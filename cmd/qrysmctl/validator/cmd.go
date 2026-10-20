@@ -66,7 +66,7 @@ var (
 	TokenFlag = &cli.StringFlag{
 		Name:    "token",
 		Aliases: []string{"t"},
-		Usage:   "keymanager API bearer token, note: currently required but may be removed in the future, this is the same token as the web ui token.",
+		Usage:   "keymanager API bearer token read from <wallet-dir>/auth-token on the validator host.",
 	}
 )
 
@@ -86,6 +86,7 @@ var Commands = []*cli.Command{
 					TokenFlag,
 					ValidatorHostFlag,
 					ProposerSettingsOutputFlag,
+					WithBuilderFlag,
 				},
 				Before: func(cliCtx *cli.Context) error {
 					return cmd.LoadFlagsFromConfig(cliCtx, cliCtx.Command.Flags)

@@ -15,14 +15,21 @@ import (
 )
 
 const (
+	// ValidatorFieldCount is the number of fields in the validator object.
+	ValidatorFieldCount = 9
+
+	// ValidatorFieldRootCount is the number of leaves in the SSZ tree of a
+	// validator object: the field count rounded up to a power of two.
+	ValidatorFieldRootCount = 16
+
 	// number of field roots for the validator object.
-	validatorFieldRoots = 8
+	validatorFieldRoots = ValidatorFieldRootCount
 
 	// Depth of tree representation of an individual
 	// validator.
 	// NumOfRoots = 2 ^ (TreeDepth)
-	// 8 = 2 ^ 3
-	validatorTreeDepth = 3
+	// 16 = 2 ^ 4
+	validatorTreeDepth = 4
 )
 
 // ValidatorRegistryRoot computes the HashTreeRoot Merkleization of
@@ -95,7 +102,7 @@ func OptimizedValidatorRoots(validators []*qrysmpb.Validator) ([][32]byte, error
 	}
 	wg.Wait()
 
-	// A validator's tree can represented with a depth of 3. As log2(8) = 3
+	// A validator's tree can represented with a depth of 4. As log2(16) = 4
 	// Using this property we can lay out all the individual fields of a
 	// validator and hash them in single level using our vectorized routine.
 	for range validatorTreeDepth {

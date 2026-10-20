@@ -15,14 +15,25 @@ participants:
     # local build
     # vc_image: theqrl-dev/qrysm-validator:latest
     count: 2
-    # use_remote_signer: true
-    # remote_signer_type: clef
+    use_remote_signer: true
+    remote_signer_type: clef
+    remote_signer_auto_approve: true
+    # remote_signer_image: qrledger/go-qrl:alltools-stable
 network_params:
   preset: "mainnet"
-  prefunded_accounts: '{"QD5812F6cf4a0f645aA620CD57319a0Ed649Dd8f5": {"balance": "2000000QRL"}, "Qa5AEDb928f8300DE98C66bb4BB66b9bB137e9A17": {"balance": "2000000QRL"}}' # tx spammer/clef accounts
+  prefunded_accounts:
+    Q738a3bdbcd5e0924d4923ebedfc378dd9111c977bb36116394e900761c741636cb1b9eff5fba549af1f624fed38d628aa1cc1d8f158def9e58eae84d3645a7a7:
+      balance: "2000000QRL"
+    Qd5812f6cf4a0f645aa620cd57319a0ed649dd8f5519a9dde7770ae5b0e49e547985f35eb972a2a07041561aa39c65a3991478f9b1e6749e05277dcf58a9a8b72:
+      balance: "2000000QRL"
+    Qa5aedb928f8300de98c66bb4bb66b9bb137e9a17e9d41039d98a664671b7c8a34bf63d49800d4ff8f4fd28aef583920e018988d994651b6f0f5966b1dbe11a8b:
+      balance: "2000000QRL"
   light_kdf_enabled: True
-  # withdrawal_address: "Q8943545177806ED17B9F23F0a21ee5948eCaa776"
+  # withdrawal_address: "Q0838A121A6e4dd8A51e7437b152FaBBc76a173f077132F2C2ED021c7B0991E70da4dba44e9ec00984a90f28dfb0aabbd"
   # genesis_delay: 150 # required if light kdf is disabled!
+
+qrl_genesis_generator_params:
+  image: qrledger/qrysm:qrl-genesis-generator-latest
 
 # global_log_level: debug
 

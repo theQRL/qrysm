@@ -192,10 +192,14 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 		attBitfield := bitfield.NewBitlist(uint64(len(committee)))
 		attBitfield.SetBitAt(i, true)
 
+		sig, err := privKeys[committee[i]].Sign(signingRoot[:])
+		if err != nil {
+			return errors.Wrap(err, "could not sign attestation")
+		}
 		att := &qrysmpb.Attestation{
 			AggregationBits: attBitfield,
 			Data:            attData,
-			Signatures:      [][]byte{privKeys[committee[i]].Sign(signingRoot[:]).Marshal()},
+			Signatures:      [][]byte{sig.Marshal()},
 		}
 		// We only broadcast to conns[0] here since we can trust that at least 1 node will be online.
 		// Only broadcasting the attestation to one node also helps test slashing propagation.
@@ -296,7 +300,7 @@ func generateSignedBeaconBlock(
 				DepositRoot:  bytesutil.PadTo([]byte("bad deposit root"), hashLen),
 				DepositCount: 1,
 			},
-			RandaoReveal:      bytesutil.PadTo([]byte("bad randao"), field_params.MLDSA87SignatureLength),
+			RandaoReveal:      bytesutil.PadTo([]byte("bad randao"), field_params.RandaoRevealLength),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
 			ProposerSlashings: []*qrysmpb.ProposerSlashing{},
 			AttesterSlashings: []*qrysmpb.AttesterSlashing{},
@@ -318,10 +322,13 @@ func generateSignedBeaconBlock(
 	if err != nil {
 		return nil, errors.Wrap(err, "could not compute signing root")
 	}
-	sig := privKeys[proposerIndex].Sign(signingRoot[:]).Marshal()
+	blkSig, err := privKeys[proposerIndex].Sign(signingRoot[:])
+	if err != nil {
+		return nil, errors.Wrap(err, "could not sign block")
+	}
 	signedBlk := &qrysmpb.SignedBeaconBlockZond{
 		Block:     blk,
-		Signature: sig,
+		Signature: blkSig.Marshal(),
 	}
 
 	// We only broadcast to conns[0] here since we can trust that at least 1 node will be online.

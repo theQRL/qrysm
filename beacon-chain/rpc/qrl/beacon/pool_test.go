@@ -2,7 +2,10 @@ package beacon
 
 import (
 	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"testing"
+	"time"
 
 	blockchainmock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
@@ -100,8 +103,9 @@ func TestListPoolAttesterSlashings(t *testing.T) {
 	}
 
 	s := &Server{
-		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{PendingAttSlashings: []*qrysmpb.AttesterSlashing{slashing1, slashing2}},
+		ChainInfoFetcher:   &blockchainmock.ChainService{State: bs},
+		GenesisTimeFetcher: &blockchainmock.ChainService{State: bs},
+		SlashingsPool:      &slashingsmock.PoolMock{PendingAttSlashings: []*qrysmpb.AttesterSlashing{slashing1, slashing2}},
 	}
 
 	resp, err := s.ListPoolAttesterSlashings(context.Background(), &emptypb.Empty{})
@@ -160,8 +164,9 @@ func TestListPoolProposerSlashings(t *testing.T) {
 	}
 
 	s := &Server{
-		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{PendingPropSlashings: []*qrysmpb.ProposerSlashing{slashing1, slashing2}},
+		ChainInfoFetcher:   &blockchainmock.ChainService{State: bs},
+		GenesisTimeFetcher: &blockchainmock.ChainService{State: bs},
+		SlashingsPool:      &slashingsmock.PoolMock{PendingPropSlashings: []*qrysmpb.ProposerSlashing{slashing1, slashing2}},
 	}
 
 	resp, err := s.ListPoolProposerSlashings(context.Background(), &emptypb.Empty{})
@@ -235,9 +240,10 @@ func TestSubmitAttesterSlashing_Ok(t *testing.T) {
 
 	broadcaster := &p2pMock.MockBroadcaster{}
 	s := &Server{
-		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{},
-		Broadcaster:      broadcaster,
+		ChainInfoFetcher:   &blockchainmock.ChainService{State: bs},
+		GenesisTimeFetcher: &blockchainmock.ChainService{State: bs},
+		SlashingsPool:      &slashingsmock.PoolMock{},
+		Broadcaster:        broadcaster,
 	}
 
 	_, err = s.SubmitAttesterSlashing(ctx, slashing)
@@ -312,9 +318,10 @@ func TestSubmitAttesterSlashing_AcrossFork(t *testing.T) {
 
 	broadcaster := &p2pMock.MockBroadcaster{}
 	s := &Server{
-		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{},
-		Broadcaster:      broadcaster,
+		ChainInfoFetcher:   &blockchainmock.ChainService{State: bs},
+		GenesisTimeFetcher: &blockchainmock.ChainService{State: bs},
+		SlashingsPool:      &slashingsmock.PoolMock{},
+		Broadcaster:        broadcaster,
 	}
 
 	_, err = s.SubmitAttesterSlashing(ctx, slashing)
@@ -362,9 +369,10 @@ func TestSubmitAttesterSlashing_InvalidSlashing(t *testing.T) {
 
 	broadcaster := &p2pMock.MockBroadcaster{}
 	s := &Server{
-		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{},
-		Broadcaster:      broadcaster,
+		ChainInfoFetcher:   &blockchainmock.ChainService{State: bs},
+		GenesisTimeFetcher: &blockchainmock.ChainService{State: bs},
+		SlashingsPool:      &slashingsmock.PoolMock{},
+		Broadcaster:        broadcaster,
 	}
 
 	_, err = s.SubmitAttesterSlashing(ctx, slashing)
@@ -429,9 +437,10 @@ func TestSubmitProposerSlashing_Ok(t *testing.T) {
 
 	broadcaster := &p2pMock.MockBroadcaster{}
 	s := &Server{
-		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{},
-		Broadcaster:      broadcaster,
+		ChainInfoFetcher:   &blockchainmock.ChainService{State: bs},
+		GenesisTimeFetcher: &blockchainmock.ChainService{State: bs},
+		SlashingsPool:      &slashingsmock.PoolMock{},
+		Broadcaster:        broadcaster,
 	}
 
 	_, err = s.SubmitProposerSlashing(ctx, slashing)
@@ -498,9 +507,10 @@ func TestSubmitProposerSlashing_AcrossFork(t *testing.T) {
 
 	broadcaster := &p2pMock.MockBroadcaster{}
 	s := &Server{
-		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{},
-		Broadcaster:      broadcaster,
+		ChainInfoFetcher:   &blockchainmock.ChainService{State: bs},
+		GenesisTimeFetcher: &blockchainmock.ChainService{State: bs},
+		SlashingsPool:      &slashingsmock.PoolMock{},
+		Broadcaster:        broadcaster,
 	}
 
 	_, err = s.SubmitProposerSlashing(ctx, slashing)
@@ -541,12 +551,249 @@ func TestSubmitProposerSlashing_InvalidSlashing(t *testing.T) {
 
 	broadcaster := &p2pMock.MockBroadcaster{}
 	s := &Server{
-		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{},
-		Broadcaster:      broadcaster,
+		ChainInfoFetcher:   &blockchainmock.ChainService{State: bs},
+		GenesisTimeFetcher: &blockchainmock.ChainService{State: bs},
+		SlashingsPool:      &slashingsmock.PoolMock{},
+		Broadcaster:        broadcaster,
 	}
 
 	_, err = s.SubmitProposerSlashing(ctx, slashing)
 	require.ErrorContains(t, "Invalid proposer slashing", err)
 	assert.Equal(t, false, broadcaster.BroadcastCalled)
+}
+
+// A slot far beyond the wall clock. Advancing the head state to it would take
+// hours at tens of microseconds per slot; the handlers must cap the advance at
+// the current slot.
+const farFutureSlot = primitives.Slot(1 << 40)
+
+func TestSubmitProposerSlashing_FutureHeaderSlotIsBounded(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	transition.SkipSlotCache.Disable()
+	defer transition.SkipSlotCache.Enable()
+
+	_, keys, err := util.DeterministicDepositsAndKeys(1)
+	require.NoError(t, err)
+	validator := &qrysmpb.Validator{
+		PublicKey:         keys[0].PublicKey().Marshal(),
+		WithdrawableEpoch: primitives.Epoch(1),
+	}
+	bs, err := util.NewBeaconStateZond(func(state *qrysmpb.BeaconStateZond) error {
+		state.Validators = []*qrysmpb.Validator{validator}
+		return nil
+	})
+	require.NoError(t, err)
+
+	slashing := &qrlpb.ProposerSlashing{
+		SignedHeader_1: &qrlpb.SignedBeaconBlockHeader{
+			Message: &qrlpb.BeaconBlockHeader{
+				Slot:          farFutureSlot,
+				ProposerIndex: 0,
+				ParentRoot:    bytesutil.PadTo([]byte("parentroot1"), 32),
+				StateRoot:     bytesutil.PadTo([]byte("stateroot1"), 32),
+				BodyRoot:      bytesutil.PadTo([]byte("bodyroot1"), 32),
+			},
+		},
+		SignedHeader_2: &qrlpb.SignedBeaconBlockHeader{
+			Message: &qrlpb.BeaconBlockHeader{
+				Slot:          farFutureSlot,
+				ProposerIndex: 0,
+				ParentRoot:    bytesutil.PadTo([]byte("parentroot2"), 32),
+				StateRoot:     bytesutil.PadTo([]byte("stateroot2"), 32),
+				BodyRoot:      bytesutil.PadTo([]byte("bodyroot2"), 32),
+			},
+		},
+	}
+	for _, h := range []*qrlpb.SignedBeaconBlockHeader{slashing.SignedHeader_1, slashing.SignedHeader_2} {
+		sb, err := signing.ComputeDomainAndSign(bs, slots.ToEpoch(h.Message.Slot), h.Message, params.BeaconConfig().DomainBeaconProposer, keys[0])
+		require.NoError(t, err)
+		sig, err := ml_dsa_87.SignatureFromBytes(sb)
+		require.NoError(t, err)
+		h.Signature = sig.Marshal()
+	}
+
+	// The wall clock is at slot 2, so the head state may only be advanced that far.
+	currentSlot := primitives.Slot(2)
+	chain := &blockchainmock.ChainService{State: bs, Slot: &currentSlot}
+	broadcaster := &p2pMock.MockBroadcaster{}
+	s := &Server{
+		ChainInfoFetcher:   chain,
+		GenesisTimeFetcher: chain,
+		SlashingsPool:      &slashingsmock.PoolMock{},
+		Broadcaster:        broadcaster,
+	}
+
+	start := time.Now()
+	_, err = s.SubmitProposerSlashing(ctx, slashing)
+	require.NoError(t, err)
+	require.Equal(t, true, time.Since(start) < 5*time.Second, "slot advance was not bounded by the current slot")
+	require.Equal(t, 1, len(s.SlashingsPool.PendingProposerSlashings(ctx, bs, true)))
+	assert.Equal(t, true, broadcaster.BroadcastCalled)
+}
+
+func TestSubmitProposerSlashing_MissingHeadersRejected(t *testing.T) {
+	s := &Server{}
+	for _, req := range []*qrlpb.ProposerSlashing{
+		{},
+		{SignedHeader_1: &qrlpb.SignedBeaconBlockHeader{}},
+		{SignedHeader_1: &qrlpb.SignedBeaconBlockHeader{Message: &qrlpb.BeaconBlockHeader{}}},
+		{SignedHeader_1: &qrlpb.SignedBeaconBlockHeader{Message: &qrlpb.BeaconBlockHeader{}}, SignedHeader_2: &qrlpb.SignedBeaconBlockHeader{}},
+	} {
+		_, err := s.SubmitProposerSlashing(context.Background(), req)
+		require.NotNil(t, err)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	}
+}
+
+func TestSubmitAttesterSlashing_FutureSlotIsBounded(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	transition.SkipSlotCache.Disable()
+	defer transition.SkipSlotCache.Enable()
+
+	_, keys, err := util.DeterministicDepositsAndKeys(1)
+	require.NoError(t, err)
+	validator := &qrysmpb.Validator{
+		PublicKey: keys[0].PublicKey().Marshal(),
+	}
+	bs, err := util.NewBeaconStateZond(func(state *qrysmpb.BeaconStateZond) error {
+		state.Validators = []*qrysmpb.Validator{validator}
+		return nil
+	})
+	require.NoError(t, err)
+
+	slashing := &qrlpb.AttesterSlashing{
+		Attestation_1: &qrlpb.IndexedAttestation{
+			AttestingIndices: []uint64{0},
+			Data: &qrlpb.AttestationData{
+				Slot:            farFutureSlot,
+				Index:           1,
+				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot1"), 32),
+				Source:          &qrlpb.Checkpoint{Epoch: 1, Root: bytesutil.PadTo([]byte("sourceroot1"), 32)},
+				Target:          &qrlpb.Checkpoint{Epoch: 10, Root: bytesutil.PadTo([]byte("targetroot1"), 32)},
+			},
+		},
+		Attestation_2: &qrlpb.IndexedAttestation{
+			AttestingIndices: []uint64{0},
+			Data: &qrlpb.AttestationData{
+				Slot:            farFutureSlot,
+				Index:           1,
+				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot2"), 32),
+				Source:          &qrlpb.Checkpoint{Epoch: 1, Root: bytesutil.PadTo([]byte("sourceroot2"), 32)},
+				Target:          &qrlpb.Checkpoint{Epoch: 10, Root: bytesutil.PadTo([]byte("targetroot2"), 32)},
+			},
+		},
+	}
+	for _, att := range []*qrlpb.IndexedAttestation{slashing.Attestation_1, slashing.Attestation_2} {
+		sb, err := signing.ComputeDomainAndSign(bs, att.Data.Target.Epoch, att.Data, params.BeaconConfig().DomainBeaconAttester, keys[0])
+		require.NoError(t, err)
+		sig, err := ml_dsa_87.SignatureFromBytes(sb)
+		require.NoError(t, err)
+		att.Signatures = [][]byte{sig.Marshal()}
+	}
+
+	currentSlot := primitives.Slot(2)
+	chain := &blockchainmock.ChainService{State: bs, Slot: &currentSlot}
+	broadcaster := &p2pMock.MockBroadcaster{}
+	s := &Server{
+		ChainInfoFetcher:   chain,
+		GenesisTimeFetcher: chain,
+		SlashingsPool:      &slashingsmock.PoolMock{},
+		Broadcaster:        broadcaster,
+	}
+
+	start := time.Now()
+	_, err = s.SubmitAttesterSlashing(ctx, slashing)
+	require.NoError(t, err)
+	require.Equal(t, true, time.Since(start) < 5*time.Second, "slot advance was not bounded by the current slot")
+	require.Equal(t, 1, len(s.SlashingsPool.PendingAttesterSlashings(ctx, bs, true)))
+	assert.Equal(t, true, broadcaster.BroadcastCalled)
+}
+
+func TestSubmitAttesterSlashing_MissingAttestationsRejected(t *testing.T) {
+	s := &Server{}
+	for _, req := range []*qrlpb.AttesterSlashing{
+		{},
+		{Attestation_1: &qrlpb.IndexedAttestation{}},
+		{Attestation_1: &qrlpb.IndexedAttestation{Data: &qrlpb.AttestationData{}}},
+		{Attestation_1: &qrlpb.IndexedAttestation{Data: &qrlpb.AttestationData{}}, Attestation_2: &qrlpb.IndexedAttestation{}},
+	} {
+		_, err := s.SubmitAttesterSlashing(context.Background(), req)
+		require.NotNil(t, err)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	}
+}
+
+func TestSubmitProposerSlashing_LaggingHeadIsBounded(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	transition.SkipSlotCache.Disable()
+	defer transition.SkipSlotCache.Enable()
+
+	_, keys, err := util.DeterministicDepositsAndKeys(1)
+	require.NoError(t, err)
+	validator := &qrysmpb.Validator{
+		PublicKey:         keys[0].PublicKey().Marshal(),
+		WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
+	}
+	bs, err := util.NewBeaconStateZond(func(state *qrysmpb.BeaconStateZond) error {
+		// Two epochs of processing run below, so size every per-validator array.
+		state.Validators = []*qrysmpb.Validator{validator}
+		state.Balances = []uint64{params.BeaconConfig().MaxEffectiveBalance}
+		state.InactivityScores = []uint64{0}
+		state.PreviousEpochParticipation = []byte{0}
+		state.CurrentEpochParticipation = []byte{0}
+		return nil
+	})
+	require.NoError(t, err)
+
+	slashing := &qrlpb.ProposerSlashing{
+		SignedHeader_1: &qrlpb.SignedBeaconBlockHeader{
+			Message: &qrlpb.BeaconBlockHeader{
+				Slot:          farFutureSlot,
+				ProposerIndex: 0,
+				ParentRoot:    bytesutil.PadTo([]byte("parentroot1"), 32),
+				StateRoot:     bytesutil.PadTo([]byte("stateroot1"), 32),
+				BodyRoot:      bytesutil.PadTo([]byte("bodyroot1"), 32),
+			},
+		},
+		SignedHeader_2: &qrlpb.SignedBeaconBlockHeader{
+			Message: &qrlpb.BeaconBlockHeader{
+				Slot:          farFutureSlot,
+				ProposerIndex: 0,
+				ParentRoot:    bytesutil.PadTo([]byte("parentroot2"), 32),
+				StateRoot:     bytesutil.PadTo([]byte("stateroot2"), 32),
+				BodyRoot:      bytesutil.PadTo([]byte("bodyroot2"), 32),
+			},
+		},
+	}
+	for _, h := range []*qrlpb.SignedBeaconBlockHeader{slashing.SignedHeader_1, slashing.SignedHeader_2} {
+		sb, err := signing.ComputeDomainAndSign(bs, slots.ToEpoch(h.Message.Slot), h.Message, params.BeaconConfig().DomainBeaconProposer, keys[0])
+		require.NoError(t, err)
+		sig, err := ml_dsa_87.SignatureFromBytes(sb)
+		require.NoError(t, err)
+		h.Signature = sig.Marshal()
+	}
+
+	// The wall clock is far ahead of the head (a node still catching up), so
+	// the wall-clock cap alone would still let the request advance the head
+	// state by the whole gap. The head-relative cap limits it to two epochs.
+	currentSlot := farFutureSlot
+	chain := &blockchainmock.ChainService{State: bs, Slot: &currentSlot}
+	s := &Server{
+		ChainInfoFetcher:   chain,
+		GenesisTimeFetcher: chain,
+		SlashingsPool:      &slashingsmock.PoolMock{},
+		Broadcaster:        &p2pMock.MockBroadcaster{},
+	}
+
+	start := time.Now()
+	_, err = s.SubmitProposerSlashing(ctx, slashing)
+	require.NoError(t, err)
+	require.Equal(t, true, time.Since(start) < 5*time.Second, "slot advance was not bounded relative to the head")
+	assert.Equal(t, 2*params.BeaconConfig().SlotsPerEpoch, bs.Slot(), "head state advanced beyond two epochs")
 }

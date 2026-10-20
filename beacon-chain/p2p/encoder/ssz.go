@@ -19,6 +19,14 @@ var _ NetworkEncoding = (*SszNetworkEncoder)(nil)
 var MaxGossipSize = params.BeaconNetworkConfig().GossipMaxSize
 var MaxChunkSize = params.BeaconNetworkConfig().MaxChunkSize
 
+// MaxGossipCompressedSize is the largest possible snappy-encoded wire size for
+// a gossip payload of MaxGossipSize uncompressed bytes. It is the correct
+// bound to give to gossipsub's WithMaxMessageSize (which inspects compressed
+// wire bytes) and to use for early rejection of oversized frames in
+// DecodeGossip before performing any snappy work.
+// lint:ignore uintcast MaxGossipSize is a bounded protocol config value used as an int by snappy.
+var MaxGossipCompressedSize = snappy.MaxEncodedLen(int(MaxGossipSize))
+
 // This pool defines the sync pool for our buffered snappy writers, so that they
 // can be constantly reused.
 var bufWriterPool = new(sync.Pool)
@@ -81,6 +89,13 @@ func doDecode(b []byte, to fastssz.Unmarshaler) error {
 
 // DecodeGossip decodes the bytes to the protobuf gossip message provided.
 func (_ SszNetworkEncoder) DecodeGossip(b []byte, to fastssz.Unmarshaler) error {
+	// Reject oversized frames before doing any snappy work. snappy.DecodedLen
+	// would still parse the header for arbitrarily large inputs, so cap the
+	// compressed wire length up-front using the worst-case snappy encoding
+	// of a payload at MaxGossipSize.
+	if MaxGossipCompressedSize > 0 && len(b) > MaxGossipCompressedSize {
+		return errors.Errorf("gossip message exceeds max compressed size: %d bytes > %d bytes", len(b), MaxGossipCompressedSize)
+	}
 	b, err := DecodeSnappy(b, MaxGossipSize)
 	if err != nil {
 		return err

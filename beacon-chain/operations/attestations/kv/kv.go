@@ -27,20 +27,29 @@ type AttCaches struct {
 	forkchoiceAtt      map[[32]byte]*qrysmpb.Attestation
 	blockAttLock       sync.RWMutex
 	blockAtt           map[[32]byte][]*qrysmpb.Attestation
+	seenAttLock        sync.RWMutex
 	seenAtt            *cache.Cache
+	seenAggregatedAtt  *cache.Cache
 }
 
 // NewAttCaches initializes a new attestation pool consists of multiple KV store in cache for
 // various kind of attestations.
 func NewAttCaches() *AttCaches {
+	// Post EIP-7045, attestations from the previous epoch can still be
+	// included in the current epoch's blocks, so dedup history is kept
+	// for two epochs (matching the prune window in pruneExpiredAtts).
 	secsInEpoch := time.Duration(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
-	c := cache.New(secsInEpoch*time.Second, 2*secsInEpoch*time.Second)
+	c := cache.New(2*secsInEpoch*time.Second, 3*secsInEpoch*time.Second)
 	pool := &AttCaches{
 		unAggregatedAtt: make(map[[32]byte]*qrysmpb.Attestation),
 		aggregatedAtt:   make(map[[32]byte][]*qrysmpb.Attestation),
 		forkchoiceAtt:   make(map[[32]byte]*qrysmpb.Attestation),
 		blockAtt:        make(map[[32]byte][]*qrysmpb.Attestation),
 		seenAtt:         c,
+		seenAggregatedAtt: cache.New(
+			2*secsInEpoch*time.Second,
+			3*secsInEpoch*time.Second,
+		),
 	}
 
 	return pool

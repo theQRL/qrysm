@@ -11,6 +11,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/altair"
 	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
@@ -150,12 +151,12 @@ func TestProcessProposedBlock(t *testing.T) {
 			name: "Block proposed by tracked validator",
 			block: &qrysmpb.BeaconBlockZond{
 				Slot:          6,
-				ProposerIndex: 135,
+				ProposerIndex: 44,
 				ParentRoot:    bytesutil.PadTo([]byte("hello-world"), 32),
 				StateRoot:     bytesutil.PadTo([]byte("state-world"), 32),
 				Body:          &qrysmpb.BeaconBlockBodyZond{},
 			},
-			wantedErr: "\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=0x68656c6c6f2d NewBalance=40000000000000 ParentRoot=0x68656c6c6f2d ProposerIndex=135 Slot=6 Version=0 prefix=monitor",
+			wantedErr: "\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=0x68656c6c6f2d NewBalance=40000000000000 ParentRoot=0x68656c6c6f2d ProposerIndex=44 Slot=6 Version=0 prefix=monitor",
 		},
 		{
 			name: "Block proposed by untracked validator",
@@ -189,6 +190,77 @@ func TestProcessProposedBlock(t *testing.T) {
 
 }
 
+type resyncMonitoringStateManager struct {
+	stategen.StateManager
+	afterRead func([32]byte)
+}
+
+func (m *resyncMonitoringStateManager) StateByRootIfCached(root [32]byte) state.BeaconState {
+	st := m.StateManager.StateByRootIfCached(root)
+	if st != nil && m.afterRead != nil {
+		m.afterRead(root)
+	}
+	return st
+}
+
+func TestProcessBlock_StateSnapshotDuringResync(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		cached bool
+		resync bool
+	}{
+		{name: "cached state control", cached: true},
+		{name: "resync consumes cached state", cached: true, resync: true},
+		{name: "cache miss"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			st, err := util.NewBeaconStateZond()
+			require.NoError(t, err)
+			require.NoError(t, st.SetSlot(1))
+			require.NoError(t, st.SetBalances([]uint64{10}))
+			b := util.NewBeaconBlockZond()
+			b.Block.Slot = 1
+			wrapped, err := blocks.NewSignedBeaconBlock(b)
+			require.NoError(t, err)
+			root, err := wrapped.Block().HashTreeRoot()
+			require.NoError(t, err)
+			manager := stategen.New(testDB.SetupDB(t), doublylinkedtree.New())
+			if tc.cached {
+				require.NoError(t, manager.SaveState(ctx, root, st))
+			}
+			resynced := false
+			reader := &resyncMonitoringStateManager{StateManager: manager}
+			if tc.resync {
+				reader.afterRead = func(r [32]byte) {
+					// A resync batch takes ownership of the cached parent after
+					// monitoring retrieves it, before monitoring reads balances.
+					next, err := manager.StateByRootInitialSync(ctx, r)
+					require.NoError(t, err)
+					require.NoError(t, next.SetSlot(2))
+					require.NoError(t, next.UpdateBalancesAtIndex(0, 20))
+					resynced = true
+				}
+			}
+			svc := &Service{
+				config:                &ValidatorMonitorConfig{StateGen: reader},
+				TrackedValidators:     map[primitives.ValidatorIndex]bool{0: true},
+				latestPerformance:     map[primitives.ValidatorIndex]ValidatorLatestPerformance{0: {balance: 9}},
+				aggregatedPerformance: make(map[primitives.ValidatorIndex]ValidatorAggregatedPerformance),
+			}
+			svc.processBlock(ctx, wrapped)
+			require.Equal(t, tc.resync, resynced)
+			if tc.cached {
+				require.Equal(t, uint64(1), svc.aggregatedPerformance[0].totalProposedCount)
+				require.Equal(t, uint64(10), svc.latestPerformance[0].balance, "monitor the imported block's state, not the next batch's working state")
+			} else {
+				require.Equal(t, uint64(0), svc.aggregatedPerformance[0].totalProposedCount)
+				require.Equal(t, uint64(9), svc.latestPerformance[0].balance)
+			}
+		})
+	}
+}
+
 func TestProcessBlock_AllEventsTrackedVals(t *testing.T) {
 	hook := logTest.NewGlobal()
 	ctx := context.Background()
@@ -214,14 +286,15 @@ func TestProcessBlock_AllEventsTrackedVals(t *testing.T) {
 		ValidatorsRoot: [32]byte{},
 	}
 
+	blockProposerIndex := b.Block.ProposerIndex
 	trackedVals := map[primitives.ValidatorIndex]bool{
-		51: true,
-		1:  true,
-		2:  true,
+		blockProposerIndex: true,
+		1:                  true,
+		2:                  true,
 	}
 
 	latestPerformance := map[primitives.ValidatorIndex]ValidatorLatestPerformance{
-		51: {
+		blockProposerIndex: {
 			balance: 39999900000000,
 		},
 		1: {
@@ -274,7 +347,7 @@ func TestProcessBlock_AllEventsTrackedVals(t *testing.T) {
 	root, err := b.GetBlock().HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, svc.config.StateGen.SaveState(ctx, root, genesis))
-	wanted1 := fmt.Sprintf("\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=%#x NewBalance=40000000000000 ParentRoot=0xb88dfbae9294 ProposerIndex=51 Slot=1 Version=0 prefix=monitor", bytesutil.Trunc(root[:]))
+	wanted1 := fmt.Sprintf("\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=%#x NewBalance=40000000000000 ParentRoot=%#x ProposerIndex=%d Slot=1 Version=0 prefix=monitor", bytesutil.Trunc(root[:]), bytesutil.Trunc(b.Block.ParentRoot), blockProposerIndex)
 	wanted2 := fmt.Sprintf("\"Proposer slashing was included\" BodyRoot1=0x000100000000 BodyRoot2=0x000200000000 ProposerIndex=%d SlashingSlot=0 Slot=1 prefix=monitor", idx)
 	wanted3 := "\"Sync committee contribution included\" BalanceChange=0 ContribCount=3 ExpectedContribCount=3 NewBalance=40000000000000 ValidatorIndex=1 prefix=monitor"
 	wanted4 := "\"Sync committee contribution included\" BalanceChange=0 ContribCount=1 ExpectedContribCount=1 NewBalance=40000000000000 ValidatorIndex=2 prefix=monitor"

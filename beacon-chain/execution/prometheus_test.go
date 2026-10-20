@@ -6,8 +6,46 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/theQRL/qrysm/monitoring/clientstats"
 	"github.com/theQRL/qrysm/testing/assert"
 )
+
+func TestUpdate_CanceledWithFullQueue(t *testing.T) {
+	for _, canceled := range []bool{false, true} {
+		name := "active"
+		if canceled {
+			name = "canceled"
+		}
+		t.Run(name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			pc := &ExecutionChainCollector{ctx: ctx, updateChan: make(chan clientstats.BeaconNodeStats, 1)}
+			pc.Update(clientstats.BeaconNodeStats{})
+			if canceled {
+				cancel()
+			}
+			done := make(chan struct{})
+			go func() {
+				pc.Update(clientstats.BeaconNodeStats{SyncExecutionConnected: true})
+				close(done)
+			}()
+			if !canceled {
+				<-pc.updateChan
+			}
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+				// Release the blocked sender before reporting the regression.
+				<-pc.updateChan
+				<-done
+				t.Fatal("statistics update remained blocked after collector cancellation")
+			}
+			if !canceled {
+				assert.Equal(t, true, (<-pc.updateChan).SyncExecutionConnected)
+			}
+		})
+	}
+}
 
 // TestCleanup ensures that the cleanup function unregisters the prometheus.Collection
 // also tests the interchangability of the explicit prometheus Register/Unregister

@@ -5,22 +5,67 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/theQRL/qrysm/config/params"
 	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
-	"google.golang.org/protobuf/proto"
 )
 
-func TestReplayBlocks_AllSkipSlots(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
+type recordingBlockRootGetter struct {
+	blocks map[[32]byte]interfaces.ReadOnlySignedBeaconBlock
+	calls  [][32]byte
+}
+
+func (g *recordingBlockRootGetter) Block(_ context.Context, root [32]byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
+	g.calls = append(g.calls, root)
+	return g.blocks[root], nil
+}
+
+func TestExecuteStateTransitionStateGen_SyncCommitteeSignatures(t *testing.T) {
+	ctx := context.Background()
+	preState, keys := util.DeterministicGenesisStateZond(t, 32)
+	block, err := util.GenerateFullBlockZond(preState, keys, &util.BlockGenConfig{FullSyncAggregate: true}, 1)
+	require.NoError(t, err)
+	signed, err := consensusblocks.NewSignedBeaconBlock(block)
+	require.NoError(t, err)
+
+	t.Run("valid replay matches verified state", func(t *testing.T) {
+		verified, err := transition.ExecuteStateTransition(ctx, preState.Copy(), signed)
+		require.NoError(t, err)
+		replayed, err := executeStateTransitionStateGen(ctx, preState.Copy(), signed)
+		require.NoError(t, err)
+		verifiedRoot, err := verified.HashTreeRoot(ctx)
+		require.NoError(t, err)
+		replayedRoot, err := replayed.HashTreeRoot(ctx)
+		require.NoError(t, err)
+		require.Equal(t, verifiedRoot, replayedRoot)
+	})
+
+	t.Run("only replay skips sync signature verification", func(t *testing.T) {
+		// Corrupt one signature to detect verification being performed during
+		// replay. Production replay only receives previously verified blocks.
+		corrupted := qrysmpb.CopySignedBeaconBlockZond(block)
+		corrupted.Block.Body.SyncAggregate.SyncCommitteeSignatures[0][0] ^= 1
+		signed, err := consensusblocks.NewSignedBeaconBlock(corrupted)
+		require.NoError(t, err)
+
+		_, err = transition.ExecuteStateTransition(ctx, preState.Copy(), signed)
+		require.ErrorContains(t, "invalid sync committee signature[0]", err)
+		_, err = executeStateTransitionStateGen(ctx, preState.Copy(), signed)
+		require.NoError(t, err)
+	})
+}
+
+func TestReplayBlockRoots_AllSkipSlots(t *testing.T) {
 
 	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
 	genesisBlock := blocks.NewGenesisBlock([]byte{})
@@ -40,15 +85,13 @@ func TestReplayBlocks_AllSkipSlots(t *testing.T) {
 	cp.Root = mockRoot[:]
 	require.NoError(t, beaconState.SetCurrentJustifiedCheckpoint(cp))
 
-	service := New(beaconDB, doublylinkedtree.New())
 	targetSlot := params.BeaconConfig().SlotsPerEpoch - 1
-	newState, err := service.replayBlocks(context.Background(), beaconState, []interfaces.ReadOnlySignedBeaconBlock{}, targetSlot)
+	newState, err := replayBlockRootsWithGetter(context.Background(), beaconState, nil, targetSlot, nil)
 	require.NoError(t, err)
 	assert.Equal(t, targetSlot, newState.Slot(), "Did not advance slots")
 }
 
-func TestReplayBlocks_SameSlot(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
+func TestReplayBlockRoots_SameSlot(t *testing.T) {
 
 	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
 	genesisBlock := blocks.NewGenesisBlock([]byte{})
@@ -68,15 +111,13 @@ func TestReplayBlocks_SameSlot(t *testing.T) {
 	cp.Root = mockRoot[:]
 	require.NoError(t, beaconState.SetCurrentJustifiedCheckpoint(cp))
 
-	service := New(beaconDB, doublylinkedtree.New())
 	targetSlot := beaconState.Slot()
-	newState, err := service.replayBlocks(context.Background(), beaconState, []interfaces.ReadOnlySignedBeaconBlock{}, targetSlot)
+	newState, err := replayBlockRootsWithGetter(context.Background(), beaconState, nil, targetSlot, nil)
 	require.NoError(t, err)
 	assert.Equal(t, targetSlot, newState.Slot(), "Did not advance slots")
 }
 
-func TestReplayBlocks_LowerSlotBlock(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
+func TestReplayBlockRoots_LowerSlotBlock(t *testing.T) {
 
 	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
 	require.NoError(t, beaconState.SetSlot(1))
@@ -97,279 +138,138 @@ func TestReplayBlocks_LowerSlotBlock(t *testing.T) {
 	cp.Root = mockRoot[:]
 	require.NoError(t, beaconState.SetCurrentJustifiedCheckpoint(cp))
 
-	service := New(beaconDB, doublylinkedtree.New())
 	targetSlot := beaconState.Slot()
 	b := util.NewBeaconBlockZond()
 	b.Block.Slot = beaconState.Slot() - 1
 	wsb, err := consensusblocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
-	newState, err := service.replayBlocks(context.Background(), beaconState, []interfaces.ReadOnlySignedBeaconBlock{wsb}, targetSlot)
+	root := [32]byte{1}
+	getter := &recordingBlockRootGetter{blocks: map[[32]byte]interfaces.ReadOnlySignedBeaconBlock{root: wsb}}
+	newState, err := replayBlockRootsWithGetter(context.Background(), beaconState, [][32]byte{root}, targetSlot, getter)
 	require.NoError(t, err)
 	assert.Equal(t, targetSlot, newState.Slot(), "Did not advance slots")
 }
 
-// NOTE(rgeraldes24): test is not valid atm: re-enable once we have a fork boundary
-/*
-func TestReplayBlocks_ThroughZondForkBoundary(t *testing.T) {
-	params.SetupTestConfigCleanup(t)
+func TestLatestAncestorAndBlockRoots_FollowsCanonicalLineage(t *testing.T) {
+	ctx := context.Background()
+	cases := []struct {
+		name        string
+		build       func(*testing.T, db.Database, []byte) ([][32]byte, []*qrysmpb.SignedBeaconBlockZond, error)
+		target      int
+		removeState []int
+		want        []int
+	}{
+		{
+			name:        "fork siblings are excluded",
+			build:       tree1,
+			target:      8,
+			removeState: []int{1, 2, 3, 4, 6},
+			want:        []int{1, 2, 4, 6, 8},
+		},
+		{
+			name:        "same-slot siblings are excluded",
+			build:       tree2,
+			target:      6,
+			removeState: []int{1, 5},
+			want:        []int{1, 5, 6},
+		},
+		{
+			name:        "selected end-slot sibling is retained",
+			build:       tree3,
+			target:      2,
+			removeState: []int{1},
+			want:        []int{1, 2},
+		},
+		{
+			name:   "same-slot child of saved state",
+			build:  tree4,
+			target: 1,
+			want:   []int{1},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			beaconDB := testDB.SetupDB(t)
+			s := New(beaconDB, doublylinkedtree.New())
+			roots, _, err := tc.build(t, beaconDB, bytesutil.PadTo([]byte{'A'}, 32))
+			require.NoError(t, err)
+			for _, i := range tc.removeState {
+				require.NoError(t, beaconDB.DeleteState(ctx, roots[i]))
+			}
 
+			targetBlock, err := beaconDB.Block(ctx, roots[tc.target])
+			require.NoError(t, err)
+			ancestor, got, err := s.latestAncestorAndBlockRootsForSlot(ctx, roots[tc.target], targetBlock.Block().Slot())
+			require.NoError(t, err)
+			require.Equal(t, primitives.Slot(0), ancestor.Slot())
+			require.Equal(t, len(tc.want), len(got))
+			for i, wantIndex := range tc.want {
+				require.Equal(t, roots[wantIndex], got[i])
+			}
+		})
+	}
+}
+
+func TestLatestAncestorAndBlockRootsForSlot_ExcludesBlocksAfterTarget(t *testing.T) {
+	ctx := context.Background()
+	beaconDB := testDB.SetupDB(t)
+	s := New(beaconDB, doublylinkedtree.New())
+
+	ancestorState, _ := util.DeterministicGenesisStateZond(t, 32)
+	ancestorBlock := util.NewBeaconBlockZond()
+	ancestorRoot, err := ancestorBlock.Block.HashTreeRoot()
+	require.NoError(t, err)
+	require.NoError(t, s.epochBoundaryStateCache.put(ancestorRoot, ancestorState))
+
+	beforeTarget := util.NewBeaconBlockZond()
+	beforeTarget.Block.Slot = 5
+	beforeTarget.Block.ParentRoot = ancestorRoot[:]
+	beforeTargetRoot, err := beforeTarget.Block.HashTreeRoot()
+	require.NoError(t, err)
+	util.SaveBlock(t, ctx, beaconDB, beforeTarget)
+
+	afterTarget := util.NewBeaconBlockZond()
+	afterTarget.Block.Slot = 11
+	afterTarget.Block.ParentRoot = beforeTargetRoot[:]
+	afterTargetRoot, err := afterTarget.Block.HashTreeRoot()
+	require.NoError(t, err)
+	util.SaveBlock(t, ctx, beaconDB, afterTarget)
+
+	ancestor, roots, err := s.latestAncestorAndBlockRootsForSlot(ctx, afterTargetRoot, 10)
+	require.NoError(t, err)
+	require.Equal(t, ancestorState.Slot(), ancestor.Slot())
+	require.Equal(t, 1, len(roots))
+	require.Equal(t, beforeTargetRoot, roots[0])
+}
+
+func TestReplayBlockRoots_RejectsTargetBeforeState(t *testing.T) {
 	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
-	genesisBlock := blocks.NewGenesisBlock([]byte{})
-	bodyRoot, err := genesisBlock.Block.HashTreeRoot()
-	require.NoError(t, err)
-	err = beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
-		Slot:       genesisBlock.Block.Slot,
-		ParentRoot: genesisBlock.Block.ParentRoot,
-		StateRoot:  params.BeaconConfig().ZeroHash[:],
-		BodyRoot:   bodyRoot[:],
-	})
-	require.NoError(t, err)
+	require.NoError(t, beaconState.SetSlot(1))
 
-	service := New(testDB.SetupDB(t), doublylinkedtree.New())
-	targetSlot := params.BeaconConfig().SlotsPerEpoch * 2
-	newState, err := service.replayBlocks(context.Background(), beaconState, []interfaces.ReadOnlySignedBeaconBlock{}, targetSlot)
-	require.NoError(t, err)
-
-	// Verify state is version Bellatrix.
-	assert.Equal(t, version.Zond, newState.Version())
-
-	targetSlot = params.BeaconConfig().SlotsPerEpoch * 3
-	newState, err = service.replayBlocks(context.Background(), newState, []interfaces.ReadOnlySignedBeaconBlock{}, targetSlot)
-	require.NoError(t, err)
-
-	// Verify state is version Zond.
-	assert.Equal(t, version.Zond, newState.Version())
-}
-*/
-
-func TestLoadBlocks_FirstBranch(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
-	ctx := context.Background()
-	s := &State{
-		beaconDB: beaconDB,
-	}
-
-	roots, savedBlocks, err := tree1(t, beaconDB, bytesutil.PadTo([]byte{'A'}, 32))
-	require.NoError(t, err)
-
-	filteredBlocks, err := s.loadBlocks(ctx, 0, 8, roots[len(roots)-1])
-	require.NoError(t, err)
-
-	wanted := []*qrysmpb.SignedBeaconBlockZond{
-		savedBlocks[8],
-		savedBlocks[6],
-		savedBlocks[4],
-		savedBlocks[2],
-		savedBlocks[1],
-		savedBlocks[0],
-	}
-
-	for i, block := range wanted {
-		wsb, err := consensusblocks.NewSignedBeaconBlock(block)
-		require.NoError(t, err)
-		blinded, err := wsb.ToBlinded()
-		require.NoError(t, err)
-		blindedPb, err := blinded.Proto()
-		require.NoError(t, err)
-
-		filteredBlocksPb, err := filteredBlocks[i].Proto()
-		require.NoError(t, err)
-		if !proto.Equal(blindedPb, filteredBlocksPb) {
-			t.Error("Did not get wanted blocks")
-		}
-	}
+	_, err := replayBlockRootsWithGetter(context.Background(), beaconState, nil, 0, nil)
+	require.ErrorIs(t, err, ErrReplayTargetSlotExceeded)
 }
 
-func TestLoadBlocks_SecondBranch(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
-	ctx := context.Background()
-	s := &State{
-		beaconDB: beaconDB,
+func TestReplayBlockRoots_FetchesRootsInOrder(t *testing.T) {
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
+	require.NoError(t, beaconState.SetSlot(3))
+	roots := [][32]byte{{1}, {2}, {3}}
+	getter := &recordingBlockRootGetter{blocks: make(map[[32]byte]interfaces.ReadOnlySignedBeaconBlock)}
+	for i, root := range roots {
+		block := util.NewBeaconBlockZond()
+		block.Block.Slot = primitives.Slot(i)
+		signed, err := consensusblocks.NewSignedBeaconBlock(block)
+		require.NoError(t, err)
+		getter.blocks[root] = signed
 	}
 
-	roots, savedBlocks, err := tree1(t, beaconDB, bytesutil.PadTo([]byte{'A'}, 32))
+	got, err := replayBlockRootsWithGetter(context.Background(), beaconState, roots, beaconState.Slot(), getter)
 	require.NoError(t, err)
-
-	filteredBlocks, err := s.loadBlocks(ctx, 0, 5, roots[5])
-	require.NoError(t, err)
-
-	wanted := []*qrysmpb.SignedBeaconBlockZond{
-		savedBlocks[5],
-		savedBlocks[3],
-		savedBlocks[1],
-		savedBlocks[0],
+	require.Equal(t, beaconState.Slot(), got.Slot())
+	require.Equal(t, len(roots), len(getter.calls))
+	for i := range roots {
+		require.Equal(t, roots[i], getter.calls[i])
 	}
-
-	for i, block := range wanted {
-		wsb, err := consensusblocks.NewSignedBeaconBlock(block)
-		require.NoError(t, err)
-		blinded, err := wsb.ToBlinded()
-		require.NoError(t, err)
-		blindedPb, err := blinded.Proto()
-		require.NoError(t, err)
-
-		filteredBlocksPb, err := filteredBlocks[i].Proto()
-		require.NoError(t, err)
-		if !proto.Equal(blindedPb, filteredBlocksPb) {
-			t.Error("Did not get wanted blocks")
-		}
-	}
-}
-
-func TestLoadBlocks_ThirdBranch(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
-	ctx := context.Background()
-	s := &State{
-		beaconDB: beaconDB,
-	}
-
-	roots, savedBlocks, err := tree1(t, beaconDB, bytesutil.PadTo([]byte{'A'}, 32))
-	require.NoError(t, err)
-
-	filteredBlocks, err := s.loadBlocks(ctx, 0, 7, roots[7])
-	require.NoError(t, err)
-
-	wanted := []*qrysmpb.SignedBeaconBlockZond{
-		savedBlocks[7],
-		savedBlocks[6],
-		savedBlocks[4],
-		savedBlocks[2],
-		savedBlocks[1],
-		savedBlocks[0],
-	}
-
-	for i, block := range wanted {
-		wsb, err := consensusblocks.NewSignedBeaconBlock(block)
-		require.NoError(t, err)
-		blinded, err := wsb.ToBlinded()
-		require.NoError(t, err)
-		blindedPb, err := blinded.Proto()
-		require.NoError(t, err)
-
-		filteredBlocksPb, err := filteredBlocks[i].Proto()
-		require.NoError(t, err)
-		if !proto.Equal(blindedPb, filteredBlocksPb) {
-			t.Error("Did not get wanted blocks")
-		}
-	}
-}
-
-func TestLoadBlocks_SameSlots(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
-	ctx := context.Background()
-	s := &State{
-		beaconDB: beaconDB,
-	}
-
-	roots, savedBlocks, err := tree2(t, beaconDB, bytesutil.PadTo([]byte{'A'}, 32))
-	require.NoError(t, err)
-
-	filteredBlocks, err := s.loadBlocks(ctx, 0, 3, roots[6])
-	require.NoError(t, err)
-
-	wanted := []*qrysmpb.SignedBeaconBlockZond{
-		savedBlocks[6],
-		savedBlocks[5],
-		savedBlocks[1],
-		savedBlocks[0],
-	}
-
-	for i, block := range wanted {
-		wsb, err := consensusblocks.NewSignedBeaconBlock(block)
-		require.NoError(t, err)
-		blinded, err := wsb.ToBlinded()
-		require.NoError(t, err)
-		blindedPb, err := blinded.Proto()
-		require.NoError(t, err)
-
-		filteredBlocksPb, err := filteredBlocks[i].Proto()
-		require.NoError(t, err)
-		if !proto.Equal(blindedPb, filteredBlocksPb) {
-			t.Error("Did not get wanted blocks")
-		}
-	}
-}
-
-func TestLoadBlocks_SameEndSlots(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
-	ctx := context.Background()
-	s := &State{
-		beaconDB: beaconDB,
-	}
-
-	roots, savedBlocks, err := tree3(t, beaconDB, bytesutil.PadTo([]byte{'A'}, 32))
-	require.NoError(t, err)
-
-	filteredBlocks, err := s.loadBlocks(ctx, 0, 2, roots[2])
-	require.NoError(t, err)
-
-	wanted := []*qrysmpb.SignedBeaconBlockZond{
-		savedBlocks[2],
-		savedBlocks[1],
-		savedBlocks[0],
-	}
-
-	for i, block := range wanted {
-		wsb, err := consensusblocks.NewSignedBeaconBlock(block)
-		require.NoError(t, err)
-		blinded, err := wsb.ToBlinded()
-		require.NoError(t, err)
-		blindedPb, err := blinded.Proto()
-		require.NoError(t, err)
-
-		filteredBlocksPb, err := filteredBlocks[i].Proto()
-		require.NoError(t, err)
-		if !proto.Equal(blindedPb, filteredBlocksPb) {
-			t.Error("Did not get wanted blocks")
-		}
-	}
-}
-
-func TestLoadBlocks_SameEndSlotsWith2blocks(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
-	ctx := context.Background()
-	s := &State{
-		beaconDB: beaconDB,
-	}
-
-	roots, savedBlocks, err := tree4(t, beaconDB, bytesutil.PadTo([]byte{'A'}, 32))
-	require.NoError(t, err)
-
-	filteredBlocks, err := s.loadBlocks(ctx, 0, 2, roots[1])
-	require.NoError(t, err)
-
-	wanted := []*qrysmpb.SignedBeaconBlockZond{
-		savedBlocks[1],
-		savedBlocks[0],
-	}
-
-	for i, block := range wanted {
-		wsb, err := consensusblocks.NewSignedBeaconBlock(block)
-		require.NoError(t, err)
-		blinded, err := wsb.ToBlinded()
-		require.NoError(t, err)
-		blindedPb, err := blinded.Proto()
-		require.NoError(t, err)
-
-		filteredBlocksPb, err := filteredBlocks[i].Proto()
-		require.NoError(t, err)
-		if !proto.Equal(blindedPb, filteredBlocksPb) {
-			t.Error("Did not get wanted blocks")
-		}
-	}
-}
-
-func TestLoadBlocks_BadStart(t *testing.T) {
-	beaconDB := testDB.SetupDB(t)
-	ctx := context.Background()
-	s := &State{
-		beaconDB: beaconDB,
-	}
-
-	roots, _, err := tree1(t, beaconDB, bytesutil.PadTo([]byte{'A'}, 32))
-	require.NoError(t, err)
-	_, err = s.loadBlocks(ctx, 0, 5, roots[8])
-	assert.ErrorContains(t, "end block roots don't match", err)
 }
 
 // tree1 constructs the following tree:
@@ -715,4 +615,50 @@ func TestLoadFinalizedBlocks(t *testing.T) {
 	filteredBlocks, err = s.loadFinalizedBlocks(ctx, 0, 8)
 	require.NoError(t, err)
 	require.Equal(t, 10, len(filteredBlocks))
+}
+
+// A checkpoint state can be a block's post-state advanced through empty slots
+// up to the slot of the next block. Replaying that next block must apply it:
+// the state is at the block's slot but has not applied it. A state that did
+// apply the block (its latest header is the block's) is left alone.
+func TestReplayBlockRoots_AppliesBlockAtPreStateSlot(t *testing.T) {
+	ctx := context.Background()
+	preState, keys := util.DeterministicGenesisStateZond(t, 32)
+	block, err := util.GenerateFullBlockZond(preState, keys, util.DefaultBlockGenConfig(), 3)
+	require.NoError(t, err)
+	signed, err := consensusblocks.NewSignedBeaconBlock(block)
+	require.NoError(t, err)
+	root, err := signed.Block().HashTreeRoot()
+	require.NoError(t, err)
+	getter := &recordingBlockRootGetter{blocks: map[[32]byte]interfaces.ReadOnlySignedBeaconBlock{root: signed}}
+
+	advanced, err := transition.ProcessSlots(ctx, preState.Copy(), 3)
+	require.NoError(t, err)
+	st, err := replayBlockRootsWithGetter(ctx, advanced, [][32]byte{root}, 3, getter)
+	require.NoError(t, err)
+	require.Equal(t, primitives.Slot(3), st.LatestBlockHeader().Slot, "the block at the pre-state's slot was not applied")
+
+	post, err := executeStateTransitionStateGen(ctx, preState.Copy(), signed)
+	require.NoError(t, err)
+	postRoot, err := post.HashTreeRoot(ctx)
+	require.NoError(t, err)
+	replayedRoot, err := st.HashTreeRoot(ctx)
+	require.NoError(t, err)
+	require.Equal(t, postRoot, replayedRoot)
+
+	again, err := replayBlockRootsWithGetter(ctx, post.Copy(), [][32]byte{root}, 3, getter)
+	require.NoError(t, err)
+	againRoot, err := again.HashTreeRoot(ctx)
+	require.NoError(t, err)
+	require.Equal(t, postRoot, againRoot, "a block the state already applied must not be applied again")
+}
+
+// A replay stops at the next slot once its context is cancelled instead of
+// running every remaining slot and epoch transition to the target.
+func TestReplayProcessSlots_StopsOnCancelledContext(t *testing.T) {
+	st, _ := util.DeterministicGenesisStateZond(t, 8)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := ReplayProcessSlots(ctx, st, params.BeaconConfig().SlotsPerEpoch*2)
+	require.ErrorIs(t, err, context.Canceled)
 }

@@ -25,13 +25,15 @@ type OpCode byte
 
 // IsPush specifies if an opcode is a PUSH opcode.
 func (op OpCode) IsPush() bool {
-	return op >= PUSH1 && op <= PUSH32
+	return (op >= PUSH1 && op <= PUSH32) || (op >= PUSH33 && op <= PUSH64)
 }
 
 // HasImmediate returns true if the op has immediate after the op.
 func (op OpCode) HasImmediate() bool {
 	switch {
 	case op >= PUSH1 && op <= PUSH32:
+		return true
+	case op >= PUSH33 && op <= PUSH64:
 		return true
 		//case op == RJUMP || op == RJUMPI || op == RJUMPV:
 		//	return true
@@ -47,8 +49,11 @@ func (op OpCode) IsCall() bool {
 }
 
 func (op OpCode) PushSize() int {
-	if op.IsPush() {
-		return (int(op) - int(PUSH1) + 1)
+	if op >= PUSH1 && op <= PUSH32 {
+		return int(op) - int(PUSH1) + 1
+	}
+	if op >= PUSH33 && op <= PUSH64 {
+		return int(op) - int(PUSH33) + 33
 	}
 	return 0
 }
@@ -176,53 +181,89 @@ const (
 	PUSH32 = OpCode(0x7f)
 )
 
-// 0x80 range
+// 0x80 range - pushes (continued).
 const (
-	DUP1  = OpCode(0x80)
-	DUP2  = OpCode(0x81)
-	DUP3  = OpCode(0x82)
-	DUP4  = OpCode(0x83)
-	DUP5  = OpCode(0x84)
-	DUP6  = OpCode(0x85)
-	DUP7  = OpCode(0x86)
-	DUP8  = OpCode(0x87)
-	DUP9  = OpCode(0x88)
-	DUP10 = OpCode(0x89)
-	DUP11 = OpCode(0x8a)
-	DUP12 = OpCode(0x8b)
-	DUP13 = OpCode(0x8c)
-	DUP14 = OpCode(0x8d)
-	DUP15 = OpCode(0x8e)
-	DUP16 = OpCode(0x8f)
+	PUSH33 = OpCode(0x80)
+	PUSH34 = OpCode(0x81)
+	PUSH35 = OpCode(0x82)
+	PUSH36 = OpCode(0x83)
+	PUSH37 = OpCode(0x84)
+	PUSH38 = OpCode(0x85)
+	PUSH39 = OpCode(0x86)
+	PUSH40 = OpCode(0x87)
+	PUSH41 = OpCode(0x88)
+	PUSH42 = OpCode(0x89)
+	PUSH43 = OpCode(0x8a)
+	PUSH44 = OpCode(0x8b)
+	PUSH45 = OpCode(0x8c)
+	PUSH46 = OpCode(0x8d)
+	PUSH47 = OpCode(0x8e)
+	PUSH48 = OpCode(0x8f)
+	PUSH49 = OpCode(0x90)
+	PUSH50 = OpCode(0x91)
+	PUSH51 = OpCode(0x92)
+	PUSH52 = OpCode(0x93)
+	PUSH53 = OpCode(0x94)
+	PUSH54 = OpCode(0x95)
+	PUSH55 = OpCode(0x96)
+	PUSH56 = OpCode(0x97)
+	PUSH57 = OpCode(0x98)
+	PUSH58 = OpCode(0x99)
+	PUSH59 = OpCode(0x9a)
+	PUSH60 = OpCode(0x9b)
+	PUSH61 = OpCode(0x9c)
+	PUSH62 = OpCode(0x9d)
+	PUSH63 = OpCode(0x9e)
+	PUSH64 = OpCode(0x9f)
 )
 
-// 0x90 range
+// 0xa0 range - dups.
 const (
-	SWAP1  = OpCode(0x90)
-	SWAP2  = OpCode(0x91)
-	SWAP3  = OpCode(0x92)
-	SWAP4  = OpCode(0x93)
-	SWAP5  = OpCode(0x94)
-	SWAP6  = OpCode(0x95)
-	SWAP7  = OpCode(0x96)
-	SWAP8  = OpCode(0x97)
-	SWAP9  = OpCode(0x98)
-	SWAP10 = OpCode(0x99)
-	SWAP11 = OpCode(0x9a)
-	SWAP12 = OpCode(0x9b)
-	SWAP13 = OpCode(0x9c)
-	SWAP14 = OpCode(0x9d)
-	SWAP15 = OpCode(0x9e)
-	SWAP16 = OpCode(0x9f)
+	DUP1  = OpCode(0xa0)
+	DUP2  = OpCode(0xa1)
+	DUP3  = OpCode(0xa2)
+	DUP4  = OpCode(0xa3)
+	DUP5  = OpCode(0xa4)
+	DUP6  = OpCode(0xa5)
+	DUP7  = OpCode(0xa6)
+	DUP8  = OpCode(0xa7)
+	DUP9  = OpCode(0xa8)
+	DUP10 = OpCode(0xa9)
+	DUP11 = OpCode(0xaa)
+	DUP12 = OpCode(0xab)
+	DUP13 = OpCode(0xac)
+	DUP14 = OpCode(0xad)
+	DUP15 = OpCode(0xae)
+	DUP16 = OpCode(0xaf)
 )
 
-// 0xa0 range - logging ops.
+// 0xb0 range - swaps.
 const (
-	LOG0 = OpCode(0xa0)
-	LOG1 = OpCode(0xa1)
-	LOG2 = OpCode(0xa2)
-	LOG3 = OpCode(0xa3)
-	LOG4 = OpCode(0xa4)
+	SWAP1  = OpCode(0xb0)
+	SWAP2  = OpCode(0xb1)
+	SWAP3  = OpCode(0xb2)
+	SWAP4  = OpCode(0xb3)
+	SWAP5  = OpCode(0xb4)
+	SWAP6  = OpCode(0xb5)
+	SWAP7  = OpCode(0xb6)
+	SWAP8  = OpCode(0xb7)
+	SWAP9  = OpCode(0xb8)
+	SWAP10 = OpCode(0xb9)
+	SWAP11 = OpCode(0xba)
+	SWAP12 = OpCode(0xbb)
+	SWAP13 = OpCode(0xbc)
+	SWAP14 = OpCode(0xbd)
+	SWAP15 = OpCode(0xbe)
+	SWAP16 = OpCode(0xbf)
+)
+
+// 0xc0 range - logging ops.
+const (
+	LOG0 = OpCode(0xc0)
+	LOG1 = OpCode(0xc1)
+	LOG2 = OpCode(0xc2)
+	LOG3 = OpCode(0xc3)
+	LOG4 = OpCode(0xc4)
 )
 
 // 0xb0 range
@@ -385,7 +426,7 @@ var opCodeInfo = map[OpCode]opInfo{
 	PUSH17: {"PUSH17", nil, []string{"17 bytes pushed value"}},
 	PUSH18: {"PUSH18", nil, []string{"18 bytes pushed value"}},
 	PUSH19: {"PUSH19", nil, []string{"19 bytes pushed value"}},
-	PUSH20: {"PUSH20", nil, []string{"19 bytes pushed value"}},
+	PUSH20: {"PUSH20", nil, []string{"20 bytes pushed value"}},
 	PUSH21: {"PUSH21", nil, []string{"21 bytes pushed value"}},
 	PUSH22: {"PUSH22", nil, []string{"22 bytes pushed value"}},
 	PUSH23: {"PUSH23", nil, []string{"23 bytes pushed value"}},
@@ -398,6 +439,40 @@ var opCodeInfo = map[OpCode]opInfo{
 	PUSH30: {"PUSH30", nil, []string{"30 bytes pushed value"}},
 	PUSH31: {"PUSH31", nil, []string{"31 bytes pushed value"}},
 	PUSH32: {"PUSH32", nil, []string{"32 bytes pushed value"}},
+
+	// 0x80 through 0x9F range - push (continued).
+	PUSH33: {"PUSH33", nil, []string{"33 bytes pushed value"}},
+	PUSH34: {"PUSH34", nil, []string{"34 bytes pushed value"}},
+	PUSH35: {"PUSH35", nil, []string{"35 bytes pushed value"}},
+	PUSH36: {"PUSH36", nil, []string{"36 bytes pushed value"}},
+	PUSH37: {"PUSH37", nil, []string{"37 bytes pushed value"}},
+	PUSH38: {"PUSH38", nil, []string{"38 bytes pushed value"}},
+	PUSH39: {"PUSH39", nil, []string{"39 bytes pushed value"}},
+	PUSH40: {"PUSH40", nil, []string{"40 bytes pushed value"}},
+	PUSH41: {"PUSH41", nil, []string{"41 bytes pushed value"}},
+	PUSH42: {"PUSH42", nil, []string{"42 bytes pushed value"}},
+	PUSH43: {"PUSH43", nil, []string{"43 bytes pushed value"}},
+	PUSH44: {"PUSH44", nil, []string{"44 bytes pushed value"}},
+	PUSH45: {"PUSH45", nil, []string{"45 bytes pushed value"}},
+	PUSH46: {"PUSH46", nil, []string{"46 bytes pushed value"}},
+	PUSH47: {"PUSH47", nil, []string{"47 bytes pushed value"}},
+	PUSH48: {"PUSH48", nil, []string{"48 bytes pushed value"}},
+	PUSH49: {"PUSH49", nil, []string{"49 bytes pushed value"}},
+	PUSH50: {"PUSH50", nil, []string{"50 bytes pushed value"}},
+	PUSH51: {"PUSH51", nil, []string{"51 bytes pushed value"}},
+	PUSH52: {"PUSH52", nil, []string{"52 bytes pushed value"}},
+	PUSH53: {"PUSH53", nil, []string{"53 bytes pushed value"}},
+	PUSH54: {"PUSH54", nil, []string{"54 bytes pushed value"}},
+	PUSH55: {"PUSH55", nil, []string{"55 bytes pushed value"}},
+	PUSH56: {"PUSH56", nil, []string{"56 bytes pushed value"}},
+	PUSH57: {"PUSH57", nil, []string{"57 bytes pushed value"}},
+	PUSH58: {"PUSH58", nil, []string{"58 bytes pushed value"}},
+	PUSH59: {"PUSH59", nil, []string{"59 bytes pushed value"}},
+	PUSH60: {"PUSH60", nil, []string{"60 bytes pushed value"}},
+	PUSH61: {"PUSH61", nil, []string{"61 bytes pushed value"}},
+	PUSH62: {"PUSH62", nil, []string{"62 bytes pushed value"}},
+	PUSH63: {"PUSH63", nil, []string{"63 bytes pushed value"}},
+	PUSH64: {"PUSH64", nil, []string{"64 bytes pushed value"}},
 
 	// cover your eyes, here comes ugly
 	DUP1:  {"DUP1", []string{"x"}, []string{"x", "x"}},

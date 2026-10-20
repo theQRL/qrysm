@@ -12,7 +12,7 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	// Misc
 	minimalConfig.MaxCommitteesPerSlot = 4
 	minimalConfig.TargetCommitteeSize = 4
-	minimalConfig.MaxValidatorsPerCommittee = 2048
+	minimalConfig.MaxValidatorsPerCommittee = 32
 	minimalConfig.MinPerEpochChurnLimit = 2           // Changed in EIP7514
 	minimalConfig.MaxPerEpochActivationChurnLimit = 4 // New in EIP7514
 	minimalConfig.ChurnLimitQuotient = 32
@@ -20,16 +20,13 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	minimalConfig.MinGenesisActiveValidatorCount = 64
 	minimalConfig.MinGenesisTime = 1578009600
 	minimalConfig.GenesisDelay = 300 // 5 minutes
-	minimalConfig.TargetAggregatorsPerCommittee = 16
+	minimalConfig.TargetAggregatorsPerCommittee = 8
 
 	// Shor values
-	minimalConfig.MinDepositAmount = 1e9
+	minimalConfig.MinDepositAmount = 2000e9
 	minimalConfig.MaxEffectiveBalance = 40000e9
 	minimalConfig.EjectionBalance = 20000e9
 	minimalConfig.EffectiveBalanceIncrement = 1e9
-
-	// Initial values
-	minimalConfig.ExecutionAddressWithdrawalPrefixByte = byte(0)
 
 	// Time parameters
 	minimalConfig.SecondsPerSlot = 6
@@ -60,7 +57,7 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	// Max operations per block
 	minimalConfig.MaxProposerSlashings = 16
 	minimalConfig.MaxAttesterSlashings = 2
-	minimalConfig.MaxAttestations = 128
+	minimalConfig.MaxAttestations = 4
 	minimalConfig.MaxDeposits = 16
 	minimalConfig.MaxVoluntaryExits = 16
 	minimalConfig.MaxWithdrawalsPerPayload = 4
@@ -85,7 +82,7 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	// QRL execution layer parameters.
 	minimalConfig.DepositChainID = 5
 	minimalConfig.DepositNetworkID = 5
-	minimalConfig.DepositContractAddress = "Q1234567890123456789012345678901234567890"
+	minimalConfig.DepositContractAddress = "Q12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678"
 
 	minimalConfig.ConfigName = MinimalName
 	minimalConfig.PresetBase = "minimal"

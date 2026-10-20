@@ -3,6 +3,7 @@ package testutil
 import (
 	"bytes"
 	"context"
+	"errors"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -20,6 +21,7 @@ var _ iface.Validator = (*FakeValidator)(nil)
 // FakeValidator for mocking.
 type FakeValidator struct {
 	DoneCalled                        bool
+	SetTickerCalled                   bool
 	WaitForWalletInitializationCalled bool
 	SlasherReadyCalled                bool
 	NextSlotCalled                    bool
@@ -38,11 +40,17 @@ type FakeValidator struct {
 	WaitForActivationCalled           int
 	CanonicalHeadSlotCalled           int
 	ReceiveBlocksCalled               int
+	KeymanagerCalled                  int
+	PushProposerSettingsCalled        int
 	RetryTillSuccess                  int
+	ReceiveBlocksRetryTillSuccess     int
+	KeymanagerFailures                int
 	ProposeBlockArg1                  uint64
 	AttestToBlockHeadArg1             uint64
 	RoleAtArg1                        uint64
 	UpdateDutiesArg1                  uint64
+	PushProposerSettingsArg1          uint64
+	GenesisT                          uint64
 	NextSlotRet                       <-chan primitives.Slot
 	PublicKey                         string
 	UpdateDutiesRet                   error
@@ -54,12 +62,24 @@ type FakeValidator struct {
 	PubkeysToStatusesMap              map[[field_params.MLDSA87PubkeyLength]byte]qrysmpb.ValidatorStatus
 	proposerSettings                  *validatorserviceconfig.ProposerSettings
 	ProposerSettingWait               time.Duration
+	KeymanagerErr                     error
 	Km                                keymanager.IKeymanager
+	AttSubmitted                      chan interface{}
+	BlockProposed                     chan interface{}
 }
 
 // Done for mocking.
 func (fv *FakeValidator) Done() {
 	fv.DoneCalled = true
+}
+
+// SetTicker for mocking.
+func (fv *FakeValidator) SetTicker() {
+	fv.SetTickerCalled = true
+}
+
+func (fv *FakeValidator) GenesisTime() uint64 {
+	return fv.GenesisT
 }
 
 // WaitForKeymanagerInitialization for mocking.
@@ -165,12 +185,20 @@ func (fv *FakeValidator) RolesAt(_ context.Context, slot primitives.Slot) (map[[
 func (fv *FakeValidator) SubmitAttestation(_ context.Context, slot primitives.Slot, _ [field_params.MLDSA87PubkeyLength]byte) {
 	fv.AttestToBlockHeadCalled = true
 	fv.AttestToBlockHeadArg1 = uint64(slot)
+	if fv.AttSubmitted != nil {
+		close(fv.AttSubmitted)
+		fv.AttSubmitted = nil
+	}
 }
 
 // ProposeBlock for mocking.
 func (fv *FakeValidator) ProposeBlock(_ context.Context, slot primitives.Slot, _ [field_params.MLDSA87PubkeyLength]byte) {
 	fv.ProposeBlockCalled = true
 	fv.ProposeBlockArg1 = uint64(slot)
+	if fv.BlockProposed != nil {
+		close(fv.BlockProposed)
+		fv.BlockProposed = nil
+	}
 }
 
 // SubmitAggregateAndProof for mocking.
@@ -209,6 +237,14 @@ func (fv *FakeValidator) PubkeysToStatuses(_ context.Context) map[[field_params.
 
 // Keymanager for mocking
 func (fv *FakeValidator) Keymanager() (keymanager.IKeymanager, error) {
+	fv.KeymanagerCalled++
+	if fv.KeymanagerFailures > 0 {
+		fv.KeymanagerFailures--
+		if fv.KeymanagerErr != nil {
+			return nil, fv.KeymanagerErr
+		}
+		return nil, errors.New("keymanager unavailable")
+	}
 	return fv.Km, nil
 }
 
@@ -220,7 +256,7 @@ func (*FakeValidator) CheckDoppelGanger(_ context.Context) error {
 // ReceiveBlocks for mocking
 func (fv *FakeValidator) ReceiveBlocks(_ context.Context, connectionErrorChannel chan<- error) {
 	fv.ReceiveBlocksCalled++
-	if fv.RetryTillSuccess > fv.ReceiveBlocksCalled {
+	if fv.ReceiveBlocksRetryTillSuccess >= fv.ReceiveBlocksCalled && fv.ReceiveBlocksRetryTillSuccess > 0 {
 		connectionErrorChannel <- iface.ErrConnectionIssue
 	}
 }
@@ -246,14 +282,13 @@ func (*FakeValidator) HasProposerSettings() bool {
 }
 
 // PushProposerSettings for mocking
-func (fv *FakeValidator) PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot, deadline time.Time) error {
-	nctx, cancel := context.WithDeadline(ctx, deadline)
-	ctx = nctx
-	defer cancel()
+func (fv *FakeValidator) PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot) error {
+	fv.PushProposerSettingsCalled++
+	fv.PushProposerSettingsArg1 = uint64(slot)
 	time.Sleep(fv.ProposerSettingWait)
-	if ctx.Err() == context.DeadlineExceeded {
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		log.Error("Deadline exceeded")
-		// can't return error or it will trigger a log.fatal
+		// can't return error as it will trigger a log.fatal
 		return nil
 	}
 

@@ -78,6 +78,51 @@ func TestShuffleList_Vs_ShuffleIndex(t *testing.T) {
 	assert.DeepEqual(t, shuffledListByIndex, shuffledList, "Shuffled lists ar not equal")
 }
 
+func TestShuffleRoundCount_ScalarAndBulkAgree(t *testing.T) {
+	for _, rounds := range []uint64{0, 1, 10, 90, 254, 255} {
+		t.Run(fmt.Sprintf("rounds_%d", rounds), func(t *testing.T) {
+			params.SetupTestConfigCleanup(t)
+			cfg := params.BeaconConfig().Copy()
+			cfg.ShuffleRoundCount = rounds
+			require.NoError(t, cfg.Validate())
+			params.OverrideBeaconConfig(cfg)
+			for seedIndex, seed := range [][32]byte{{}, {123, 42}} {
+				// Include a singleton and a list that crosses a 256-position hash window.
+				for _, listSize := range []uint64{1, 16, 257} {
+					t.Run(fmt.Sprintf("seed_%d/size_%d", seedIndex, listSize), func(t *testing.T) {
+						original := make([]primitives.ValidatorIndex, listSize)
+						for i := range original {
+							original[i] = primitives.ValidatorIndex(i)
+						}
+						shuffled, err := ShuffleList(append([]primitives.ValidatorIndex(nil), original...), seed)
+						require.NoError(t, err)
+						unshuffled, err := UnshuffleList(append([]primitives.ValidatorIndex(nil), original...), seed)
+						require.NoError(t, err)
+						for _, index := range original {
+							shuffledIndex, err := ShuffledIndex(index, listSize, seed)
+							require.NoError(t, err)
+							require.Equal(t, index, shuffled[shuffledIndex])
+							unshuffledIndex, err := UnShuffledIndex(index, listSize, seed)
+							require.NoError(t, err)
+							require.Equal(t, index, unshuffled[unshuffledIndex])
+							restoredIndex, err := UnShuffledIndex(shuffledIndex, listSize, seed)
+							require.NoError(t, err)
+							require.Equal(t, index, restoredIndex)
+						}
+						if rounds == 0 {
+							require.DeepEqual(t, original, shuffled)
+							require.DeepEqual(t, original, unshuffled)
+						}
+						restored, err := UnshuffleList(shuffled, seed)
+						require.NoError(t, err)
+						require.DeepEqual(t, original, restored)
+					})
+				}
+			}
+		})
+	}
+}
+
 func BenchmarkShuffledIndex(b *testing.B) {
 	listSizes := []uint64{4000000, 40000, 400}
 	seed := [32]byte{123, 42}

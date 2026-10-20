@@ -52,6 +52,18 @@ type Service struct {
 	clockWaiter          startup.ClockWaiter
 	syncComplete         chan struct{}
 	blockBeingSynced     *currentlySyncingBlock
+	// Serializes cache snapshot writes with invalid-block deletion. Acquire
+	// before initSyncBlocksLock when both locks are needed.
+	initSyncBlocksSaveLock sync.Mutex
+	// Protected by the forkchoice lock; records the last validated engine update.
+	lastForkchoiceUpdate *executionForkchoice
+	// Protected by the forkchoice lock; retains only the removed head ancestry
+	// until its replacement is published and orphaned operations are recovered.
+	invalidatedHeadBlocks map[[32]byte]interfaces.ReadOnlySignedBeaconBlock
+	// Protected by initSyncBlocksLock. Quarantines invalid roots until their
+	// storage cleanup succeeds; values retain any evicted initial-sync blocks
+	// needed to retry recovery of the published head.
+	pendingInvalidBlocks map[[32]byte]interfaces.ReadOnlySignedBeaconBlock
 }
 
 // config options for the service.
@@ -61,6 +73,7 @@ type config struct {
 	BeaconDB                db.HeadAccessDatabase
 	DepositCache            cache.DepositCache
 	ProposerSlotIndexCache  *cache.ProposerPayloadIDsCache
+	AttestationCache        *cache.AttestationCache
 	AttPool                 attestations.Pool
 	ExitPool                voluntaryexits.PoolManager
 	SlashingPool            slashings.PoolManager
@@ -111,6 +124,7 @@ func NewService(ctx context.Context, opts ...Option) (*Service, error) {
 // Start a blockchain service's main event loop.
 func (s *Service) Start() {
 	saved := s.cfg.FinalizedStateAtStartUp
+	defer s.removeStartupState()
 
 	if saved != nil && !saved.IsNil() {
 		if err := s.StartFromSavedState(saved); err != nil {
@@ -140,7 +154,7 @@ func (s *Service) Stop() error {
 		s.headLock.RUnlock()
 	}
 	// Save initial sync cached blocks to the DB before stop.
-	return s.cfg.BeaconDB.SaveBlocks(s.ctx, s.getInitSyncBlocks())
+	return s.saveInitSyncBlocks(s.ctx, false)
 }
 
 // Status always returns nil unless there is an error condition that causes
@@ -226,7 +240,7 @@ func (s *Service) originRootFromSavedState(ctx context.Context) ([32]byte, error
 	return genesisBlkRoot, nil
 }
 
-// initializeHead uses the finalized checkpoint and head block root from forkchoice to set the current head.
+// initializeHead selects the forkchoice head and sets the service's current head.
 // Note that this may block until stategen replays blocks between the finalized and head blocks
 // if the head sync flag was specified and the gap between the finalized and head blocks is at least 128 epochs long.
 func (s *Service) initializeHead(ctx context.Context, st state.BeaconState) error {
@@ -236,12 +250,23 @@ func (s *Service) initializeHead(ctx context.Context, st state.BeaconState) erro
 		return errors.New("finalized state can't be nil")
 	}
 
-	s.cfg.ForkChoiceStore.RLock()
-	root := s.cfg.ForkChoiceStore.HighestReceivedBlockRoot()
-	s.cfg.ForkChoiceStore.RUnlock()
+	s.cfg.ForkChoiceStore.Lock()
+	root, err := s.cfg.ForkChoiceStore.Head(ctx)
+	if err != nil {
+		s.cfg.ForkChoiceStore.Unlock()
+		return errors.Wrap(err, "could not select startup head")
+	}
+	optimistic, err := s.cfg.ForkChoiceStore.IsOptimistic(root)
+	s.cfg.ForkChoiceStore.Unlock()
+	if err != nil {
+		return errors.Wrap(err, "could not get startup head optimistic status")
+	}
 	blk, err := s.cfg.BeaconDB.Block(ctx, root)
 	if err != nil {
 		return errors.Wrap(err, "could not get head block")
+	}
+	if err := blocks.BeaconBlockIsNil(blk); err != nil {
+		return errors.Wrapf(err, "head block %#x is not in the database", root)
 	}
 	if root != fRoot {
 		st, err = s.cfg.StateGen.StateByRoot(ctx, root)
@@ -249,7 +274,7 @@ func (s *Service) initializeHead(ctx context.Context, st state.BeaconState) erro
 			return errors.Wrap(err, "could not get head state")
 		}
 	}
-	if err := s.setHead(&head{root, blk, st, blk.Block().Slot(), false}); err != nil {
+	if err := s.setHead(&head{root, blk, st, blk.Block().Slot(), optimistic}); err != nil {
 		return errors.Wrap(err, "could not set head")
 	}
 	log.WithFields(logrus.Fields{
@@ -315,6 +340,13 @@ func (s *Service) hasBlock(ctx context.Context, root [32]byte) bool {
 	}
 
 	return s.cfg.BeaconDB.HasBlock(ctx, root)
+}
+
+// removeStartupState releases the (potentially multi-MB) finalized-state
+// reference once the service has finished consuming it during startup, so
+// it can be garbage-collected instead of living for the process lifetime.
+func (s *Service) removeStartupState() {
+	s.cfg.FinalizedStateAtStartUp = nil
 }
 
 func spawnCountdownIfPreGenesis(ctx context.Context, genesisTime time.Time, db db.HeadAccessDatabase) {

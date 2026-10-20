@@ -2,13 +2,17 @@ package execution
 
 import (
 	"context"
+	"fmt"
+	"math/big"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/accounts/abi"
 	"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
@@ -16,17 +20,20 @@ import (
 	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/async/event"
 	"github.com/theQRL/qrysm/beacon-chain/cache/depositcache"
+	"github.com/theQRL/qrysm/beacon-chain/cache/depositsnapshot"
 	dbutil "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
 	"github.com/theQRL/qrysm/beacon-chain/execution/types"
 	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/container/trie"
 	contracts "github.com/theQRL/qrysm/contracts/deposit"
 	"github.com/theQRL/qrysm/contracts/deposit/mock"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/clientstats"
+	"github.com/theQRL/qrysm/network"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
@@ -57,10 +64,10 @@ func (g *goodLogger) FilterLogs(ctx context.Context, q qrl.FilterQuery) ([]gqrlt
 		logs := make([]gqrltypes.Log, 3)
 		for i := range logs {
 			logs[i].Address = common.Address{}
-			logs[i].Topics = make([]common.Hash, 5)
-			logs[i].Topics[0] = common.Hash{'a'}
-			logs[i].Topics[1] = common.Hash{'b'}
-			logs[i].Topics[2] = common.Hash{'c'}
+			logs[i].Topics = make([]common.LogTopic, 5)
+			logs[i].Topics[0] = common.LogTopic{'a'}
+			logs[i].Topics[1] = common.LogTopic{'b'}
+			logs[i].Topics[2] = common.LogTopic{'c'}
 
 		}
 		return logs, nil
@@ -262,6 +269,147 @@ func TestStatus(t *testing.T) {
 	}
 }
 
+func TestStart_ConnectionFailureHealth(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer synctest.Wait()
+		defer cancel()
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		s := &Service{
+			ctx: ctx, rpcClient: RPCClientEmpty{}, executionHeadTicker: ticker,
+			cfg: &config{
+				currHttpEndpoint:       network.Endpoint{Url: "unsupported://execution"},
+				beaconNodeStatsUpdater: &NopBeaconNodeStatsUpdater{},
+			},
+		}
+		go s.Start()
+		synctest.Wait()
+		assert.NotNil(t, s.Status(), "startup connection failure must fail the health check")
+		assert.NotNil(t, s.ExecutionClientConnectionErr())
+		assert.Equal(t, false, s.ExecutionClientConnected())
+	})
+}
+
+type connectionHealthClient struct {
+	RPCClientEmpty
+	header    *types.HeaderInfo
+	nextError chan error
+}
+
+func (c *connectionHealthClient) CallContext(_ context.Context, result any, _ string, _ ...any) error {
+	select {
+	case err := <-c.nextError:
+		return err
+	default:
+	}
+	*result.(**types.HeaderInfo) = c.header.Copy()
+	return nil
+}
+
+func (c *connectionHealthClient) BatchCallContext(_ context.Context, elems []rpc.BatchElem) error {
+	for _, elem := range elems {
+		*elem.Result.(*types.HeaderInfo) = *c.header.Copy()
+	}
+	return nil
+}
+
+func TestRun_ConnectionFailureHealth(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	conf := params.BeaconConfig().Copy()
+	conf.ExecutionFollowDistance = 0
+	params.OverrideBeaconConfig(conf)
+	contractABI, err := abi.JSON(strings.NewReader(contracts.DepositContractABI))
+	require.NoError(t, err)
+	encoded, err := contractABI.Methods["get_deposit_count"].Outputs.Pack(bytesutil.Bytes8(0))
+	require.NoError(t, err)
+	caller, err := contracts.NewDepositContractCaller(common.Address{}, &depositCountBackend{result: encoded})
+	require.NoError(t, err)
+	beaconDB := dbutil.SetupDB(t)
+	for _, failed := range []bool{false, true} {
+		t.Run(fmt.Sprintf("failed=%t", failed), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				ctx, cancel := context.WithCancel(context.Background())
+				defer synctest.Wait()
+				defer cancel()
+				ticker := time.NewTicker(time.Second)
+				defer ticker.Stop()
+				client := &connectionHealthClient{
+					header:    &types.HeaderInfo{Number: big.NewInt(1), Time: 100, Hash: common.Hash{1}},
+					nextError: make(chan error, 1),
+				}
+				stats := &mockBSUpdater{lastBS: clientstats.BeaconNodeStats{SyncExecutionConnected: true}}
+				s := &Service{
+					ctx: ctx, rpcClient: client, executionHeadTicker: ticker,
+					cfg:       &config{beaconDB: beaconDB, beaconNodeStatsUpdater: stats, executionHeaderReqLimit: 1},
+					isRunning: true, connectedExecution: true, genesisBlockResolved: true,
+					latestExecutionData: &qrysmpb.LatestExecutionData{}, chainStartData: &qrysmpb.ChainStartData{},
+					headerCache: newHeaderCache(), depositContractCaller: caller, httpLogger: &limitedLogFilter{limit: 1},
+				}
+				go s.run(ctx.Done())
+				synctest.Wait()
+				require.NoError(t, s.Status())
+				require.Equal(t, true, s.ExecutionClientConnected())
+				callErr := errors.New("execution endpoint unavailable")
+				if failed {
+					client.nextError <- callErr
+				}
+				time.Sleep(time.Second)
+				synctest.Wait()
+				if failed {
+					assert.Equal(t, true, errors.Is(s.Status(), callErr))
+					assert.Equal(t, true, errors.Is(s.ExecutionClientConnectionErr(), callErr))
+				} else {
+					assert.NoError(t, s.Status())
+					assert.NoError(t, s.ExecutionClientConnectionErr())
+				}
+				assert.Equal(t, !failed, s.ExecutionClientConnected())
+				assert.Equal(t, !failed, stats.lastBS.SyncExecutionConnected)
+			})
+		})
+	}
+}
+
+func TestInitExecutionService_ConcurrentGenesisInfo(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	conf := params.BeaconConfig().Copy()
+	conf.ExecutionFollowDistance = 0
+	params.OverrideBeaconConfig(conf)
+	reset := features.InitWithReset(&features.Flags{})
+	defer reset()
+	deposits, err := depositcache.New()
+	require.NoError(t, err)
+	s, err := NewService(context.Background(), WithDatabase(dbutil.SetupDB(t)), WithDepositCache(deposits))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, s.Stop()) }()
+	defer s.executionHeadTicker.Stop()
+	s.chainStartData.ExecutionData.BlockHash = bytesutil.PadTo([]byte{1}, 32)
+	s.rpcClient = &connectionHealthClient{header: &types.HeaderInfo{Number: big.NewInt(1), Time: 100, Hash: common.Hash{1}}}
+	s.cfg.executionHeaderReqLimit = 1
+	s.httpLogger = &limitedLogFilter{limit: 1}
+	contractABI, err := abi.JSON(strings.NewReader(contracts.DepositContractABI))
+	require.NoError(t, err)
+	encoded, err := contractABI.Methods["get_deposit_count"].Outputs.Pack(bytesutil.Bytes8(0))
+	require.NoError(t, err)
+	s.depositContractCaller, err = contracts.NewDepositContractCaller(common.Address{}, &depositCountBackend{result: encoded})
+	require.NoError(t, err)
+
+	started := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		close(started)
+		for range 100 {
+			s.GenesisExecutionChainInfo()
+		}
+	}()
+	<-started
+	s.initExecutionService()
+	<-done
+	_, height := s.GenesisExecutionChainInfo()
+	require.Equal(t, uint64(1), height.Uint64())
+}
+
 func TestHandlePanic_OK(t *testing.T) {
 	hook := logTest.NewGlobal()
 	beaconDB := dbutil.SetupDB(t)
@@ -283,9 +431,9 @@ func TestHandlePanic_OK(t *testing.T) {
 
 func TestInitDepositCache_OK(t *testing.T) {
 	ctrs := []*qrysmpb.DepositContainer{
-		{Index: 0, ExecutionBlockHeight: 2, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("A")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}}}},
-		{Index: 1, ExecutionBlockHeight: 4, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("B")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}}}},
-		{Index: 2, ExecutionBlockHeight: 6, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("c")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}}}},
+		{Index: 0, ExecutionBlockHeight: 2, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("A")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}, RandaoCommitment: make([]byte, 32)}}},
+		{Index: 1, ExecutionBlockHeight: 4, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("B")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}, RandaoCommitment: make([]byte, 32)}}},
+		{Index: 2, ExecutionBlockHeight: 6, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("c")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}, RandaoCommitment: make([]byte, 32)}}},
 	}
 	gs, _ := util.DeterministicGenesisStateZond(t, 1)
 	beaconDB := dbutil.SetupDB(t)
@@ -308,6 +456,45 @@ func TestInitDepositCache_OK(t *testing.T) {
 	require.Equal(t, 3, len(s.cfg.depositCache.PendingContainers(context.Background(), nil)))
 }
 
+// Regression: before any genesis state is saved (pre-genesis), the DB's
+// GenesisState returns (nil, nil). initDepositCaches must not dereference it:
+// the containers still go into the deposit cache, but nothing is pending
+// because no deposit has been included in a chain yet (upstream's
+// Chainstarted guard).
+func TestInitDepositCache_NoGenesisState(t *testing.T) {
+	// Use a config name without an embedded genesis state so that the DB has
+	// no genesis state to fall back to.
+	params.SetupTestConfigCleanup(t)
+	cfg := params.BeaconConfig().Copy()
+	cfg.ConfigName = "no-embedded-genesis"
+	params.OverrideBeaconConfig(cfg)
+
+	ctrs := []*qrysmpb.DepositContainer{
+		{Index: 0, ExecutionBlockHeight: 2, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("A")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}, RandaoCommitment: make([]byte, 32)}}},
+		{Index: 1, ExecutionBlockHeight: 4, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("B")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}, RandaoCommitment: make([]byte, 32)}}},
+		{Index: 2, ExecutionBlockHeight: 6, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("c")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}, RandaoCommitment: make([]byte, 32)}}},
+	}
+	gs, _ := util.DeterministicGenesisStateZond(t, 1)
+	beaconDB := dbutil.SetupDB(t)
+	s := &Service{
+		chainStartData:  &qrysmpb.ChainStartData{},
+		preGenesisState: gs,
+		cfg:             &config{beaconDB: beaconDB},
+	}
+	var err error
+	s.cfg.depositCache, err = depositcache.New()
+	require.NoError(t, err)
+
+	// No genesis block root or genesis state is saved in the DB.
+	genState, err := beaconDB.GenesisState(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, true, genState == nil || genState.IsNil(), "test setup: expected no genesis state")
+
+	require.NoError(t, s.initDepositCaches(context.Background(), ctrs))
+	require.Equal(t, 3, len(s.cfg.depositCache.AllDepositContainers(context.Background())))
+	require.Equal(t, 0, len(s.cfg.depositCache.PendingContainers(context.Background(), nil)))
+}
+
 func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 	ctrs := []*qrysmpb.DepositContainer{
 		{
@@ -315,9 +502,11 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 			ExecutionBlockHeight: 2,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{0}, 2592),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 4627),
+					PublicKey:           bytesutil.PadTo([]byte{0}, 2592),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, 4627),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 		},
@@ -326,9 +515,11 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 			ExecutionBlockHeight: 4,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{1}, 2592),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 4627),
+					PublicKey:           bytesutil.PadTo([]byte{1}, 2592),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, 4627),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 		},
@@ -337,9 +528,11 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 			ExecutionBlockHeight: 6,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{2}, 2592),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 4627),
+					PublicKey:           bytesutil.PadTo([]byte{2}, 2592),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, 4627),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 		},
@@ -474,12 +667,12 @@ func Test_batchRequestHeaders_UnderflowChecks(t *testing.T) {
 	srv := &Service{}
 	start := uint64(101)
 	end := uint64(100)
-	_, err := srv.batchRequestHeaders(start, end)
+	_, err := srv.batchRequestHeaders(context.Background(), start, end)
 	require.ErrorContains(t, "cannot be >", err)
 
 	start = uint64(200)
 	end = uint64(100)
-	_, err = srv.batchRequestHeaders(start, end)
+	_, err = srv.batchRequestHeaders(context.Background(), start, end)
 	require.ErrorContains(t, "cannot be >", err)
 }
 
@@ -503,7 +696,8 @@ func TestService_EnsureConsistentExecutionChainData(t *testing.T) {
 	assert.NoError(t, genState.SetSlot(1000))
 
 	require.NoError(t, s1.cfg.beaconDB.SaveGenesisData(context.Background(), genState))
-	require.NoError(t, s1.ensureValidExecutionChainData(context.Background()))
+	_, err = s1.validExecutionChainData(context.Background())
+	require.NoError(t, err)
 
 	executionData, err := s1.cfg.beaconDB.ExecutionChainData(context.Background())
 	assert.NoError(t, err)
@@ -532,7 +726,8 @@ func TestService_InitializeCorrectly(t *testing.T) {
 	assert.NoError(t, genState.SetSlot(1000))
 
 	require.NoError(t, s1.cfg.beaconDB.SaveGenesisData(context.Background(), genState))
-	require.NoError(t, s1.ensureValidExecutionChainData(context.Background()))
+	_, err = s1.validExecutionChainData(context.Background())
+	require.NoError(t, err)
 
 	executionData, err := s1.cfg.beaconDB.ExecutionChainData(context.Background())
 	assert.NoError(t, err)
@@ -567,7 +762,8 @@ func TestService_EnsureValidExecutionChainData(t *testing.T) {
 		DepositContainers: []*qrysmpb.DepositContainer{{Index: 1}},
 	})
 	require.NoError(t, err)
-	require.NoError(t, s1.ensureValidExecutionChainData(context.Background()))
+	_, err = s1.validExecutionChainData(context.Background())
+	require.NoError(t, err)
 
 	executionData, err := s1.cfg.beaconDB.ExecutionChainData(context.Background())
 	assert.NoError(t, err)
@@ -665,7 +861,7 @@ func TestService_CacheBlockHeaders(t *testing.T) {
 		rpcClient:   rClient,
 		headerCache: newHeaderCache(),
 	}
-	assert.NoError(t, s.cacheBlockHeaders(1, 1000))
+	assert.NoError(t, s.cacheBlockHeaders(context.Background(), 1, 1000))
 	assert.Equal(t, 1, rClient.numOfCalls)
 	// Reset Num of Calls
 	rClient.numOfCalls = 0
@@ -673,10 +869,47 @@ func TestService_CacheBlockHeaders(t *testing.T) {
 	// code path.
 	s.cfg.executionHeaderReqLimit = 1001
 
-	assert.NoError(t, s.cacheBlockHeaders(1000, 3000))
-	// 1000 - 2000 would be 1001 headers which is higher than our request limit, it
-	// is then reduced to 500 and tried again.
-	assert.Equal(t, 5, rClient.numOfCalls)
+	assert.NoError(t, s.cacheBlockHeaders(context.Background(), 1000, 3000))
+	// The first 1001-header request fails, followed by four 500-header
+	// requests and one final request for the inclusive end block 3000.
+	assert.Equal(t, 6, rClient.numOfCalls)
+}
+
+func TestService_CacheBlockHeaders_RangeCoverage(t *testing.T) {
+	for _, tt := range []struct {
+		start, end uint64
+		batchSize  uint64
+		rpcLimit   int
+	}{
+		{0, 6, 3, 3},
+		{2, 2, 3, 3},
+		{0, 5, 4, 2},
+		{1, 5, 4, 2},
+	} {
+		t.Run(fmt.Sprintf("%d-%d/batch=%d/limit=%d", tt.start, tt.end, tt.batchSize, tt.rpcLimit), func(t *testing.T) {
+			s := &Service{
+				cfg:       &config{executionHeaderReqLimit: tt.batchSize},
+				rpcClient: &slowRPCClient{limit: tt.rpcLimit}, headerCache: newHeaderCache(),
+			}
+			require.NoError(t, s.cacheBlockHeaders(context.Background(), tt.start, tt.end))
+			for height := tt.start; height <= tt.end; height++ {
+				exists, _, err := s.headerCache.HeaderInfoByHeight(new(big.Int).SetUint64(height))
+				require.NoError(t, err)
+				assert.Equal(t, true, exists, "missing header %d", height)
+			}
+		})
+	}
+}
+
+func TestWithExecutionHeaderRequestLimit_Zero(t *testing.T) {
+	s := &Service{cfg: &config{executionHeaderReqLimit: defaultExecutionHeaderReqLimit}}
+	require.ErrorContains(t, "greater than zero", WithExecutionHeaderRequestLimit(0)(s))
+	require.Equal(t, defaultExecutionHeaderReqLimit, s.cfg.executionHeaderReqLimit)
+}
+
+func TestService_CacheBlockHeaders_SingleBlockTimeout(t *testing.T) {
+	s := &Service{cfg: &config{executionHeaderReqLimit: 1}, rpcClient: &slowRPCClient{limit: 0}}
+	require.ErrorIs(t, s.cacheBlockHeaders(context.Background(), 0, 0), errTimedOut)
 }
 
 // TODO(now.youtrack.cloud/issue/TQ-5)
@@ -724,7 +957,7 @@ func (s *slowRPCClient) Close() {
 	panic("implement me")
 }
 
-func (s *slowRPCClient) BatchCall(b []rpc.BatchElem) error {
+func (s *slowRPCClient) BatchCallContext(_ context.Context, b []rpc.BatchElem) error {
 	s.numOfCalls++
 	if len(b) > s.limit {
 		return errTimedOut
@@ -789,4 +1022,44 @@ func TestService_migrateOldDepositTree(t *testing.T) {
 	newDepositTreeRoot, err := s.depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 	require.DeepEqual(t, oldDepositTreeRoot, newDepositTreeRoot)
+}
+
+func TestService_migrateOldDepositTree_RootValidation(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		empty   bool
+		corrupt bool
+	}{
+		{name: "populated"},
+		{name: "empty", empty: true},
+		{name: "mismatched root", corrupt: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			oldTree, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
+			require.NoError(t, err)
+			if !tc.empty {
+				leaf := [32]byte{1}
+				require.NoError(t, oldTree.Insert(leaf[:], 0))
+			}
+			data := &qrysmpb.ExecutionChainData{Trie: oldTree.ToProto()}
+			if tc.corrupt {
+				data.Trie.Layers[len(data.Trie.Layers)-1].Layer[0][0] ^= 1
+			}
+			original := depositsnapshot.NewDepositTree()
+			s := &Service{depositTrie: original}
+			err = s.migrateOldDepositTree(data)
+			if tc.corrupt {
+				require.ErrorContains(t, "mismatched deposit roots", err)
+				require.Equal(t, original, s.depositTrie)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, oldTree.NumOfItems(), s.depositTrie.NumOfItems())
+			want, err := oldTree.HashTreeRoot()
+			require.NoError(t, err)
+			got, err := s.depositTrie.HashTreeRoot()
+			require.NoError(t, err)
+			require.Equal(t, want, got)
+		})
+	}
 }

@@ -10,6 +10,33 @@ import (
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
+// ValidateGenesisActiveValidatorCount checks that the validators active at
+// genesis and at every future activation/exit already scheduled in its registry
+// fit in the configured committees. Count directly, without the committee cache:
+// deposits need not create active validators, and genesis candidates may share
+// a seed. Always start at GenesisEpoch, irrespective of the supplied state's slot.
+func ValidateGenesisActiveValidatorCount(st state.ReadOnlyBeaconState) error {
+	if st == nil || st.IsNil() {
+		return errors.New("nil genesis state")
+	}
+	cfg := params.BeaconConfig()
+	maxActiveValidators, err := cfg.MaxActiveValidators()
+	if err != nil {
+		return errors.Wrap(err, "could not determine active validator capacity")
+	}
+	overflow, err := findActiveValidatorCapacityOverflow(st, cfg.GenesisEpoch, maxActiveValidators)
+	if err != nil {
+		return errors.Wrap(err, "could not count genesis active validators")
+	}
+	if overflow == nil {
+		return nil
+	}
+	if overflow.epoch == cfg.GenesisEpoch {
+		return fmt.Errorf("genesis active validator count %d exceeds committee capacity %d", overflow.count, maxActiveValidators)
+	}
+	return fmt.Errorf("genesis active validator count %d at epoch %d exceeds committee capacity %d", overflow.count, overflow.epoch, maxActiveValidators)
+}
+
 // UpdateGenesisExecutionData updates execution data for genesis state.
 func UpdateGenesisExecutionData(state state.BeaconState, deposits []*qrysmpb.Deposit, executionData *qrysmpb.ExecutionData) (state.BeaconState, error) {
 	if executionData == nil {

@@ -1,4 +1,4 @@
-// Package helpers contains helper functions outlined in the Ethereum Beacon Chain spec, such as
+// Package helpers contains helper functions outlined in the QRL beacon chain spec, such as
 // computing committees, randao, rewards/penalties, and more.
 package helpers
 
@@ -21,11 +21,49 @@ var (
 	syncCommitteeCache = cache.NewSyncCommittee()
 )
 
+// CurrentPeriodPositions returns committee indices of the current period sync committee for input validators.
+func CurrentPeriodPositions(st state.BeaconState, indices []primitives.ValidatorIndex) ([][]primitives.CommitteeIndex, error) {
+	root, err := syncPeriodBoundaryRoot(st)
+	if err != nil {
+		return nil, err
+	}
+	pos, err := syncCommitteeCache.CurrentPeriodPositions(root, indices)
+	if errors.Is(err, cache.ErrNonExistingSyncCommitteeKey) {
+		committee, err := st.CurrentSyncCommittee()
+		if err != nil {
+			return nil, err
+		}
+
+		// Fill in the cache on miss.
+		go func() {
+			if err := syncCommitteeCache.UpdatePositionsInCommittee(root, st); err != nil {
+				log.WithError(err).Error("Could not fill sync committee cache on miss")
+			}
+		}()
+
+		pos = make([][]primitives.CommitteeIndex, len(indices))
+		for i, idx := range indices {
+			pubkey := st.PubkeyAtIndex(idx)
+			pos[i] = findSubCommitteeIndices(pubkey[:], committee.Pubkeys)
+		}
+		return pos, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return pos, nil
+}
+
 // IsCurrentPeriodSyncCommittee returns true if the input validator index belongs in the current period sync committee
 // along with the sync committee root.
 // 1. Checks if the public key exists in the sync committee cache
 // 2. If 1 fails, checks if the public key exists in the input current sync committee object
 func IsCurrentPeriodSyncCommittee(st state.BeaconState, valIdx primitives.ValidatorIndex) (bool, error) {
+	// Reject an unknown validator index before consulting the cache, so the
+	// answer does not depend on whether the period's positions were cached.
+	if _, err := st.ValidatorAtIndexReadOnly(valIdx); err != nil {
+		return false, err
+	}
 	root, err := syncPeriodBoundaryRoot(st)
 	if err != nil {
 		return false, err
@@ -63,6 +101,11 @@ func IsCurrentPeriodSyncCommittee(st state.BeaconState, valIdx primitives.Valida
 func IsNextPeriodSyncCommittee(
 	st state.BeaconState, valIdx primitives.ValidatorIndex,
 ) (bool, error) {
+	// Reject an unknown validator index before consulting the cache, so the
+	// answer does not depend on whether the period's positions were cached.
+	if _, err := st.ValidatorAtIndexReadOnly(valIdx); err != nil {
+		return false, err
+	}
 	root, err := syncPeriodBoundaryRoot(st)
 	if err != nil {
 		return false, err
@@ -90,6 +133,11 @@ func IsNextPeriodSyncCommittee(
 func CurrentPeriodSyncSubcommitteeIndices(
 	st state.BeaconState, valIdx primitives.ValidatorIndex,
 ) ([]primitives.CommitteeIndex, error) {
+	// Reject an unknown validator index before consulting the cache, so the
+	// answer does not depend on whether the period's positions were cached.
+	if _, err := st.ValidatorAtIndexReadOnly(valIdx); err != nil {
+		return nil, err
+	}
 	root, err := syncPeriodBoundaryRoot(st)
 	if err != nil {
 		return nil, err
@@ -124,6 +172,11 @@ func CurrentPeriodSyncSubcommitteeIndices(
 func NextPeriodSyncSubcommitteeIndices(
 	st state.BeaconState, valIdx primitives.ValidatorIndex,
 ) ([]primitives.CommitteeIndex, error) {
+	// Reject an unknown validator index before consulting the cache, so the
+	// answer does not depend on whether the period's positions were cached.
+	if _, err := st.ValidatorAtIndexReadOnly(valIdx); err != nil {
+		return nil, err
+	}
 	root, err := syncPeriodBoundaryRoot(st)
 	if err != nil {
 		return nil, err
@@ -147,8 +200,12 @@ func NextPeriodSyncSubcommitteeIndices(
 }
 
 // UpdateSyncCommitteeCache updates sync committee cache.
-// It uses `state`'s latest block header root as key. To avoid misuse, it disallows
-// block header with state root zeroed out.
+// It keys the entry the same way lookups do: the latest block header root
+// combined with the period boundary slot, which is `state`'s slot here. Using
+// the header's own slot instead only matched lookups when a block landed on the
+// boundary slot, and after a block-less period it overwrote the previous
+// period's entry. To avoid misuse, it disallows block header with state root
+// zeroed out.
 func UpdateSyncCommitteeCache(st state.BeaconState) error {
 	nextSlot := st.Slot() + 1
 	if nextSlot%params.BeaconConfig().SlotsPerEpoch != 0 {
@@ -168,7 +225,7 @@ func UpdateSyncCommitteeCache(st state.BeaconState) error {
 		return err
 	}
 
-	return syncCommitteeCache.UpdatePositionsInCommittee(combineRootAndSlot(prevBlockRoot[:], uint64(header.Slot)), st)
+	return syncCommitteeCache.UpdatePositionsInCommittee(combineRootAndSlot(prevBlockRoot[:], uint64(st.Slot())), st)
 }
 
 // Loop through `pubKeys` for matching `pubKey` and get the indices where it matches.

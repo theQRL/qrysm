@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/d4l3k/messagediff"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -313,6 +314,21 @@ func notEmpty(loggerFn assertionLoggerFn, obj any, ignoreFieldsWithoutTags bool,
 			}
 		}
 	}
+}
+
+// Eventually asserts that given condition will be met within waitFor time,
+// periodically checking target function each tick.
+func Eventually(loggerFn assertionLoggerFn, condition func() bool, waitFor, tick time.Duration, msg ...any) {
+	deadline := time.Now().Add(waitFor)
+	for time.Now().Before(deadline) {
+		if condition() {
+			return
+		}
+		time.Sleep(tick)
+	}
+	errMsg := parseMsg("Condition never satisfied", msg...)
+	_, file, line, _ := runtime.Caller(2)
+	loggerFn("%s:%d %s (waited %v)", filepath.Base(file), line, errMsg, waitFor)
 }
 
 // TBMock exposes enough testing.TB methods for assertions.

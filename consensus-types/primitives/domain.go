@@ -20,6 +20,9 @@ func (d Domain) HashTreeRoot() ([32]byte, error) {
 
 // HashTreeRootWith --
 func (d Domain) HashTreeRootWith(hh *fssz.Hasher) error {
+	if len(d) != 32 {
+		return fmt.Errorf("expected domain of length 32 received %d", len(d))
+	}
 	hh.PutBytes(d[:])
 	return nil
 }
@@ -48,6 +51,9 @@ func (d *Domain) MarshalSSZTo(dst []byte) ([]byte, error) {
 
 // MarshalSSZ --
 func (d *Domain) MarshalSSZ() ([]byte, error) {
+	if len(*d) != d.SizeSSZ() {
+		return nil, fmt.Errorf("expected domain of length %d received %d", d.SizeSSZ(), len(*d))
+	}
 	return *d, nil
 }
 

@@ -288,14 +288,19 @@ func convertDepositsToProto(jsonDeposits []*apimiddleware.DepositJson) ([]*qrysm
 			return nil, errors.Wrapf(err, "failed to decode deposit public key `%s`", jsonDeposit.Data.PublicKey)
 		}
 
-		withdrawalCredentials, err := hexutil.Decode(jsonDeposit.Data.WithdrawalCredentials)
+		withdrawalRecipient, err := hexutil.Decode(jsonDeposit.Data.WithdrawalRecipient)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode deposit withdrawal credentials `%s`", jsonDeposit.Data.WithdrawalCredentials)
+			return nil, errors.Wrapf(err, "failed to decode deposit withdrawal recipient `%s`", jsonDeposit.Data.WithdrawalRecipient)
 		}
 
 		amount, err := strconv.ParseUint(jsonDeposit.Data.Amount, 10, 64)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse deposit amount `%s`", jsonDeposit.Data.Amount)
+		}
+
+		randaoCommitment, err := hexutil.Decode(jsonDeposit.Data.RandaoCommitment)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to decode randao commitment `%s`", jsonDeposit.Data.RandaoCommitment)
 		}
 
 		signature, err := hexutil.Decode(jsonDeposit.Data.Signature)
@@ -306,10 +311,11 @@ func convertDepositsToProto(jsonDeposits []*apimiddleware.DepositJson) ([]*qrysm
 		deposits[depositIndex] = &qrysmpb.Deposit{
 			Proof: proofs,
 			Data: &qrysmpb.Deposit_Data{
-				PublicKey:             pubkey,
-				WithdrawalCredentials: withdrawalCredentials,
-				Amount:                amount,
-				Signature:             signature,
+				PublicKey:           pubkey,
+				WithdrawalRecipient: withdrawalRecipient,
+				Amount:              amount,
+				RandaoCommitment:    randaoCommitment,
+				Signature:           signature,
 			},
 		}
 	}
@@ -389,7 +395,7 @@ func convertWithdrawalsToProto(jsonWithdrawals []*apimiddleware.WithdrawalJson) 
 			return nil, errors.Wrapf(err, "failed to parse validator index `%s`", jsonWithdrawal.ValidatorIndex)
 		}
 
-		executionAddress, err := hexutil.Decode(jsonWithdrawal.ExecutionAddress)
+		executionAddress, err := hexutil.DecodeQ(jsonWithdrawal.ExecutionAddress)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to decode execution address `%s`", jsonWithdrawal.ExecutionAddress)
 		}

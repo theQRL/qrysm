@@ -59,6 +59,16 @@ func ProcessSyncAggregate(ctx context.Context, s state.BeaconState, sync *qrysmp
 	return s, reward, nil
 }
 
+// ProcessSyncAggregateNoVerifySig processes the sync aggregate without verifying the sync committee signatures.
+// This is useful in scenarios such as block reward calculation, where we can assume the data in the block is valid.
+func ProcessSyncAggregateNoVerifySig(ctx context.Context, s state.BeaconState, sync *qrysmpb.SyncAggregate) (state.BeaconState, uint64, error) {
+	s, _, reward, err := processSyncAggregate(ctx, s, sync)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "could not filter sync committee votes")
+	}
+	return s, reward, nil
+}
+
 // processSyncAggregate applies all the logic in the spec function `process_sync_aggregate` except
 // verifying the ML-DSA-87 signatures. It returns the modified beacons state, the list of validators'
 // public keys that voted (for future signature verification) and the proposer reward for including
@@ -111,15 +121,17 @@ func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *qrysmp
 			if err := helpers.IncreaseBalance(s, vIdx, participantReward); err != nil {
 				return nil, nil, 0, err
 			}
+			// Credit each reward before later committee penalties, which floor
+			// the balance at zero and may also apply to the proposer.
+			if err := helpers.IncreaseBalance(s, proposerIndex, proposerReward); err != nil {
+				return nil, nil, 0, err
+			}
 			earnedProposerReward += proposerReward
 		} else {
 			if err := helpers.DecreaseBalance(s, vIdx, participantReward); err != nil {
 				return nil, nil, 0, err
 			}
 		}
-	}
-	if err := helpers.IncreaseBalance(s, proposerIndex, earnedProposerReward); err != nil {
-		return nil, nil, 0, err
 	}
 	return s, votedKeys, earnedProposerReward, err
 }
@@ -146,7 +158,7 @@ func VerifySyncCommitteeSigs(s state.BeaconState, syncKeys []ml_dsa_87.PublicKey
 		return err
 	}
 
-	maxProcs := runtime.GOMAXPROCS(0) - 1
+	maxProcs := max(runtime.GOMAXPROCS(0)-1, 1)
 	grp := errgroup.Group{}
 	grp.SetLimit(maxProcs)
 

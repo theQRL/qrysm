@@ -10,6 +10,7 @@ import (
 
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
@@ -896,6 +897,52 @@ func TestBlocksFetcher_requestBlocksFromPeerReturningInvalidBlocks(t *testing.T)
 			}
 		})
 	}
+}
+
+func TestBlocksFetcher_fetchBlocksFromPeer_DownscoresInvalidDataProvider(t *testing.T) {
+	p1 := p2pt.NewTestP2P(t)
+	badPeer := p2pt.NewTestP2P(t)
+	p1.Connect(badPeer)
+
+	req := &qrysmpb.BeaconBlocksByRangeRequest{
+		StartSlot: 100,
+		Step:      1,
+		Count:     64,
+	}
+
+	// Stream handler that returns more blocks than requested, triggering
+	// beaconsync.ErrInvalidFetchedData inside SendBeaconBlocksByRangeRequest.
+	topic := p2pm.RPCBlocksByRangeTopicV2
+	protocol := libp2pcore.ProtocolID(topic + badPeer.Encoding().ProtocolSuffix())
+	badPeer.BHost.SetStreamHandler(protocol, func(stream network.Stream) {
+		for i := req.StartSlot; i < req.StartSlot.Add(req.Count*req.Step+1); i += primitives.Slot(req.Step) {
+			blk := util.NewBeaconBlockZond()
+			blk.Block.Slot = i
+			tor := startup.NewClock(time.Now(), [32]byte{})
+			wsb, err := blocks.NewSignedBeaconBlock(blk)
+			require.NoError(t, err)
+			assert.NoError(t, beaconsync.WriteBlockChunk(stream, tor, badPeer.Encoding(), wsb))
+		}
+		assert.NoError(t, stream.Close())
+	})
+
+	ctx := t.Context()
+	fetcher := newBlocksFetcher(ctx, &blocksFetcherConfig{
+		p2p:   p1,
+		chain: &mock.ChainService{Genesis: time.Now(), ValidatorsRoot: [32]byte{}},
+	})
+	fetcher.rateLimiter = leakybucket.NewCollector(0.000001, 640, 1*time.Second, false)
+
+	scorer := p1.Peers().Scorers().BadResponsesScorer()
+
+	blocks, _, err := fetcher.fetchBlocksFromPeer(ctx, req.StartSlot, req.Count, []peer.ID{badPeer.PeerID()})
+	// All peers failed → expect the aggregate "no peers" error and empty blocks.
+	require.ErrorContains(t, errNoPeersAvailable.Error(), err)
+	require.Equal(t, 0, len(blocks))
+
+	count, err := scorer.Count(badPeer.PeerID())
+	require.NoError(t, err)
+	require.Equal(t, 1, count, "BadResponsesScorer should be incremented for peer serving invalid data")
 }
 
 func TestTimeToWait(t *testing.T) {

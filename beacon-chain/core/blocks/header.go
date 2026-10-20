@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
@@ -112,6 +113,9 @@ func ProcessBlockHeaderNoVerify(
 		return nil, fmt.Errorf("proposer index: %d is different than calculated: %d", proposerIndex, idx)
 	}
 	parentHeader := beaconState.LatestBlockHeader()
+	if parentHeader == nil {
+		return nil, errors.New("nil latest block header in state")
+	}
 	if parentHeader.Slot >= slot {
 		return nil, fmt.Errorf("block.Slot %d must be greater than state.LatestBlockHeader.Slot %d", slot, parentHeader.Slot)
 	}

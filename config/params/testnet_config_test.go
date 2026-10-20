@@ -53,7 +53,6 @@ func compareConfigs(t *testing.T, expected, actual *params.BeaconChainConfig) {
 	require.DeepEqual(t, expected.MaxEffectiveBalance, actual.MaxEffectiveBalance)
 	require.DeepEqual(t, expected.EjectionBalance, actual.EjectionBalance)
 	require.DeepEqual(t, expected.EffectiveBalanceIncrement, actual.EffectiveBalanceIncrement)
-	require.DeepEqual(t, expected.ExecutionAddressWithdrawalPrefixByte, actual.ExecutionAddressWithdrawalPrefixByte)
 	require.DeepEqual(t, expected.ZeroHash, actual.ZeroHash)
 	require.DeepEqual(t, expected.GenesisDelay, actual.GenesisDelay)
 	require.DeepEqual(t, expected.MinAttestationInclusionDelay, actual.MinAttestationInclusionDelay)

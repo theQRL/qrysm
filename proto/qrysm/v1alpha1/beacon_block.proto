@@ -70,18 +70,21 @@ message AttesterSlashing {
     IndexedAttestation attestation_2 = 2;
 }
 
-// Deposit into the Ethereum consensus from the QRL deposit contract.
+// Deposit into the QRL consensus from the QRL deposit contract.
 message Deposit {
     // DepositData that is encoded into a deposit signature.
     message Data {
         // 2592 byte ML-DSA-87 public key of the validator.
         bytes public_key = 1 [(theqrl.qrl.ext.ssz_size) = "2592", (theqrl.qrl.ext.spec_name) = "pubkey"];
 
-        // A 32 byte hash of the withdrawal address public key.
-        bytes withdrawal_credentials = 2 [(theqrl.qrl.ext.ssz_size) = "32"];
+        // QRL address that receives withdrawals.
+        bytes withdrawal_recipient = 2 [(theqrl.qrl.ext.ssz_size) = "64"];
 
         // Deposit amount in shor.
         uint64 amount = 3;
+
+        // 32 byte RANDAO hash-onion commitment (top layer of the validator's onion).
+        bytes randao_commitment = 5 [(theqrl.qrl.ext.ssz_size) = "32"];
 
         // 4627 byte signature from the validators public key.
         bytes signature = 4 [(theqrl.qrl.ext.ssz_size) = "4627"];
@@ -157,11 +160,11 @@ message SignedBeaconBlockHeader {
 }
 
 message IndexedAttestation {
-    repeated uint64 attesting_indices = 1 [(theqrl.qrl.ext.ssz_max) = "128"];
+    repeated uint64 attesting_indices = 1 [(theqrl.qrl.ext.ssz_max) = "32"];
 
     AttestationData data = 2;
 
-    repeated bytes signatures = 3 [(theqrl.qrl.ext.ssz_size) = "?,4627", (theqrl.qrl.ext.ssz_max) = "128"];
+    repeated bytes signatures = 3 [(theqrl.qrl.ext.ssz_size) = "?,4627", (theqrl.qrl.ext.ssz_max) = "32"];
 }
 
 // The sync aggregate object for the beacon chain to track sync committee votes and to
@@ -200,7 +203,7 @@ message BeaconBlockZond {
 
 message BeaconBlockBodyZond {
     // The validators RANDAO reveal 4627 byte value.
-    bytes randao_reveal = 1 [(theqrl.qrl.ext.ssz_size) = "4627"];
+    bytes randao_reveal = 1 [(theqrl.qrl.ext.ssz_size) = "32"];
 
     // A reference to the QRL execution chain.
     ExecutionData execution_data = 2;
@@ -219,7 +222,7 @@ message BeaconBlockBodyZond {
     repeated AttesterSlashing attester_slashings = 5 [(theqrl.qrl.ext.ssz_max) = "2"];
 
     // At most MAX_ATTESTATIONS.
-    repeated Attestation attestations = 6 [(theqrl.qrl.ext.ssz_max) = "128"];
+    repeated Attestation attestations = 6 [(theqrl.qrl.ext.ssz_max) = "4"];
 
     // At most MAX_DEPOSITS.
     repeated Deposit deposits = 7 [(theqrl.qrl.ext.ssz_max) = "16"];
@@ -261,7 +264,7 @@ message BlindedBeaconBlockZond {
 
 message BlindedBeaconBlockBodyZond {
     // The validators RANDAO reveal 4627 byte value.
-    bytes randao_reveal = 1 [(theqrl.qrl.ext.ssz_size) = "4627"];
+    bytes randao_reveal = 1 [(theqrl.qrl.ext.ssz_size) = "32"];
 
     // A reference to the QRL execution client.
     ExecutionData execution_data = 2;
@@ -277,7 +280,7 @@ message BlindedBeaconBlockBodyZond {
     repeated AttesterSlashing attester_slashings = 5 [(theqrl.qrl.ext.ssz_max) = "2"];
 
     // At most MAX_ATTESTATIONS.
-    repeated Attestation attestations = 6 [(theqrl.qrl.ext.ssz_max) = "128"];
+    repeated Attestation attestations = 6 [(theqrl.qrl.ext.ssz_max) = "4"];
 
     // At most MAX_DEPOSITS.
     repeated Deposit deposits = 7 [(theqrl.qrl.ext.ssz_max) = "16"];
@@ -293,7 +296,7 @@ message BlindedBeaconBlockBodyZond {
 }
 
 message ValidatorRegistrationV1 {
-    bytes fee_recipient = 1 [(theqrl.qrl.ext.ssz_size) = "20"];
+    bytes fee_recipient = 1 [(theqrl.qrl.ext.ssz_size) = "64"];
     uint64 gas_limit = 2;
     uint64 timestamp = 3;
     bytes pubkey = 4 [(theqrl.qrl.ext.ssz_size) = "2592"];

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -95,6 +96,7 @@ type BeaconNode struct {
 	syncCommitteePool       synccommittee.Pool
 	depositCache            cache.DepositCache
 	proposerIdsCache        *cache.ProposerPayloadIDsCache
+	attestationCache        *cache.AttestationCache
 	stateFeed               *event.Feed
 	blockFeed               *event.Feed
 	opFeed                  *event.Feed
@@ -113,7 +115,11 @@ type BeaconNode struct {
 
 // New creates a new node instance, sets up configuration options, and registers
 // every required service to the node.
-func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
+//
+// optFuncs are evaluated *after* the configure* block so that any node options
+// derived from CLI flags + chain config (e.g. checkpoint/genesis sync) see
+// values from the user-supplied chain-config file rather than the defaults.
+func New(cliCtx *cli.Context, optFuncs []func(*cli.Context) (Option, error), opts ...Option) (*BeaconNode, error) {
 	if err := configureTracing(cliCtx); err != nil {
 		return nil, err
 	}
@@ -152,10 +158,18 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 		return nil, err
 	}
 
-	configureFastSSZHashingAlgorithm()
-
 	// Initializes any forks here.
 	params.BeaconConfig().InitializeForkSchedule()
+
+	for _, of := range optFuncs {
+		ofo, err := of(cliCtx)
+		if err != nil {
+			return nil, err
+		}
+		if ofo != nil {
+			opts = append(opts, ofo)
+		}
+	}
 
 	registry := runtime.NewServiceRegistry()
 
@@ -177,6 +191,7 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 		slasherAttestationsFeed: new(event.Feed),
 		serviceFlagOpts:         &serviceFlagOpts{},
 		proposerIdsCache:        cache.NewProposerPayloadIDsCache(),
+		attestationCache:        cache.NewAttestationCache(),
 	}
 
 	beacon.initialSyncComplete = make(chan struct{})
@@ -297,6 +312,10 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 	}
 	beacon.collector = c
 
+	// The finalized state has been provided to the respective services during
+	// their initialization. Drop the node-level reference so it can be GC'd.
+	beacon.finalizedStateAtStartUp = nil
+
 	return beacon, nil
 }
 
@@ -375,6 +394,22 @@ func (b *BeaconNode) startDB(cliCtx *cli.Context, depositAddress string) error {
 	if err != nil {
 		return err
 	}
+	// If anything below fails the node will not start, and nothing else holds
+	// this handle: close it so that the database file and its lock are released
+	// instead of leaking until the process exits.
+	started := false
+	openDB := d
+	defer func() {
+		if started || openDB == nil {
+			return
+		}
+		if err := openDB.Close(); err != nil {
+			log.WithError(err).Error("Could not close database after failed startup")
+		}
+		if b.db == openDB {
+			b.db = nil
+		}
+	}()
 	clearDBConfirmed := false
 	if clearDB && !forceClearDB {
 		actionText := "This will delete your beacon chain database stored in your data directory. " +
@@ -390,6 +425,7 @@ func (b *BeaconNode) startDB(cliCtx *cli.Context, depositAddress string) error {
 		if err := d.Close(); err != nil {
 			return errors.Wrap(err, "could not close db prior to clearing")
 		}
+		openDB = nil
 		if err := d.ClearDB(); err != nil {
 			return errors.Wrap(err, "could not clear database")
 		}
@@ -397,6 +433,7 @@ func (b *BeaconNode) startDB(cliCtx *cli.Context, depositAddress string) error {
 		if err != nil {
 			return errors.Wrap(err, "could not create new database")
 		}
+		openDB = d
 	}
 
 	if err := d.RunMigrations(b.ctx); err != nil {
@@ -458,6 +495,7 @@ func (b *BeaconNode) startDB(cliCtx *cli.Context, depositAddress string) error {
 			knownContract, addr)
 	}
 	log.Infof("Deposit contract: %#x", addr)
+	started = true
 	return nil
 }
 
@@ -481,6 +519,22 @@ func (b *BeaconNode) startSlasherDB(cliCtx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	// If anything below fails the node will not start, and nothing else holds
+	// this handle: close it so that the database file and its lock are released
+	// instead of leaking until the process exits.
+	started := false
+	openDB := d
+	defer func() {
+		if started || openDB == nil {
+			return
+		}
+		if err := openDB.Close(); err != nil {
+			log.WithError(err).Error("Could not close database after failed startup")
+		}
+		if b.slasherDB == openDB {
+			b.slasherDB = nil
+		}
+	}()
 	clearDBConfirmed := false
 	if clearDB && !forceClearDB {
 		actionText := "This will delete your beacon chain database stored in your data directory. " +
@@ -496,6 +550,7 @@ func (b *BeaconNode) startSlasherDB(cliCtx *cli.Context) error {
 		if err := d.Close(); err != nil {
 			return errors.Wrap(err, "could not close db prior to clearing")
 		}
+		openDB = nil
 		if err := d.ClearDB(); err != nil {
 			return errors.Wrap(err, "could not clear database")
 		}
@@ -503,9 +558,11 @@ func (b *BeaconNode) startSlasherDB(cliCtx *cli.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "could not create new database")
 		}
+		openDB = d
 	}
 
 	b.slasherDB = d
+	started = true
 	return nil
 }
 
@@ -542,33 +599,53 @@ func (b *BeaconNode) startStateGen(ctx context.Context, bfs *backfill.Status, fc
 	return nil
 }
 
+// parseIPNetStrings parses the CIDR ranges given to --p2p-colocation-whitelist.
+func parseIPNetStrings(ipWhitelist []string) ([]*net.IPNet, error) {
+	ipNets := make([]*net.IPNet, 0, len(ipWhitelist))
+	for _, cidr := range ipWhitelist {
+		_, ipNet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			log.WithError(err).WithField("cidr", cidr).Error("Invalid CIDR in IP colocation whitelist")
+			return nil, err
+		}
+		ipNets = append(ipNets, ipNet)
+		log.WithField("cidr", cidr).Info("Added IP range to colocation whitelist")
+	}
+	return ipNets, nil
+}
+
 func (b *BeaconNode) registerP2P(cliCtx *cli.Context) error {
 	bootstrapNodeAddrs, dataDir, err := registration.P2PPreregistration(cliCtx)
 	if err != nil {
 		return err
 	}
 
+	colocationWhitelist, err := parseIPNetStrings(slice.SplitCommaSeparated(cliCtx.StringSlice(cmd.P2PColocationWhitelist.Name)))
+	if err != nil {
+		return fmt.Errorf("failed to register p2p service: %w", err)
+	}
+
 	svc, err := p2p.NewService(b.ctx, &p2p.Config{
-		NoDiscovery:       cliCtx.Bool(cmd.NoDiscovery.Name),
-		StaticPeers:       slice.SplitCommaSeparated(cliCtx.StringSlice(cmd.StaticPeers.Name)),
-		BootstrapNodeAddr: bootstrapNodeAddrs,
-		RelayNodeAddr:     cliCtx.String(cmd.RelayNode.Name),
-		DataDir:           dataDir,
-		LocalIP:           cliCtx.String(cmd.P2PIP.Name),
-		HostAddress:       cliCtx.String(cmd.P2PHost.Name),
-		HostDNS:           cliCtx.String(cmd.P2PHostDNS.Name),
-		PrivateKey:        cliCtx.String(cmd.P2PPrivKey.Name),
-		StaticPeerID:      cliCtx.Bool(cmd.P2PStaticID.Name),
-		MetaDataDir:       cliCtx.String(cmd.P2PMetadata.Name),
-		TCPPort:           cliCtx.Uint(cmd.P2PTCPPort.Name),
-		UDPPort:           cliCtx.Uint(cmd.P2PUDPPort.Name),
-		MaxPeers:          cliCtx.Uint(cmd.P2PMaxPeers.Name),
-		AllowListCIDR:     cliCtx.String(cmd.P2PAllowList.Name),
-		DenyListCIDR:      slice.SplitCommaSeparated(cliCtx.StringSlice(cmd.P2PDenyList.Name)),
-		EnableUPnP:        cliCtx.Bool(cmd.EnableUPnPFlag.Name),
-		StateNotifier:     b,
-		DB:                b.db,
-		ClockWaiter:       b.clockWaiter,
+		NoDiscovery:           cliCtx.Bool(cmd.NoDiscovery.Name),
+		StaticPeers:           slice.SplitCommaSeparated(cliCtx.StringSlice(cmd.StaticPeers.Name)),
+		BootstrapNodeAddr:     bootstrapNodeAddrs,
+		RelayNodeAddr:         cliCtx.String(cmd.RelayNode.Name),
+		DataDir:               dataDir,
+		LocalIP:               cliCtx.String(cmd.P2PIP.Name),
+		HostAddress:           cliCtx.String(cmd.P2PHost.Name),
+		HostDNS:               cliCtx.String(cmd.P2PHostDNS.Name),
+		PrivateKey:            cliCtx.String(cmd.P2PPrivKey.Name),
+		StaticPeerID:          cliCtx.Bool(cmd.P2PStaticID.Name),
+		TCPPort:               cliCtx.Uint(cmd.P2PTCPPort.Name),
+		UDPPort:               cliCtx.Uint(cmd.P2PUDPPort.Name),
+		MaxPeers:              cliCtx.Uint(cmd.P2PMaxPeers.Name),
+		AllowListCIDR:         cliCtx.String(cmd.P2PAllowList.Name),
+		DenyListCIDR:          slice.SplitCommaSeparated(cliCtx.StringSlice(cmd.P2PDenyList.Name)),
+		IPColocationWhitelist: colocationWhitelist,
+		EnableUPnP:            cliCtx.Bool(cmd.EnableUPnPFlag.Name),
+		StateNotifier:         b,
+		DB:                    b.db,
+		ClockWaiter:           b.clockWaiter,
 	})
 	if err != nil {
 		return err
@@ -632,6 +709,7 @@ func (b *BeaconNode) registerBlockchainService(fc forkchoice.ForkChoicer, gs *st
 		blockchain.WithSlasherAttestationsFeed(b.slasherAttestationsFeed),
 		blockchain.WithFinalizedStateAtStartUp(b.finalizedStateAtStartUp),
 		blockchain.WithProposerIdsCache(b.proposerIdsCache),
+		blockchain.WithAttestationCache(b.attestationCache),
 		blockchain.WithClockSynchronizer(gs),
 		blockchain.WithSyncComplete(syncComplete),
 	)
@@ -783,13 +861,6 @@ func (b *BeaconNode) registerRPCService(router *mux.Router) error {
 		return err
 	}
 
-	var slasherService *slasher.Service
-	if features.Get().EnableSlasher {
-		if err := b.services.FetchService(&slasherService); err != nil {
-			return err
-		}
-	}
-
 	genesisValidators := b.cliCtx.Uint64(flags.InteropNumValidatorsFlag.Name)
 	var depositFetcher cache.DepositFetcher
 	var chainStartFetcher execution.ChainStartFetcher
@@ -845,7 +916,6 @@ func (b *BeaconNode) registerRPCService(router *mux.Router) error {
 		AttestationsPool:              b.attestationPool,
 		ExitPool:                      b.exitPool,
 		SlashingsPool:                 b.slashingsPool,
-		SlashingChecker:               slasherService,
 		SyncCommitteeObjectPool:       b.syncCommitteePool,
 		ExecutionChainService:         web3Service,
 		ExecutionChainInfoFetcher:     web3Service,
@@ -861,6 +931,7 @@ func (b *BeaconNode) registerRPCService(router *mux.Router) error {
 		EnableDebugRPCEndpoints:       enableDebugRPCEndpoints,
 		MaxMsgSize:                    maxMsgSize,
 		ProposerIdsCache:              b.proposerIdsCache,
+		AttestationCache:              b.attestationCache,
 		BlockBuilder:                  b.fetchBuilderService(),
 		Router:                        router,
 		ClockWaiter:                   b.clockWaiter,
@@ -922,7 +993,6 @@ func (b *BeaconNode) registerGRPCGateway(router *mux.Router) error {
 		apigateway.WithGatewayAddr(gatewayAddress),
 		apigateway.WithRemoteAddr(selfAddress),
 		apigateway.WithPbHandlers(muxs),
-		apigateway.WithMuxHandler(gatewayConfig.Handler),
 		apigateway.WithRemoteCert(selfCert),
 		apigateway.WithMaxCallRecvMsgSize(maxCallSize),
 		apigateway.WithAllowedOrigins(allowedOrigins),

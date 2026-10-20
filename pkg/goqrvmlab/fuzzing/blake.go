@@ -8,14 +8,14 @@ import (
 
 func fillBlake(gst *GstMaker, fork string) {
 	// Add a contract which calls blake
-	dest, err := common.NewAddressFromString("Q00000000000000000000000000000ca1100b1a7e")
+	dest, err := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ca1100b1a7e")
 	if err != nil {
 		panic(err)
 	}
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    RandCallBlake(),
 		Balance: new(big.Int),
-		Storage: make(map[common.Hash]common.Hash),
+		Storage: make(map[common.Hash]common.StorageValue64),
 	})
 	// The transaction
 	gst.SetTx(&StTransaction{

@@ -94,7 +94,8 @@ func TestGetGenesis(t *testing.T) {
 			queriesDepositContract: true,
 			depositContractResponse: apimiddleware.DepositContractResponseJson{
 				Data: &apimiddleware.DepositContractJson{
-					Address: hexutil.Encode([]byte{3}),
+					// The server returns a Q-prefixed execution address.
+					Address: hexutil.EncodeQ([]byte{3}),
 				},
 			},
 			expectedResponse: &qrysmpb.Genesis{

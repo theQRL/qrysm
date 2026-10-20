@@ -44,6 +44,7 @@ go_library(
         "//encoding/bytesutil",
         "//math",
         "//proto/qrysm/v1alpha1",
+        "//time/slots",
         "@com_github_hashicorp_golang_lru//:golang-lru",
         "@com_github_patrickmn_go_cache//:go-cache",
         "@com_github_pkg_errors//:errors",

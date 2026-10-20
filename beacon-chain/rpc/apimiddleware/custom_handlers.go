@@ -2,6 +2,7 @@ package apimiddleware
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -10,8 +11,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/r3labs/sse/v2"
+	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/api"
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/api/grpc"
@@ -82,7 +85,7 @@ func handleGetSSZ(
 	req *http.Request,
 	config sszConfig,
 ) (handled bool) {
-	ssz := http2.SszRequested(req)
+	ssz := http2.RespondWithSsz(req)
 	if !ssz {
 		return false
 	}
@@ -203,26 +206,144 @@ func writeSSZResponseHeaderAndBody(grpcResp *http.Response, w http.ResponseWrite
 	return nil
 }
 
+// eventsMaxBufferSize bounds a single SSE event read from grpc-gateway. The
+// sse library's default (64 KiB) is smaller than an aggregate attestation or
+// sync committee contribution event carrying ML-DSA-87 signatures (up to
+// 128 x 4627 bytes, hex-encoded ~1.2 MB), which made the reader fail with
+// bufio.ErrTooLong, reconnect and silently drop events. The buffer only grows
+// on demand, so the cap costs nothing for small events.
+const eventsMaxBufferSize = 32 << 20
+
+var log = logrus.WithField("prefix", "apimiddleware")
+
+// eventsNoRetry is a backoff policy that never retries. It satisfies the sse
+// client's ReconnectStrategy (gopkg.in/cenkalti/backoff.v1 BackOff) so that a
+// non-200 answer from grpc-gateway - e.g. 400 for an unknown topic - is
+// reported straight away instead of being retried with the library's default
+// exponential backoff for up to 15 minutes while the client hangs.
+type eventsNoRetry struct{}
+
+func (eventsNoRetry) Reset() {}
+
+// NextBackOff returns backoff.Stop (-1).
+func (eventsNoRetry) NextBackOff() time.Duration { return -1 }
+
+// eventsConnectError carries grpc-gateway's status and message for a failed
+// events subscription so that they can be relayed to the client.
+type eventsConnectError struct {
+	code    int
+	message string
+}
+
+func (e *eventsConnectError) Error() string {
+	return fmt.Sprintf("could not connect to event stream: %d %s", e.code, e.message)
+}
+
+// eventsResponseValidator turns a non-200 grpc-gateway response into an
+// eventsConnectError with the gateway's own status code and message.
+func eventsResponseValidator(_ *sse.Client, resp *http.Response) error {
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	if err != nil {
+		body = nil
+	}
+	message := http.StatusText(resp.StatusCode)
+	gatewayErr := &struct {
+		Message string `json:"message"`
+	}{}
+	if json.Unmarshal(body, gatewayErr) == nil && gatewayErr.Message != "" {
+		message = gatewayErr.Message
+	} else if len(body) > 0 {
+		message = string(body)
+	}
+	return &eventsConnectError{code: resp.StatusCode, message: message}
+}
+
+// writeTrackingResponseWriter records whether anything has been written to the
+// response, so that an upstream failure after events have already been
+// streamed is not answered with a second (superfluous) error response.
+type writeTrackingResponseWriter struct {
+	http.ResponseWriter
+	written bool
+}
+
+func (w *writeTrackingResponseWriter) Write(b []byte) (int, error) {
+	w.written = true
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *writeTrackingResponseWriter) WriteHeader(statusCode int) {
+	w.written = true
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (w *writeTrackingResponseWriter) Flush() {
+	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 func handleEvents(m *apimiddleware.ApiProxyMiddleware, _ apimiddleware.Endpoint, w http.ResponseWriter, req *http.Request) (handled bool) {
-	sseClient := sse.NewClient("http://" + m.GatewayAddress + "/internal" + req.URL.RequestURI())
+	sseClient := sse.NewClient(
+		"http://"+m.GatewayAddress+"/internal"+req.URL.RequestURI(),
+		sse.ClientMaxBufferSize(eventsMaxBufferSize),
+	)
 	sseClient.Headers["Grpc-Timeout"] = "0S"
-	eventChan := make(chan *sse.Event)
+	sseClient.ReconnectStrategy = eventsNoRetry{}
+	sseClient.ResponseValidator = eventsResponseValidator
+
+	// The proxied stream lives as long as the client's request, or until the
+	// upstream stream ends (grpc-gateway closed it, or reading it failed):
+	// in that case the client is disconnected too rather than left waiting
+	// on a connection that will never carry another event.
+	ctx, cancel := context.WithCancel(req.Context())
+	defer cancel()
 
 	// We use grpc-gateway as the server side of events, not the sse library.
 	// Because of this subscribing to streams doesn't work as intended, resulting in each event being handled by all subscriptions.
 	// To handle events properly, we subscribe just once using a placeholder value ('events') and handle all topics inside this subscription.
-	if err := sseClient.SubscribeChan("events", eventChan); err != nil {
-		apimiddleware.WriteError(w, apimiddleware.InternalServerError(err), nil)
-		sseClient.Unsubscribe(eventChan)
-		return
-	}
+	eventChan := make(chan *sse.Event)
+	streamDone := make(chan error, 1)
+	go func() {
+		err := sseClient.SubscribeWithContext(ctx, "events", func(msg *sse.Event) {
+			select {
+			case eventChan <- msg:
+			case <-ctx.Done():
+			}
+		})
+		streamDone <- err
+		cancel()
+	}()
 
-	errJson := receiveEvents(eventChan, w, req)
-	if errJson != nil {
-		apimiddleware.WriteError(w, errJson, nil)
-	}
+	tw := &writeTrackingResponseWriter{ResponseWriter: w}
+	errJson := receiveEvents(eventChan, tw, req.WithContext(ctx))
+	cancel()
+	streamErr := <-streamDone
 
-	sseClient.Unsubscribe(eventChan)
+	switch {
+	case errJson != nil:
+		if !tw.written {
+			apimiddleware.WriteError(w, errJson, nil)
+		} else {
+			log.WithError(errors.New(errJson.Msg())).Debug("Event stream ended with an error")
+		}
+	case streamErr != nil && req.Context().Err() == nil:
+		var connectErr *eventsConnectError
+		if !tw.written {
+			if errors.As(streamErr, &connectErr) {
+				apimiddleware.WriteError(w, &apimiddleware.DefaultErrorJson{Message: connectErr.message, Code: connectErr.code}, nil)
+			} else {
+				apimiddleware.WriteError(w, apimiddleware.InternalServerError(streamErr), nil)
+			}
+		} else {
+			log.WithError(streamErr).Debug("Event stream ended with an error")
+		}
+	}
 	return true
 }
 

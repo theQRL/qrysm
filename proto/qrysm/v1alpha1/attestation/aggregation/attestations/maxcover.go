@@ -192,8 +192,8 @@ func aggregateAttestations(atts []*qrysmpb.Attestation, keys []int, coverage *bi
 			// no need for more index searches
 			if insertIdx > (len(participants) - 1) {
 				for _, missingParticipant := range participantsToAdd[i:] {
-					participants = slices.Insert(participants, insertIdx, participant)
-					sigs = slices.Insert(sigs, insertIdx, sigIndex[missingParticipant])
+					participants = append(participants, missingParticipant)
+					sigs = append(sigs, sigIndex[missingParticipant])
 				}
 				break
 			}

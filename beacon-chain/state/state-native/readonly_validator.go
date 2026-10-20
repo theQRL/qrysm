@@ -5,6 +5,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
@@ -70,15 +71,21 @@ func (v readOnlyValidator) PublicKey() [field_params.MLDSA87PubkeyLength]byte {
 	return pubkey
 }
 
-// WithdrawalCredentials returns the withdrawal credentials of the
+// WithdrawalRecipient returns the withdrawal recipient of the
 // read only validator.
-func (v readOnlyValidator) WithdrawalCredentials() []byte {
-	creds := make([]byte, len(v.validator.WithdrawalCredentials))
-	copy(creds, v.validator.WithdrawalCredentials)
-	return creds
+func (v readOnlyValidator) WithdrawalRecipient() []byte {
+	withdrawalRecipient := make([]byte, len(v.validator.WithdrawalRecipient))
+	copy(withdrawalRecipient, v.validator.WithdrawalRecipient)
+	return withdrawalRecipient
 }
 
 // Slashed returns the read only validator is slashed.
+// RandaoCommitment returns the validator's current RANDAO hash-onion
+// commitment: the SHA-256 of the next randao_reveal it may put in a block.
+func (v readOnlyValidator) RandaoCommitment() [field_params.RandaoCommitmentLength]byte {
+	return bytesutil.ToBytes32(v.validator.RandaoCommitment)
+}
+
 func (v readOnlyValidator) Slashed() bool {
 	return v.validator.Slashed
 }

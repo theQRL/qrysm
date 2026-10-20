@@ -69,10 +69,11 @@ func TestNode_ApplyWeightChanges_NegativeChange(t *testing.T) {
 }
 
 func TestNode_UpdateBestDescendant_NonViableChild(t *testing.T) {
-	f := setup(1, 1)
+	f := setup(1, 0)
+	driftGenesisTime(f, 4*params.BeaconConfig().SlotsPerEpoch, 1)
 	ctx := context.Background()
 	// Input child is not viable.
-	state, blkRoot, err := prepareForkchoiceState(ctx, 1, indexToHash(1), params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 2, 3)
+	state, blkRoot, err := prepareForkchoiceState(ctx, 1, indexToHash(1), params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 0, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
@@ -137,24 +138,34 @@ func TestNode_UpdateBestDescendant_LowerWeightChild(t *testing.T) {
 }
 
 func TestNode_ViableForHead(t *testing.T) {
+	currentSlot := 5 * params.BeaconConfig().SlotsPerEpoch
 	tests := []struct {
+		name           string
 		n              *Node
 		justifiedEpoch primitives.Epoch
 		want           bool
 	}{
-		{&Node{}, 0, true},
-		{&Node{}, 1, false},
-		{&Node{finalizedEpoch: 1, justifiedEpoch: 1}, 1, true},
-		{&Node{finalizedEpoch: 1, justifiedEpoch: 1}, 2, false},
-		{&Node{finalizedEpoch: 3, justifiedEpoch: 4}, 4, true},
+		{"genesis justification", &Node{}, 0, true},
+		{"stale source", &Node{}, 1, false},
+		{"matching realized source", &Node{slot: currentSlot, justifiedEpoch: 1}, 1, true},
+		{"mismatched realized source", &Node{slot: currentSlot, justifiedEpoch: 1}, 2, false},
+		{"source three epochs old", &Node{slot: currentSlot, justifiedEpoch: 2}, 3, false},
+		{"source behind justification", &Node{slot: currentSlot, justifiedEpoch: 2}, 4, false},
+		{"recent realized source", &Node{slot: currentSlot, justifiedEpoch: 3}, 4, true},
+		{"previous epoch uses unrealized source", &Node{slot: currentSlot - 1, justifiedEpoch: 1, unrealizedJustifiedEpoch: 4}, 4, true},
+		{"previous epoch uses recent unrealized source", &Node{slot: currentSlot - 1, justifiedEpoch: 1, unrealizedJustifiedEpoch: 3}, 4, true},
+		{"previous epoch source can decrease", &Node{slot: currentSlot - 1, justifiedEpoch: 4, unrealizedJustifiedEpoch: 2}, 4, false},
+		{"current epoch ignores unrealized source", &Node{slot: currentSlot, justifiedEpoch: 1, unrealizedJustifiedEpoch: 4}, 4, false},
 	}
 	for _, tc := range tests {
-		got := tc.n.viableForHead(tc.justifiedEpoch, 5)
-		assert.Equal(t, tc.want, got)
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.n.viableForHead(tc.justifiedEpoch, 5)
+			assert.Equal(t, tc.want, got)
+		})
 	}
 }
 
-func TestNode_LeadsToViableHead(t *testing.T) {
+func TestNode_LeadsToViableTip(t *testing.T) {
 	f := setup(4, 3)
 	ctx := context.Background()
 	state, blkRoot, err := prepareForkchoiceState(ctx, 1, indexToHash(1), params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 1, 1)
@@ -173,10 +184,46 @@ func TestNode_LeadsToViableHead(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
-	require.Equal(t, true, f.store.treeRootNode.leadsToViableHead(4, 5))
-	require.Equal(t, true, f.store.nodeByRoot[indexToHash(5)].leadsToViableHead(4, 5))
-	require.Equal(t, false, f.store.nodeByRoot[indexToHash(2)].leadsToViableHead(4, 5))
-	require.Equal(t, false, f.store.nodeByRoot[indexToHash(4)].leadsToViableHead(4, 5))
+	require.Equal(t, true, f.store.treeRootNode.leadsToViableTip(4, 5))
+	require.Equal(t, true, f.store.nodeByRoot[indexToHash(5)].leadsToViableTip(4, 5))
+	require.Equal(t, false, f.store.nodeByRoot[indexToHash(2)].leadsToViableTip(4, 5))
+	require.Equal(t, false, f.store.nodeByRoot[indexToHash(4)].leadsToViableTip(4, 5))
+}
+
+// A block with children is in the spec's filtered tree only through a viable
+// tip. A parent whose only child has gone stale must not become head on its own
+// checkpoints while a competing branch still has a viable tip, even when the
+// votes accumulated on that parent outweigh the competitor.
+func TestNode_LeadsToViableTip_InternalNodeNeedsViableChild(t *testing.T) {
+	f := setup(3, 2)
+	ctx := context.Background()
+	e := params.BeaconConfig().SlotsPerEpoch
+	driftGenesisTime(f, 5*e, 30)
+	parent, child, rival := indexToHash(1), indexToHash(2), indexToHash(3)
+	state, blkRoot, err := prepareForkchoiceState(ctx, 4*e+1, parent, params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 3, 2)
+	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
+	// The child's pulled-up justification fell back to epoch 2, which is
+	// stale at the current epoch.
+	state, blkRoot, err = prepareForkchoiceState(ctx, 4*e+2, child, parent, params.BeaconConfig().ZeroHash, 2, 2)
+	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
+	state, blkRoot, err = prepareForkchoiceState(ctx, 4*e+3, rival, params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 3, 2)
+	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
+	f.justifiedBalances = []uint64{100, 100, 100, 10}
+	f.ProcessAttestation(ctx, []uint64{0, 1, 2}, child, 3)
+	f.ProcessAttestation(ctx, []uint64{3}, rival, 3)
+
+	head, err := f.Head(ctx)
+	require.NoError(t, err)
+	require.Equal(t, rival, head)
+	require.Equal(t, false, f.store.nodeByRoot[child].leadsToViableTip(3, 5))
+	require.Equal(t, false, f.store.nodeByRoot[parent].leadsToViableTip(3, 5))
+	require.Equal(t, true, f.store.nodeByRoot[rival].leadsToViableTip(3, 5))
+	require.Equal(t, true, f.store.treeRootNode.leadsToViableTip(3, 5))
+	// Its own voting source cannot make an internal node an eligible tip.
+	require.Equal(t, true, f.store.nodeByRoot[parent].viableForHead(3, 5))
 }
 
 func TestNode_SetFullyValidated(t *testing.T) {
@@ -277,6 +324,7 @@ func TestNode_TimeStampsChecks(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, false, late)
 
+	orphanLateBlockFirstThreshold := params.BeaconConfig().SecondsPerSlot / params.BeaconConfig().IntervalsPerSlot
 	// late block
 	driftGenesisTime(f, 2, orphanLateBlockFirstThreshold+1)
 	root = [32]byte{'b'}
@@ -311,7 +359,7 @@ func TestNode_TimeStampsChecks(t *testing.T) {
 
 	// block from the future
 	root = [32]byte{'d'}
-	state, blkRoot, err = prepareForkchoiceState(ctx, 5, root, [32]byte{'c'}, [32]byte{'D'}, 1, 1)
+	state, blkRoot, err = prepareForkchoiceState(ctx, 5, root, [32]byte{'c'}, [32]byte{'D'}, 0, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 	headRoot, err = f.Head(ctx)
@@ -322,5 +370,28 @@ func TestNode_TimeStampsChecks(t *testing.T) {
 	require.Equal(t, true, early)
 	late, err = f.store.headNode.arrivedAfterOrphanCheck(f.store.genesisTime)
 	require.ErrorContains(t, "invalid timestamp", err)
+	require.Equal(t, false, late)
+}
+
+// TestNode_TimeStampsChecks_TreeRoot verifies that arrivedEarly and
+// arrivedAfterOrphanCheck do not error when called on the tree root node, even
+// if the node was inserted with a timestamp before the slot start time. This
+// can happen on a fresh beacon node that starts up before MIN_GENESIS_TIME:
+// the tree root's timestamp is sourced from time.Now() at insertion rather
+// than the real arrival time, and can land before genesisTime.
+func TestNode_TimeStampsChecks_TreeRoot(t *testing.T) {
+	f := setup(0, 0)
+
+	// Simulate a beacon node that started before genesis by setting the tree
+	// root's timestamp earlier than the forkchoice genesis time.
+	treeRoot := f.store.treeRootNode
+	require.Equal(t, true, treeRoot.parent == nil)
+	f.store.genesisTime = treeRoot.timestamp + 24
+
+	early, err := treeRoot.arrivedEarly(f.store.genesisTime)
+	require.NoError(t, err)
+	require.Equal(t, true, early)
+	late, err := treeRoot.arrivedAfterOrphanCheck(f.store.genesisTime)
+	require.NoError(t, err)
 	require.Equal(t, false, late)
 }

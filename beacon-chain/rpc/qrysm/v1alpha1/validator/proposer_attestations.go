@@ -76,18 +76,25 @@ func (vs *Server) packAttestations(ctx context.Context, latestState state.Beacon
 }
 
 // filter separates attestation list into two groups: valid and invalid attestations.
-// The first group passes the all the required checks for attestation to be considered for proposing.
+// The first group passes all the required checks for attestation to be considered for proposing.
 // And attestations from the second group should be deleted.
 func (a proposerAtts) filter(ctx context.Context, st state.BeaconState) (proposerAtts, proposerAtts) {
 	validAtts := make([]*qrysmpb.Attestation, 0, len(a))
 	invalidAtts := make([]*qrysmpb.Attestation, 0, len(a))
 
 	for _, att := range a {
-		if err := blocks.VerifyAttestationNoVerifySignatures(ctx, st, att); err == nil {
-			validAtts = append(validAtts, att)
+		if err := blocks.VerifyAttestationNoVerifySignatures(ctx, st, att); err != nil {
+			invalidAtts = append(invalidAtts, att)
 			continue
 		}
-		invalidAtts = append(invalidAtts, att)
+		// Recovered votes were verified on their original branch. A reorg can
+		// change the committee identified by their aggregation bits, so verify
+		// signatures against the selected proposal state before aggregation.
+		if err := blocks.VerifyAttestationSignatures(ctx, st, att); err != nil {
+			invalidAtts = append(invalidAtts, att)
+			continue
+		}
+		validAtts = append(validAtts, att)
 	}
 	return validAtts, invalidAtts
 }

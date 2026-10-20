@@ -92,20 +92,20 @@ func TestGetState(t *testing.T) {
 	})
 
 	t.Run("finalized", func(t *testing.T) {
+		// Use a block root distinct from the state root to verify
+		// we look up by checkpoint root, not by state root.
+		blockRoot := bytesutil.ToBytes32([]byte("finalized-block-root"))
 		stateGen := mockstategen.NewMockService()
-		replayer := mockstategen.NewMockReplayerBuilder()
-		replayer.SetMockStateForSlot(newBeaconState, params.BeaconConfig().SlotsPerEpoch*10)
-		stateGen.StatesByRoot[stateRoot] = newBeaconState
+		stateGen.StatesByRoot[blockRoot] = newBeaconState
 
 		p := BeaconDbStater{
 			ChainInfoFetcher: &chainMock.ChainService{
 				FinalizedCheckPoint: &qrysmpb.Checkpoint{
-					Root:  stateRoot[:],
+					Root:  blockRoot[:],
 					Epoch: 10,
 				},
 			},
 			StateGenService: stateGen,
-			ReplayerBuilder: replayer,
 		}
 
 		s, err := p.State(ctx, []byte("finalized"))
@@ -116,20 +116,18 @@ func TestGetState(t *testing.T) {
 	})
 
 	t.Run("justified", func(t *testing.T) {
+		blockRoot := bytesutil.ToBytes32([]byte("justified-block-root"))
 		stateGen := mockstategen.NewMockService()
-		replayer := mockstategen.NewMockReplayerBuilder()
-		replayer.SetMockStateForSlot(newBeaconState, params.BeaconConfig().SlotsPerEpoch*10)
-		stateGen.StatesByRoot[stateRoot] = newBeaconState
+		stateGen.StatesByRoot[blockRoot] = newBeaconState
 
 		p := BeaconDbStater{
 			ChainInfoFetcher: &chainMock.ChainService{
 				CurrentJustifiedCheckPoint: &qrysmpb.Checkpoint{
-					Root:  stateRoot[:],
+					Root:  blockRoot[:],
 					Epoch: 10,
 				},
 			},
 			StateGenService: stateGen,
-			ReplayerBuilder: replayer,
 		}
 
 		s, err := p.State(ctx, []byte("justified"))
@@ -137,6 +135,24 @@ func TestGetState(t *testing.T) {
 		sRoot, err := s.HashTreeRoot(ctx)
 		require.NoError(t, err)
 		assert.DeepEqual(t, stateRoot, sRoot)
+	})
+
+	t.Run("nil finalized checkpoint", func(t *testing.T) {
+		p := BeaconDbStater{
+			ChainInfoFetcher: &chainMock.ChainService{},
+			StateGenService:  mockstategen.NewMockService(),
+		}
+		_, err := p.State(ctx, []byte("finalized"))
+		require.ErrorContains(t, "received nil finalized checkpoint", err)
+	})
+
+	t.Run("nil justified checkpoint", func(t *testing.T) {
+		p := BeaconDbStater{
+			ChainInfoFetcher: &chainMock.ChainService{},
+			StateGenService:  mockstategen.NewMockService(),
+		}
+		_, err := p.State(ctx, []byte("justified"))
+		require.ErrorContains(t, "received nil justified checkpoint", err)
 	})
 
 	t.Run("hex", func(t *testing.T) {

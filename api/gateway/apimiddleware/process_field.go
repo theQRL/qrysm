@@ -18,13 +18,25 @@ import (
 // processField calls each processor function on any field that has the matching tag set.
 // It is a recursive function.
 func processField(s any, processors []fieldProcessor) error {
+	if s == nil {
+		return errors.New("cannot process fields of a nil container")
+	}
 	kind := reflect.TypeOf(s).Kind()
 	if kind != reflect.Ptr && kind != reflect.Slice && kind != reflect.Array {
 		return fmt.Errorf("processing fields of kind '%v' is unsupported", kind)
 	}
 
+	// A nil pointer (e.g. a `null` element of a struct-pointer slice in a
+	// request body) has no fields to process; recursing into it would panic.
+	if reflect.ValueOf(s).IsNil() {
+		return nil
+	}
+
 	t := reflect.TypeOf(s).Elem()
 	v := reflect.Indirect(reflect.ValueOf(s))
+	if t.Kind() != reflect.Struct {
+		return fmt.Errorf("processing fields of kind '%v' is unsupported", t.Kind())
+	}
 
 	for i := 0; i < t.NumField(); i++ {
 		switch v.Field(i).Kind() {

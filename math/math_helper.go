@@ -210,5 +210,10 @@ func PlanckToShor(v Planck) Shor {
 
 // IsValidUint256 given a bigint checks if the value is a valid Uint256
 func IsValidUint256(bi *big.Int) bool {
+	// A nil *big.Int is not a value at all (e.g. a JSON field that was never
+	// set); big.Int methods panic on a nil receiver.
+	if bi == nil {
+		return false
+	}
 	return bi.Cmp(big.NewInt(0)) >= 0 && bi.BitLen() <= 256
 }

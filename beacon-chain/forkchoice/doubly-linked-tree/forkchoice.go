@@ -3,13 +3,13 @@ package doublylinkedtree
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
 	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
 	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/features"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	consensus_blocks "github.com/theQRL/qrysm/consensus-types/blocks"
@@ -47,7 +47,8 @@ func (f *ForkChoice) NodeCount() int {
 }
 
 // Head returns the head root from fork choice store.
-// It firsts computes validator's balance changes then recalculates block tree from leaves to root.
+// It realizes pending epoch transitions, computes validator balance changes,
+// then recalculates the block tree from leaves to root.
 func (f *ForkChoice) Head(
 	ctx context.Context,
 ) ([32]byte, error) {
@@ -55,6 +56,13 @@ func (f *ForkChoice) Head(
 	defer span.End()
 
 	calledHeadCount.Inc()
+
+	// Proposal requests can run before the slot ticker. Advance checkpoints
+	// and their balances before weighting the tree or selecting its head.
+	currentSlot := slots.CurrentSlot(f.store.genesisTime)
+	if err := f.NewSlot(ctx, currentSlot); err != nil {
+		return [32]byte{}, errors.Wrap(err, "could not process new slot")
+	}
 
 	if err := f.updateBalances(); err != nil {
 		return [32]byte{}, errors.Wrap(err, "could not update balances")
@@ -70,7 +78,7 @@ func (f *ForkChoice) Head(
 
 	jc := f.JustifiedCheckpoint()
 	fc := f.FinalizedCheckpoint()
-	currentEpoch := slots.EpochsSinceGenesis(time.Unix(int64(f.store.genesisTime), 0))
+	currentEpoch := slots.ToEpoch(currentSlot)
 	if err := f.store.treeRootNode.updateBestDescendant(ctx, jc.Epoch, fc.Epoch, currentEpoch); err != nil {
 		return [32]byte{}, errors.Wrap(err, "could not update best descendant")
 	}
@@ -125,7 +133,7 @@ func (f *ForkChoice) InsertNode(ctx context.Context, state state.BeaconState, ro
 
 	jc, fc = f.store.pullTips(state, node, jc, fc)
 	if err := f.updateCheckpoints(ctx, jc, fc); err != nil {
-		_, remErr := f.store.removeNode(ctx, node)
+		_, remErr := f.store.removeNode(context.WithoutCancel(ctx), node)
 		if remErr != nil {
 			log.WithError(remErr).Error("Could not remove node")
 		}
@@ -136,21 +144,29 @@ func (f *ForkChoice) InsertNode(ctx context.Context, state state.BeaconState, ro
 
 // updateCheckpoints update the checkpoints when inserting a new node.
 func (f *ForkChoice) updateCheckpoints(ctx context.Context, jc, fc *qrysmpb.Checkpoint) error {
-	if jc.Epoch > f.store.justifiedCheckpoint.Epoch {
-		f.store.prevJustifiedCheckpoint = f.store.justifiedCheckpoint
-		jcRoot := bytesutil.ToBytes32(jc.Root)
-		f.store.justifiedCheckpoint = &forkchoicetypes.Checkpoint{Epoch: jc.Epoch, Root: jcRoot}
-		if err := f.updateJustifiedBalances(ctx, jcRoot); err != nil {
-			return errors.Wrap(err, "could not update justified balances")
+	var plan *pruningPlan
+	var finalized *forkchoicetypes.Checkpoint
+	if fc.Epoch > f.store.finalizedCheckpoint.Epoch {
+		finalized = &forkchoicetypes.Checkpoint{Epoch: fc.Epoch, Root: bytesutil.ToBytes32(fc.Root)}
+		var err error
+		plan, err = f.store.preparePrune(ctx, finalized)
+		if err != nil {
+			return err
 		}
 	}
-	// Update finalization
-	if fc.Epoch <= f.store.finalizedCheckpoint.Epoch {
-		return nil
+	if jc.Epoch > f.store.justifiedCheckpoint.Epoch {
+		jcRoot := bytesutil.ToBytes32(jc.Root)
+		if err := f.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{Epoch: jc.Epoch, Root: jcRoot}); err != nil {
+			return err
+		}
 	}
-	f.store.finalizedCheckpoint = &forkchoicetypes.Checkpoint{Epoch: fc.Epoch,
-		Root: bytesutil.ToBytes32(fc.Root)}
-	return f.store.prune(ctx)
+	// Checkpoint balance reads and pruning preparation have succeeded. Finish
+	// the checkpoint and tree changes together, without another failure point.
+	if plan != nil {
+		f.store.finalizedCheckpoint = finalized
+		f.store.applyPrune(plan)
+	}
+	return nil
 }
 
 // HasNode returns true if the node exists in fork choice store,
@@ -160,23 +176,22 @@ func (f *ForkChoice) HasNode(root [32]byte) bool {
 	return ok
 }
 
-// IsCanonical returns true if the given root is part of the canonical chain.
+// IsCanonical returns true if the given root is the selected head or one of its ancestors.
 func (f *ForkChoice) IsCanonical(root [32]byte) bool {
 	node, ok := f.store.nodeByRoot[root]
 	if !ok || node == nil {
 		return false
 	}
 
-	if node.bestDescendant == nil {
-		if f.store.headNode.bestDescendant == nil {
-			return node == f.store.headNode
+	// Best descendants are computed across the whole tree, but head selection
+	// starts at the justified checkpoint. An ancestor of that checkpoint may
+	// have a best descendant on a different branch, so follow the selected head.
+	for ancestor := f.store.headNode; ancestor != nil && ancestor.slot >= node.slot; ancestor = ancestor.parent {
+		if ancestor == node {
+			return true
 		}
-		return node == f.store.headNode.bestDescendant
 	}
-	if f.store.headNode.bestDescendant == nil {
-		return node.bestDescendant == f.store.headNode
-	}
-	return node.bestDescendant == f.store.headNode.bestDescendant
+	return false
 }
 
 // IsOptimistic returns true if the given root has been optimistically synced.
@@ -239,9 +254,12 @@ func (f *ForkChoice) IsViableForCheckpoint(cp *forkchoicetypes.Checkpoint) (bool
 	if node.slot == epochStart {
 		return true, nil
 	}
-	nodeEpoch := slots.ToEpoch(node.slot)
-	if nodeEpoch >= cp.Epoch {
-		return false, nil
+	if !features.Get().DisableLastEpochTargets {
+		// Allow any node from the checkpoint epoch - 1 to be viable.
+		nodeEpoch := slots.ToEpoch(node.slot)
+		if nodeEpoch+1 == cp.Epoch {
+			return true, nil
+		}
 	}
 	for _, child := range node.children {
 		if child.slot > epochStart {
@@ -399,11 +417,13 @@ func (f *ForkChoice) UpdateJustifiedCheckpoint(ctx context.Context, jc *forkchoi
 	if jc == nil {
 		return errInvalidNilCheckpoint
 	}
-	f.store.prevJustifiedCheckpoint = f.store.justifiedCheckpoint
-	f.store.justifiedCheckpoint = jc
-	if err := f.updateJustifiedBalances(ctx, jc.Root); err != nil {
+	// A failed balance read must leave the checkpoint unchanged so the next
+	// block or epoch transition can retry it with the matching balances.
+	if err := f.updateJustifiedBalances(ctx, jc); err != nil {
 		return errors.Wrap(err, "could not update justified balances")
 	}
+	f.store.prevJustifiedCheckpoint = f.store.justifiedCheckpoint
+	f.store.justifiedCheckpoint = jc
 	return nil
 }
 
@@ -413,6 +433,13 @@ func (f *ForkChoice) UpdateFinalizedCheckpoint(fc *forkchoicetypes.Checkpoint) e
 		return errInvalidNilCheckpoint
 	}
 	f.store.finalizedCheckpoint = fc
+	// Cache the finalized payload hash now, before the node it resolves from
+	// is removed by prune at finalization. Reading it later from nodeByRoot
+	// can return [32]byte{} and silently suppress finality signalling to the
+	// execution layer.
+	if node, ok := f.store.nodeByRoot[fc.Root]; ok && node != nil {
+		f.store.finalizedPayloadBlockHash = node.payloadHash
+	}
 	return nil
 }
 
@@ -466,18 +493,88 @@ func (f *ForkChoice) CommonAncestor(ctx context.Context, r1 [32]byte, r2 [32]byt
 // each consecutive entry must be a child of the previous one.
 // The parent of the first block in this list must already be present in forkchoice.
 func (f *ForkChoice) InsertChain(ctx context.Context, chain []*forkchoicetypes.BlockAndCheckpoints) error {
-	if len(chain) == 0 {
-		return nil
-	}
+	// Backfilled ancestors can carry checkpoints whose roots occur later in
+	// the chain. Keep that portion staged until all required roots are known.
+	// On failure, preserve completed prefixes and roll back the staged suffix.
+	var pending *Node
+	defer func() {
+		if pending != nil {
+			if _, err := f.store.removeNode(context.WithoutCancel(ctx), pending); err != nil {
+				log.WithError(err).Error("Could not remove failed batch nodes")
+			}
+		}
+	}()
+	var jc, fc, ujc, ufc *qrysmpb.Checkpoint
+	var checkpointErr error
+	currentEpoch := slots.ToEpoch(slots.CurrentSlot(f.store.genesisTime))
 	for _, bcp := range chain {
-		if _, err := f.store.insert(ctx,
+		if bcp.JustifiedCheckpoint == nil || bcp.FinalizedCheckpoint == nil {
+			return errInvalidNilCheckpoint
+		}
+		blockJC, blockFC := bcp.JustifiedCheckpoint, bcp.FinalizedCheckpoint
+		uj, uf := bcp.UnrealizedJustifiedCheckpoint, bcp.UnrealizedFinalizedCheckpoint
+		if uj == nil {
+			uj = blockJC
+		}
+		if uf == nil {
+			uf = blockFC
+		}
+		// Match pullTips: older blocks use their pulled-up voting source now,
+		// while current-epoch observations are promoted at the next epoch tick.
+		if slots.ToEpoch(bcp.Block.Block().Slot()) < currentEpoch {
+			blockJC, blockFC = uj, uf
+		}
+		alreadyKnown := f.HasNode(bcp.Block.Root())
+		node, err := f.store.insert(ctx,
 			bcp.Block,
-			bcp.JustifiedCheckpoint.Epoch, bcp.FinalizedCheckpoint.Epoch); err != nil {
+			blockJC.Epoch, blockFC.Epoch)
+		if err != nil {
 			return err
 		}
-		if err := f.updateCheckpoints(ctx, bcp.JustifiedCheckpoint, bcp.FinalizedCheckpoint); err != nil {
+		if !alreadyKnown {
+			if pending == nil {
+				pending = node
+			}
+			node.unrealizedJustifiedEpoch, node.unrealizedFinalizedEpoch = uj.Epoch, uf.Epoch
+			node.unrealizedJustifiedRoot = bytesutil.ToBytes32(uj.Root)
+			node.unrealizedFinalizedRoot = bytesutil.ToBytes32(uf.Root)
+		}
+		if jc == nil || blockJC.Epoch > jc.Epoch {
+			jc = blockJC
+		}
+		if fc == nil || blockFC.Epoch > fc.Epoch {
+			fc = blockFC
+		}
+		if ujc == nil || uj.Epoch > ujc.Epoch {
+			ujc = uj
+		}
+		if ufc == nil || uf.Epoch > ufc.Epoch {
+			ufc = uf
+		}
+		checkpointErr = f.checkpointRootsKnown(jc, fc)
+		if checkpointErr == nil {
+			checkpointErr = f.checkpointRootsKnown(ujc, ufc)
+		}
+		if checkpointErr != nil {
+			continue
+		}
+		if err := f.updateCheckpoints(ctx, jc, fc); err != nil {
 			return err
 		}
+		f.store.advanceUnrealizedCheckpoints(ujc, ufc)
+		pending, jc, fc, ujc, ufc = nil, nil, nil, nil, nil
+	}
+	return checkpointErr
+}
+
+// checkpointRootsKnown checks roots required for advancing the checkpoints.
+// Older checkpoints may already have been pruned from the store.
+func (f *ForkChoice) checkpointRootsKnown(jc, fc *qrysmpb.Checkpoint) error {
+	if root := bytesutil.ToBytes32(jc.Root); jc.Epoch > f.store.justifiedCheckpoint.Epoch && !f.HasNode(root) {
+		return errors.WithMessage(errUnknownJustifiedRoot, fmt.Sprintf("%#x", root))
+	}
+	if root := bytesutil.ToBytes32(fc.Root); fc.Epoch > f.store.finalizedCheckpoint.Epoch && !f.HasNode(root) {
+		return errors.WithMessage(errUnknownFinalizedRoot, fmt.Sprintf("%#x", root))
 	}
 	return nil
 }
@@ -501,15 +598,12 @@ func (f *ForkChoice) CachedHeadRoot() [32]byte {
 	return f.store.headNode.root
 }
 
-// FinalizedPayloadBlockHash returns the hash of the payload at the finalized checkpoint
+// FinalizedPayloadBlockHash returns the hash of the payload at the finalized checkpoint.
+// Reads from the Store cache because the node that resolves the root is pruned
+// at finalization, so resolving via nodeByRoot at call time can race the prune
+// and return zero (suppressing finality signalling to the execution layer).
 func (f *ForkChoice) FinalizedPayloadBlockHash() [32]byte {
-	root := f.FinalizedCheckpoint().Root
-	node, ok := f.store.nodeByRoot[root]
-	if !ok || node == nil {
-		// This should not happen
-		return [32]byte{}
-	}
-	return node.payloadHash
+	return f.store.finalizedPayloadBlockHash
 }
 
 // JustifiedPayloadBlockHash returns the hash of the payload at the justified checkpoint
@@ -591,22 +685,27 @@ func (f *ForkChoice) Weight(root [32]byte) (uint64, error) {
 	return n.weight, nil
 }
 
-// updateJustifiedBalances updates the validators balances on the justified checkpoint pointed by root.
-func (f *ForkChoice) updateJustifiedBalances(ctx context.Context, root [32]byte) error {
-	balances, err := f.balancesByRoot(ctx, root)
+// updateJustifiedBalances updates the validator balances and the committee
+// weight from the state of the given justified checkpoint.
+func (f *ForkChoice) updateJustifiedBalances(ctx context.Context, jc *forkchoicetypes.Checkpoint) error {
+	jb, err := f.balancesByRoot(ctx, jc)
 	if err != nil {
 		return errors.Wrap(err, "could not get justified balances")
 	}
-	f.justifiedBalances = balances
-	f.store.committeeWeight = 0
+	if jb == nil {
+		return errors.New("nil justified balances")
+	}
+	f.justifiedBalances = jb.Balances
 	f.numActiveValidators = 0
-	for _, val := range balances {
+	for _, val := range jb.Balances {
 		if val > 0 {
-			f.store.committeeWeight += val
 			f.numActiveValidators++
 		}
 	}
-	f.store.committeeWeight /= uint64(params.BeaconConfig().SlotsPerEpoch)
+	// Proposer boost and the late-block reorg thresholds are fractions of the
+	// total active balance, which keeps counting slashed validators until they
+	// exit. Only vote weights exclude them.
+	f.store.committeeWeight = jb.TotalActiveBalance / uint64(params.BeaconConfig().SlotsPerEpoch)
 	return nil
 }
 
@@ -617,4 +716,32 @@ func (f *ForkChoice) Slot(root [32]byte) (primitives.Slot, error) {
 		return 0, ErrNilNode
 	}
 	return n.slot, nil
+}
+
+// TargetRootForEpoch returns the target root for the given epoch on the chain
+// containing the passed root. If the requested epoch is greater than the
+// node's own epoch, the node's own root is returned (the node has not yet
+// produced a target for that future epoch). Otherwise the most recent
+// ancestor whose slot is at or before the start of the requested epoch is
+// returned, which is the canonical target root for that epoch on this chain.
+func (f *ForkChoice) TargetRootForEpoch(root [32]byte, epoch primitives.Epoch) ([32]byte, error) {
+	n, ok := f.store.nodeByRoot[root]
+	if !ok || n == nil {
+		return [32]byte{}, ErrNilNode
+	}
+	if epoch > slots.ToEpoch(n.slot) {
+		return n.root, nil
+	}
+	epochStart, err := slots.EpochStart(epoch)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	cur := n
+	for cur != nil && cur.slot > epochStart {
+		cur = cur.parent
+	}
+	if cur == nil {
+		return [32]byte{}, ErrNilNode
+	}
+	return cur.root, nil
 }

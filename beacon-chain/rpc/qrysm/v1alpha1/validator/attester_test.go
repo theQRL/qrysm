@@ -2,25 +2,31 @@ package validator
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/theQRL/go-bitfield"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	dbutil "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
 	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
+	"github.com/theQRL/qrysm/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
 	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
-	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
@@ -32,46 +38,53 @@ import (
 )
 
 func TestProposeAttestation_OK(t *testing.T) {
+	st, privKeys := util.DeterministicGenesisStateZond(t, 64)
+	atts, err := util.GenerateAttestations(st, privKeys, 1, st.Slot(), false)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(atts))
+
+	chain := &mock.ChainService{State: st}
 	attesterServer := &Server{
-		HeadFetcher:       &mock.ChainService{},
-		P2P:               &mockp2p.MockBroadcaster{},
-		AttPool:           attestations.NewPool(),
-		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
+		HeadFetcher:         chain,
+		AttestationReceiver: chain,
+		P2P:                 &mockp2p.MockBroadcaster{},
+		AttPool:             attestations.NewPool(),
+		OperationNotifier:   chain.OperationNotifier(),
+		SyncChecker:         &mockSync.Sync{IsSyncing: false},
 	}
-	head := util.NewBeaconBlockZond()
-	head.Block.Slot = 999
-	head.Block.ParentRoot = bytesutil.PadTo([]byte{'a'}, 32)
-	root, err := head.Block.HashTreeRoot()
-	require.NoError(t, err)
+	_, err = attesterServer.ProposeAttestation(context.Background(), atts[0])
+	assert.NoError(t, err)
+}
 
-	validators := make([]*qrysmpb.Validator, 64)
-	for i := range validators {
-		validators[i] = &qrysmpb.Validator{
-			PublicKey:             make([]byte, 48),
-			WithdrawalCredentials: make([]byte, 32),
-			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
-			EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
-		}
-	}
-
-	state, err := util.NewBeaconStateZond()
+// TestProposeAttestation_SignatureDoesNotVerify is a regression test for
+// attestations submitted through the API entering the pool with only a
+// signature format check (upstream #16879): a well-formed signature that does
+// not sign the attestation data must be rejected before broadcast.
+func TestProposeAttestation_SignatureDoesNotVerify(t *testing.T) {
+	st, privKeys := util.DeterministicGenesisStateZond(t, 64)
+	atts, err := util.GenerateAttestations(st, privKeys, 1, st.Slot(), false)
 	require.NoError(t, err)
-	require.NoError(t, state.SetSlot(params.BeaconConfig().SlotsPerEpoch+1))
-	require.NoError(t, state.SetValidators(validators))
+	require.Equal(t, 1, len(atts))
 
 	sk, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := sk.Sign([]byte("dummy_test_data"))
-	req := &qrysmpb.Attestation{
-		Signatures: [][]byte{sig.Marshal()},
-		Data: &qrysmpb.AttestationData{
-			BeaconBlockRoot: root[:],
-			Source:          &qrysmpb.Checkpoint{Root: make([]byte, 32)},
-			Target:          &qrysmpb.Checkpoint{Root: make([]byte, 32)},
-		},
+	sig, err := sk.Sign([]byte("dummy_test_data"))
+	require.NoError(t, err)
+	atts[0].Signatures[0] = sig.Marshal()
+
+	chain := &mock.ChainService{State: st}
+	broadcaster := &mockp2p.MockBroadcaster{}
+	attesterServer := &Server{
+		HeadFetcher:         chain,
+		AttestationReceiver: chain,
+		P2P:                 broadcaster,
+		AttPool:             attestations.NewPool(),
+		OperationNotifier:   chain.OperationNotifier(),
+		SyncChecker:         &mockSync.Sync{IsSyncing: false},
 	}
-	_, err = attesterServer.ProposeAttestation(context.Background(), req)
-	assert.NoError(t, err)
+	_, err = attesterServer.ProposeAttestation(context.Background(), atts[0])
+	assert.ErrorContains(t, "Incorrect attestation signature", err)
+	assert.Equal(t, false, broadcaster.BroadcastCalled)
 }
 
 func TestProposeAttestation_IncorrectSignature(t *testing.T) {
@@ -80,12 +93,148 @@ func TestProposeAttestation_IncorrectSignature(t *testing.T) {
 		P2P:               &mockp2p.MockBroadcaster{},
 		AttPool:           attestations.NewPool(),
 		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
+		SyncChecker:       &mockSync.Sync{IsSyncing: false},
 	}
 
 	req := util.HydrateAttestation(&qrysmpb.Attestation{Signatures: [][]byte{make([]byte, 999)}})
 	wanted := "Incorrect attestation signature"
 	_, err := attesterServer.ProposeAttestation(context.Background(), req)
 	assert.ErrorContains(t, wanted, err)
+}
+
+func TestProposeAttestation_Syncing(t *testing.T) {
+	attesterServer := &Server{
+		SyncChecker: &mockSync.Sync{IsSyncing: true},
+	}
+
+	req := util.HydrateAttestation(&qrysmpb.Attestation{})
+	_, err := attesterServer.ProposeAttestation(context.Background(), req)
+	assert.ErrorContains(t, "Syncing to latest head", err)
+	s, ok := status.FromError(err)
+	require.Equal(t, true, ok)
+	assert.Equal(t, codes.Unavailable, s.Code())
+}
+
+type attestationStateFetchCounter struct {
+	*mock.ChainService
+	stateFetches int
+}
+
+func (c *attestationStateFetchCounter) AttestationTargetState(ctx context.Context, target *qrysmpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
+	c.stateFetches++
+	return c.ChainService.AttestationTargetState(ctx, target)
+}
+
+func TestProposeAttestation_InvalidData(t *testing.T) {
+	ctx := context.Background()
+	st, keys := util.DeterministicGenesisStateZond(t, 64)
+	committee, err := helpers.BeaconCommitteeFromState(ctx, st, st.Slot(), 0)
+	require.NoError(t, err)
+	root := make([]byte, 32)
+	root[0] = 'A'
+	otherRoot := make([]byte, 32)
+	otherRoot[0] = 'B'
+
+	for _, tt := range []struct {
+		name        string
+		targetEpoch primitives.Epoch
+		targetRoot  []byte
+		wantError   string
+	}{
+		{name: "slot target epoch mismatch", targetEpoch: 1, targetRoot: root, wantError: "does not match target epoch"},
+		{name: "inconsistent votes", targetRoot: otherRoot, wantError: "Inconsistent attestation"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			bits := bitfield.NewBitlist(uint64(len(committee)))
+			bits.SetBitAt(0, true)
+			att := &qrysmpb.Attestation{
+				AggregationBits: bits,
+				Data: &qrysmpb.AttestationData{
+					Slot: st.Slot(), BeaconBlockRoot: root,
+					Source: &qrysmpb.Checkpoint{Root: make([]byte, 32)},
+					Target: &qrysmpb.Checkpoint{Epoch: tt.targetEpoch, Root: tt.targetRoot},
+				},
+			}
+			sig, err := signing.ComputeDomainAndSign(st, tt.targetEpoch, att.Data, params.BeaconConfig().DomainBeaconAttester, keys[committee[0]])
+			require.NoError(t, err)
+			att.Signatures = [][]byte{sig}
+			// Reject the invalid data even though its signature verifies.
+			require.NoError(t, blocks.VerifyAttestationSignatures(ctx, st, att))
+			chain := &attestationStateFetchCounter{ChainService: &mock.ChainService{State: st}}
+			broadcaster := &mockp2p.MockBroadcaster{}
+			pool := attestations.NewPool()
+			server := &Server{
+				HeadFetcher: chain, AttestationReceiver: chain,
+				P2P: broadcaster, AttPool: pool,
+				OperationNotifier: chain.OperationNotifier(),
+				SyncChecker:       &mockSync.Sync{IsSyncing: false},
+			}
+			resp, err := server.ProposeAttestation(ctx, att)
+			require.Equal(t, codes.InvalidArgument, status.Code(err))
+			assert.ErrorContains(t, tt.wantError, err)
+			assert.Equal(t, true, resp == nil)
+			assert.Equal(t, 0, chain.stateFetches)
+			assert.Equal(t, false, broadcaster.BroadcastCalled)
+			assert.Equal(t, 0, pool.UnaggregatedAttestationCount())
+			assert.Equal(t, 0, pool.AggregatedAttestationCount())
+		})
+	}
+}
+
+func TestProposeAttestation_MalformedInput(t *testing.T) {
+	newAttestation := func() *qrysmpb.Attestation {
+		return &qrysmpb.Attestation{
+			AggregationBits: []byte{1},
+			Data: &qrysmpb.AttestationData{
+				BeaconBlockRoot: make([]byte, 32),
+				Source:          &qrysmpb.Checkpoint{Root: make([]byte, 32)},
+				Target:          &qrysmpb.Checkpoint{Root: make([]byte, 32)},
+			},
+		}
+	}
+	checkRejected := func(t *testing.T, att *qrysmpb.Attestation) {
+		t.Helper()
+		// Leave the fetcher and pool unset: malformed input must not reach them.
+		server := &Server{SyncChecker: &mockSync.Sync{IsSyncing: false}}
+		resp, err := server.ProposeAttestation(context.Background(), att)
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		require.Equal(t, true, resp == nil)
+	}
+	for _, field := range []string{"attestation", "data", "source", "target", "aggregation bits"} {
+		t.Run("nil "+field, func(t *testing.T) {
+			att := newAttestation()
+			switch field {
+			case "attestation":
+				att = nil
+			case "data":
+				att.Data = nil
+			case "source":
+				att.Data.Source = nil
+			case "target":
+				att.Data.Target = nil
+			case "aggregation bits":
+				att.AggregationBits = nil
+			}
+			checkRejected(t, att)
+		})
+	}
+	for _, field := range []string{"block root", "source root", "target root"} {
+		for _, length := range []int{0, 3, 31, 33} {
+			t.Run(fmt.Sprintf("%s/%d bytes", field, length), func(t *testing.T) {
+				att := newAttestation()
+				root := make([]byte, length)
+				switch field {
+				case "block root":
+					att.Data.BeaconBlockRoot = root
+				case "source root":
+					att.Data.Source.Root = root
+				case "target root":
+					att.Data.Target.Root = root
+				}
+				checkRejected(t, att)
+			})
+		}
+	}
 }
 
 func TestGetAttestationData_OK(t *testing.T) {
@@ -172,8 +321,10 @@ func TestGetAttestationData_Optimistic(t *testing.T) {
 		SyncChecker: &mockSync.Sync{},
 		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
 		CoreService: &core.Service{
-			GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now()},
-			HeadFetcher:        &mock.ChainService{},
+			GenesisTimeFetcher:    &mock.ChainService{Genesis: time.Now()},
+			HeadFetcher:           &mock.ChainService{},
+			AttestationCache:      cache.NewAttestationCache(),
+			OptimisticModeFetcher: &mock.ChainService{Optimistic: true},
 		},
 		OptimisticModeFetcher: &mock.ChainService{Optimistic: true},
 	}
@@ -190,9 +341,10 @@ func TestGetAttestationData_Optimistic(t *testing.T) {
 		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
 		CoreService: &core.Service{
-			GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now()},
-			HeadFetcher:        &mock.ChainService{Optimistic: false, State: beaconState},
-			AttestationCache:   cache.NewAttestationCache(),
+			GenesisTimeFetcher:    &mock.ChainService{Genesis: time.Now()},
+			HeadFetcher:           &mock.ChainService{Optimistic: false, State: beaconState},
+			AttestationCache:      cache.NewAttestationCache(),
+			OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 		},
 	}
 	_, err = as.GetAttestationData(context.Background(), &qrysmpb.AttestationDataRequest{})
@@ -274,6 +426,15 @@ func TestServer_GetAttestationData_HeadStateSlotGreaterThanRequestSlot(t *testin
 	// than the head state's slot. The Ethereum consensus spec constraints require the block root the
 	// attestation is referencing be less than or equal to the attestation data slot.
 	// See: https://github.com/prysmaticlabs/prysm/issues/5164
+	params.SetupTestConfigCleanup(t)
+	// This test persists a state. Match its vectors to the compiled SSZ
+	// layout even when TestMain selects minimal runtime parameters.
+	cfg := params.BeaconConfig().Copy()
+	cfg.SlotsPerHistoricalRoot = fieldparams.BlockRootsLength
+	cfg.EpochsPerHistoricalVector = fieldparams.RandaoMixesLength
+	cfg.EpochsPerSlashingsVector = fieldparams.SlashingsLength
+	cfg.SyncCommitteeSize = fieldparams.SyncCommitteeLength
+	params.OverrideBeaconConfig(cfg)
 	ctx := context.Background()
 	db := dbutil.SetupDB(t)
 

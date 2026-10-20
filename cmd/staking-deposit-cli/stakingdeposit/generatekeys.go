@@ -14,6 +14,7 @@ import (
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	"github.com/theQRL/qrysm/crypto/randao"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
@@ -92,7 +93,7 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 	}
 	pubKey := misc.DecodeHex(depositData.PubKey)
 
-	withdrawalCredentials := misc.DecodeHex(depositData.WithdrawalCredentials)
+	withdrawalRecipient := misc.DecodeHex(depositData.WithdrawalRecipient)
 
 	signature := misc.DecodeHex(depositData.Signature)
 
@@ -103,38 +104,42 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 		return false
 	}
 
-	if len(withdrawalCredentials) != 32 {
-		panic(fmt.Errorf("failed to derive ML-DSA-87 depositKey from signingSeed | reason %v", err))
+	if len(withdrawalRecipient) != field_params.WithdrawalRecipientLength {
+		panic(fmt.Errorf("invalid withdrawal recipient length %d, want %d",
+			len(withdrawalRecipient), field_params.WithdrawalRecipientLength))
 	}
 
-	zeroBytes11 := make([]uint8, 11)
-	if reflect.DeepEqual(withdrawalCredentials[0], params.BeaconConfig().ExecutionAddressWithdrawalPrefixByte) {
-		if !reflect.DeepEqual(withdrawalCredentials[1:12], zeroBytes11) {
-			panic("withdrawal credentials zero bytes not found for index 1:12")
-		}
-		if err != nil {
-			panic(fmt.Errorf("failed to read withdrawal address | reason %v", err))
-		}
-		if !reflect.DeepEqual(withdrawalCredentials[12:], credential.withdrawalAddress.Bytes()) {
-			panic(fmt.Errorf("withdrawalCredentials[12:] %x mismatch with credential.QRLWithdrawalAddress %x",
-				withdrawalCredentials[12:], credential.withdrawalAddress.Bytes()))
-		}
-	} else {
-		panic(fmt.Errorf("invalid prefixbyte withdrawalCredentials[0] %x", withdrawalCredentials[0]))
+	if !reflect.DeepEqual(withdrawalRecipient, credential.withdrawalAddress.Bytes()) {
+		panic(fmt.Errorf("withdrawalRecipient %x mismatch with credential.QRLWithdrawalAddress %x",
+			withdrawalRecipient, credential.withdrawalAddress.Bytes()))
 	}
 
 	if len(signature) != field_params.MLDSA87SignatureLength {
 		panic(fmt.Errorf("invalid dilitihium signature length %d", len(signature)))
 	}
 
-	if depositData.Amount > params.BeaconConfig().MaxEffectiveBalance {
+	// The deposit contract reverts below MIN_DEPOSIT_AMOUNT, so refuse here and
+	// say why instead of letting the user send a transaction that fails.
+	if depositData.Amount < params.BeaconConfig().MinDepositAmount || depositData.Amount > params.BeaconConfig().MaxEffectiveBalance {
+		fmt.Printf("deposit amount %d shor for pubkey %s is outside the allowed range [%d, %d] shor\n",
+			depositData.Amount, depositData.PubKey, params.BeaconConfig().MinDepositAmount, params.BeaconConfig().MaxEffectiveBalance)
+		return false
+	}
+
+	randaoCommitment := misc.DecodeHex(depositData.RandaoCommitment)
+	if len(randaoCommitment) != field_params.RandaoCommitmentLength {
+		panic(fmt.Errorf("invalid randao commitment length %d, want %d",
+			len(randaoCommitment), field_params.RandaoCommitmentLength))
+	}
+	if expected := randao.Commitment(signingSeed[:], randao.DefaultLayers); !reflect.DeepEqual(randaoCommitment, expected[:]) {
 		return false
 	}
 
 	depositMessage := &qrysmpb.DepositMessage{
-		PublicKey:             depositKey.PublicKey().Marshal(),
-		WithdrawalCredentials: withdrawalCredentials,
-		Amount:                depositData.Amount,
+		PublicKey:           depositKey.PublicKey().Marshal(),
+		WithdrawalRecipient: withdrawalRecipient,
+		Amount:              depositData.Amount,
+		RandaoCommitment:    randaoCommitment,
 	}
 	root, err := depositMessage.HashTreeRoot()
 	if err != nil {

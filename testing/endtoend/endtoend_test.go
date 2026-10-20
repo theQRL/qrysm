@@ -43,8 +43,8 @@ const (
 	// stalled (safety measure for nodes stuck at startup, shouldn't normally happen).
 	allNodesStartTimeout = 5 * time.Minute
 
-	// errGeneralCode is used to represent the string value for all general process errors.
-	errGeneralCode = "exit status 1"
+	// errSignalKilled is returned by exec.CommandContext when an E2E process is stopped by context cancellation.
+	errSignalKilled = "signal: killed"
 )
 
 func init() {
@@ -209,7 +209,12 @@ func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 				// for further deposit testing.
 				err := r.depositor.SendAndMine(ctx, minGenesisActiveCount, int(e2e.DepositCount), e2etypes.PostGenesisDepositBatch, false)
 				if err != nil {
-					r.t.Fatal(err)
+					// Guard against the depositor goroutine outliving test
+					// cleanup — calling t.Fatal on a finished *testing.T
+					// panics the runtime. (upstream PR #15703)
+					if ctx.Err() == nil {
+						r.t.Fatal(err)
+					}
 				}
 			}
 			r.testTxGeneration(ctx, g, keystorePath, []e2etypes.ComponentRunner{})
@@ -237,29 +242,34 @@ func (r *testRunner) waitForMatchingHead(ctx context.Context, timeout time.Durat
 	defer cancel()
 	checkClient := qrysmpb.NewBeaconChainClient(check)
 	refClient := qrysmpb.NewBeaconChainClient(ref)
+	var lastCheckSlot, lastRefSlot primitives.Slot
 	for {
 		select {
 		case <-dctx.Done():
 			// deadline ensures that the test eventually exits when beacon node fails to sync in a reasonable timeframe
 			elapsed := time.Since(start)
-			return fmt.Errorf("deadline exceeded after %s waiting for known good block to appear in checkpoint-synced node", elapsed)
+			return fmt.Errorf("deadline exceeded after %s waiting for synced node head to match reference head, last check slot %d, last reference slot %d", elapsed, lastCheckSlot, lastRefSlot)
 		default:
-			cResp, err := checkClient.GetChainHead(ctx, &emptypb.Empty{})
+			cResp, err := checkClient.GetChainHead(dctx, &emptypb.Empty{})
 			if err != nil {
 				errStatus, ok := status.FromError(err)
 				// in the happy path we expect NotFound results until the node has synced
 				if ok && errStatus.Code() == codes.NotFound {
+					time.Sleep(time.Second)
 					continue
 				}
-				return fmt.Errorf("error requesting head from 'check' beacon node")
+				return fmt.Errorf("error requesting head from 'check' beacon node: %w", err)
 			}
-			rResp, err := refClient.GetChainHead(ctx, &emptypb.Empty{})
+			rResp, err := refClient.GetChainHead(dctx, &emptypb.Empty{})
 			if err != nil {
 				return errors.Wrap(err, "unexpected error requesting head block root from 'ref' beacon node")
 			}
+			lastCheckSlot = cResp.HeadSlot
+			lastRefSlot = rResp.HeadSlot
 			if bytesutil.ToBytes32(cResp.HeadBlockRoot) == bytesutil.ToBytes32(rResp.HeadBlockRoot) {
 				return nil
 			}
+			time.Sleep(time.Second)
 		}
 	}
 }
@@ -375,15 +385,10 @@ func (r *testRunner) testBeaconChainSync(ctx context.Context, g *errgroup.Group,
 	require.NoError(t, err)
 	defer helpers.LogErrorOutput(t, syncLogFile, "beacon chain node", index)
 	syncPassed := t.Run("sync completed", func(t *testing.T) {
-		assert.NoError(t, helpers.WaitForTextInFile(syncLogFile, "Synced up to"), "Failed to sync")
+		assert.NoError(t, r.waitForMatchingHead(ctx, 5*time.Minute, syncConn, conns[0]), "sync node failed to match head")
 	})
 	if !syncPassed {
 		return errors.New("cannot sync beacon node")
-	}
-
-	// Wait for the sync node to match the head of a reference node.
-	if err := r.waitForMatchingHead(ctx, 3*time.Minute, syncConn, conns[0]); err != nil {
-		return errors.Wrap(err, "sync node failed to match head")
 	}
 	syncEvaluators := []e2etypes.Evaluator{ev.FinishedSyncing, ev.AllNodesHaveSameHead}
 	for _, evaluator := range syncEvaluators {
@@ -399,7 +404,9 @@ func (r *testRunner) testDoppelGangerProtection(ctx context.Context) error {
 	if r.config.UseQrysmShValidator {
 		return nil
 	}
-	g, ctx := errgroup.WithContext(ctx)
+	validatorCtx, cancelValidator := context.WithCancel(ctx)
+	defer cancelValidator()
+	g, validatorCtx := errgroup.WithContext(validatorCtx)
 	// Follow same parameters as older validators.
 	validatorNum := int(params.BeaconConfig().MinGenesisActiveValidatorCount)
 	beaconNodeNum := e2e.TestParams.BeaconNodeCount
@@ -412,7 +419,7 @@ func (r *testRunner) testDoppelGangerProtection(ctx context.Context) error {
 	// Replicate starting up validator client 0 to test doppleganger protection.
 	valNode := components.NewValidatorNode(r.config, validatorsPerNode, valIndex, 0)
 	g.Go(func() error {
-		return valNode.Start(ctx)
+		return valNode.Start(validatorCtx)
 	})
 	if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{valNode}); err != nil {
 		return fmt.Errorf("validator not ready: %w", err)
@@ -427,9 +434,10 @@ func (r *testRunner) testDoppelGangerProtection(ctx context.Context) error {
 	if !passed {
 		return errors.New("doppelganger was unable to be found")
 	}
-	// Expect an abrupt exit for the validator client.
-	if err := g.Wait(); err == nil || !strings.Contains(err.Error(), errGeneralCode) {
-		return fmt.Errorf("wanted an error of %s but received %v", errGeneralCode, err)
+
+	cancelValidator()
+	if err := g.Wait(); err != nil && !strings.Contains(err.Error(), errSignalKilled) {
+		return fmt.Errorf("validator did not stop cleanly after doppelganger check: %w", err)
 	}
 	return nil
 }
@@ -457,7 +465,9 @@ func (r *testRunner) defaultEndToEndRun() error {
 		defer func() {
 			log.Info("Writing output pprof files")
 			for i := 0; i < e2e.TestParams.BeaconNodeCount; i++ {
-				assert.NoError(t, helpers.WritePprofFiles(e2e.TestParams.LogPath, i))
+				if err := helpers.WritePprofFiles(e2e.TestParams.LogPath, i); err != nil {
+					log.WithError(err).Warnf("Could not write pprof files for beacon node %d", i)
+				}
 			}
 		}()
 	}
@@ -562,7 +572,9 @@ func (r *testRunner) scenarioRun() error {
 		defer func() {
 			log.Info("Writing output pprof files")
 			for i := 0; i < e2e.TestParams.BeaconNodeCount; i++ {
-				assert.NoError(t, helpers.WritePprofFiles(e2e.TestParams.LogPath, i))
+				if err := helpers.WritePprofFiles(e2e.TestParams.LogPath, i); err != nil {
+					log.WithError(err).Warnf("Could not write pprof files for beacon node %d", i)
+				}
 			}
 		}()
 	}

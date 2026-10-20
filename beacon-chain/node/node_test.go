@@ -14,13 +14,15 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/blockchain"
 	"github.com/theQRL/qrysm/beacon-chain/builder"
 	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
 	"github.com/theQRL/qrysm/beacon-chain/execution"
 	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
 	"github.com/theQRL/qrysm/beacon-chain/monitor"
 	"github.com/theQRL/qrysm/cmd"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/config/features"
-	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
@@ -44,14 +46,14 @@ func TestNodeClose_OK(t *testing.T) {
 	set.String("datadir", tmp, "node data directory")
 	set.String("p2p-encoding", "ssz", "p2p encoding scheme")
 	set.Bool("demo-config", true, "demo configuration")
-	set.String("deposit-contract", "Q0000000000000000000000000000000000000000", "deposit contract address")
-	set.String("suggested-fee-recipient", "Q6e35733c5af9B61374A128e6F85f553aF09ff89A", "fee recipient")
-	require.NoError(t, set.Set("suggested-fee-recipient", "Q6e35733c5af9B61374A128e6F85f553aF09ff89A"))
+	set.String("deposit-contract", "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "deposit contract address")
+	set.String("suggested-fee-recipient", "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A", "fee recipient")
+	require.NoError(t, set.Set("suggested-fee-recipient", "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A"))
 	cmd.ValidatorMonitorIndicesFlag.Value = &cli.IntSlice{}
 	cmd.ValidatorMonitorIndicesFlag.Value.SetInt(1)
 	ctx := cli.NewContext(&app, set, nil)
 
-	node, err := New(ctx)
+	node, err := New(ctx, nil)
 	require.NoError(t, err)
 
 	node.Close()
@@ -65,11 +67,11 @@ func TestNodeStart_Ok(t *testing.T) {
 	tmp := fmt.Sprintf("%s/datadirtest2", t.TempDir())
 	set := flag.NewFlagSet("test", 0)
 	set.String("datadir", tmp, "node data directory")
-	set.String("suggested-fee-recipient", "Q6e35733c5af9B61374A128e6F85f553aF09ff89A", "fee recipient")
-	require.NoError(t, set.Set("suggested-fee-recipient", "Q6e35733c5af9B61374A128e6F85f553aF09ff89A"))
+	set.String("suggested-fee-recipient", "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A", "fee recipient")
+	require.NoError(t, set.Set("suggested-fee-recipient", "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A"))
 
 	ctx := cli.NewContext(&app, set, nil)
-	node, err := New(ctx, WithBlockchainFlagOptions([]blockchain.Option{}),
+	node, err := New(ctx, nil, WithBlockchainFlagOptions([]blockchain.Option{}),
 		WithBuilderFlagOptions([]builder.Option{}),
 		WithExecutionChainOptions([]execution.Option{}))
 	require.NoError(t, err)
@@ -91,11 +93,11 @@ func TestNodeStart_Ok_registerDeterministicGenesisService(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	set.String("datadir", tmp, "node data directory")
 	set.Uint64(flags.InteropNumValidatorsFlag.Name, numValidators, "")
-	set.String("suggested-fee-recipient", "Q6e35733c5af9B61374A128e6F85f553aF09ff89A", "fee recipient")
-	require.NoError(t, set.Set("suggested-fee-recipient", "Q6e35733c5af9B61374A128e6F85f553aF09ff89A"))
+	set.String("suggested-fee-recipient", "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A", "fee recipient")
+	require.NoError(t, set.Set("suggested-fee-recipient", "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A"))
 	ee := &enginev1.ExecutionPayloadZond{
 		ParentHash:    make([]byte, 32),
-		FeeRecipient:  make([]byte, 20),
+		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:     make([]byte, 32),
 		ReceiptsRoot:  make([]byte, 32),
 		LogsBloom:     make([]byte, 256),
@@ -106,19 +108,20 @@ func TestNodeStart_Ok_registerDeterministicGenesisService(t *testing.T) {
 	genesisState, _, err := interop.GenerateGenesisStateZond(context.Background(), 0, numValidators, ee, &qrysmpb.ExecutionData{BlockHash: make([]byte, 32)})
 	require.NoError(t, err, "Could not generate genesis beacon state")
 	for i := uint64(1); i < 2; i++ {
-		var someRoot [32]byte
-		var someKey [field_params.MLDSA87PubkeyLength]byte
-		copy(someRoot[:], strconv.Itoa(int(i)))
+		var withdrawalRecipient [fieldparams.WithdrawalRecipientLength]byte
+		var someKey [fieldparams.MLDSA87PubkeyLength]byte
+		copy(withdrawalRecipient[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		genesisState.Validators = append(genesisState.Validators, &qrysmpb.Validator{
 			PublicKey:                  someKey[:],
-			WithdrawalCredentials:      someRoot[:],
+			WithdrawalRecipient:        withdrawalRecipient[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
 			Slashed:                    false,
 			ActivationEligibilityEpoch: 1,
 			ActivationEpoch:            1,
 			ExitEpoch:                  1,
 			WithdrawableEpoch:          1,
+			RandaoCommitment:           make([]byte, 32),
 		})
 		genesisState.Balances = append(genesisState.Balances, params.BeaconConfig().MaxEffectiveBalance)
 	}
@@ -127,7 +130,7 @@ func TestNodeStart_Ok_registerDeterministicGenesisService(t *testing.T) {
 	require.NoError(t, os.WriteFile("genesis_ssz.json", genesisBytes, 0666))
 	set.String("genesis-state", "genesis_ssz.json", "")
 	ctx := cli.NewContext(&app, set, nil)
-	node, err := New(ctx, WithBlockchainFlagOptions([]blockchain.Option{}),
+	node, err := New(ctx, nil, WithBlockchainFlagOptions([]blockchain.Option{}),
 		WithBuilderFlagOptions([]builder.Option{}),
 		WithExecutionChainOptions([]execution.Option{}))
 	require.NoError(t, err)
@@ -156,13 +159,18 @@ func TestClearDB(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	set.String("datadir", tmp, "node data directory")
 	set.Bool(cmd.ForceClearDB.Name, true, "force clear db")
-	set.String("suggested-fee-recipient", "Q6e35733c5af9B61374A128e6F85f553aF09ff89A", "fee recipient")
-	require.NoError(t, set.Set("suggested-fee-recipient", "Q6e35733c5af9B61374A128e6F85f553aF09ff89A"))
-	context := cli.NewContext(&app, set, nil)
-	_, err = New(context, WithExecutionChainOptions([]execution.Option{
+	set.String("suggested-fee-recipient", "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A", "fee recipient")
+	require.NoError(t, set.Set("suggested-fee-recipient", "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A"))
+	cliCtx := cli.NewContext(&app, set, nil)
+	node, err := New(cliCtx, nil, WithExecutionChainOptions([]execution.Option{
 		execution.WithHttpEndpoint(endpoint),
 	}))
 	require.NoError(t, err)
+	// Release the database: bolt registers a process-wide metrics collector
+	// per open store, so a leaked handle breaks later tests that open one.
+	t.Cleanup(func() {
+		require.NoError(t, node.db.Close())
+	})
 
 	require.LogsContain(t, hook, "Removing database")
 }
@@ -218,4 +226,62 @@ func Test_hasNetworkFlag(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseIPNetStrings(t *testing.T) {
+	tests := []struct {
+		name      string
+		whitelist []string
+		wantCount int
+		wantError string
+	}{
+		{name: "empty whitelist", whitelist: []string{}, wantCount: 0},
+		{name: "single IP whitelist", whitelist: []string{"192.168.1.1/32"}, wantCount: 1},
+		{name: "multiple ranges", whitelist: []string{"192.168.1.0/24", "10.0.0.0/8", "34.42.19.170/32"}, wantCount: 3},
+		{name: "invalid CIDR returns error", whitelist: []string{"192.168.1.0/24", "invalid-cidr", "10.0.0.0/8"}, wantCount: 0, wantError: "invalid CIDR address"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := parseIPNetStrings(tt.whitelist)
+			require.Equal(t, tt.wantCount, len(result))
+			if len(tt.wantError) == 0 {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, tt.wantError, err)
+			}
+		})
+	}
+}
+
+// TestStartDB_ClosesDatabaseOnFailure checks that a database opened by
+// startDB is closed again when startup fails after the open: otherwise the
+// bolt file stays locked (and the handle leaks) until the process exits, and
+// a subsequent open of the same data directory times out on the lock.
+func TestStartDB_ClosesDatabaseOnFailure(t *testing.T) {
+	ctx := context.Background()
+	tmp := t.TempDir()
+	app := cli.App{}
+	set := flag.NewFlagSet("test", 0)
+	set.String(cmd.DataDirFlag.Name, tmp, "node data directory")
+	cliCtx := cli.NewContext(&app, set, nil)
+
+	const contractA = "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A"
+	const contractB = "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89B"
+
+	// A first start records contract A in the database.
+	first := &BeaconNode{ctx: ctx, cliCtx: cliCtx}
+	require.NoError(t, first.startDB(cliCtx, contractA))
+	require.NoError(t, first.db.Close())
+
+	// Starting again with a different contract fails after the database was
+	// opened; the handle must not be kept.
+	second := &BeaconNode{ctx: ctx, cliCtx: cliCtx}
+	err := second.startDB(cliCtx, contractB)
+	require.ErrorContains(t, "database contract is", err)
+	require.Equal(t, true, second.db == nil, "failed startDB left a database handle on the node")
+
+	// The data directory can be opened again without waiting on the bolt lock.
+	d, err := db.NewDB(ctx, filepath.Join(tmp, kv.BeaconNodeDbDirName))
+	require.NoError(t, err, "database was still locked after a failed startDB")
+	require.NoError(t, d.Close())
 }

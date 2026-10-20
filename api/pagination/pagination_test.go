@@ -1,6 +1,8 @@
 package pagination_test
 
 import (
+	"math"
+	"strconv"
 	"testing"
 
 	"github.com/theQRL/qrysm/api/pagination"
@@ -100,4 +102,35 @@ func TestStartAndEndPage_InvalidPageValues(t *testing.T) {
 func TestStartAndEndPage_InvalidTokenValue(t *testing.T) {
 	_, _, _, err := pagination.StartAndEndPage("-12", 50, 60)
 	assert.ErrorContains(t, "invalid token value provided", err)
+}
+
+// TestStartAndEndPage_TokenTimesPageSizeOverflow is a regression test for
+// token*pageSize wrapping around: both values come straight from the request,
+// and a wrapped (negative) start used to be handed back without error, which
+// turned into a slice-bounds panic in every paginated gRPC handler.
+func TestStartAndEndPage_TokenTimesPageSizeOverflow(t *testing.T) {
+	huge := strconv.Itoa(math.MaxInt/2 + 1)
+
+	_, _, _, err := pagination.StartAndEndPage(huge, 2, 10)
+	assert.ErrorContains(t, "overflows", err)
+
+	_, _, _, err = pagination.StartAndEndPage(strconv.Itoa(math.MaxInt), 0 /* default page size */, 10)
+	assert.ErrorContains(t, "overflows", err)
+
+	_, _, _, err = pagination.StartAndEndPage("3", math.MaxInt, 10)
+	assert.ErrorContains(t, "overflows", err)
+
+	// The largest token that does not overflow is still handled: it simply
+	// points past the end of the list.
+	pageSize := 100
+	maxToken := (math.MaxInt - pageSize) / pageSize
+	_, _, _, err = pagination.StartAndEndPage(strconv.Itoa(maxToken), pageSize, 10)
+	assert.ErrorContains(t, ">= list 10", err)
+
+	// A single page that spans the whole int range is fine.
+	start, end, next, err := pagination.StartAndEndPage("0", math.MaxInt, 10)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, start)
+	assert.Equal(t, 10, end)
+	assert.Equal(t, "", next)
 }

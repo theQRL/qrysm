@@ -8,7 +8,8 @@ package common
 // SecretKey represents a ML-DSA-87 secret or private key.
 type SecretKey interface {
 	PublicKey() PublicKey
-	Sign(msg []byte) Signature
+	Sign(msg []byte) (Signature, error)
+	SignDeterministic(msg []byte) (Signature, error)
 	Marshal() []byte
 }
 

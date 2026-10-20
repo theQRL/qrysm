@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	corehelpers "github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/beacon-chain/state"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
@@ -124,23 +123,25 @@ func processesDepositsInBlocks(ec *e2etypes.EvaluationContext, conns ...*grpc.Cl
 		return errors.Wrap(err, "failed to get chain head")
 	}
 
-	req := &qrysmpb.ListBlocksRequest{QueryFilter: &qrysmpb.ListBlocksRequest_Epoch{Epoch: chainHead.HeadEpoch - 1}}
-	blks, err := client.ListBeaconBlocks(context.Background(), req)
-	if err != nil {
-		return errors.Wrap(err, "failed to get blocks from beacon-chain")
-	}
 	observed := make(map[[field_params.MLDSA87PubkeyLength]byte]uint64)
-	for _, blk := range blks.BlockContainers {
-		sb, err := blocks.BeaconBlockContainerToSignedBeaconBlock(blk)
+	for epoch := primitives.Epoch(0); epoch <= chainHead.HeadEpoch; epoch++ {
+		req := &qrysmpb.ListBlocksRequest{QueryFilter: &qrysmpb.ListBlocksRequest_Epoch{Epoch: epoch}}
+		blks, err := client.ListBeaconBlocks(context.Background(), req)
 		if err != nil {
-			return errors.Wrap(err, "failed to convert api response type to SignedBeaconBlock interface")
+			return errors.Wrapf(err, "failed to get blocks for epoch %d from beacon-chain", epoch)
 		}
-		b := sb.Block()
-		deposits := b.Body().Deposits()
-		for _, d := range deposits {
-			k := bytesutil.ToBytes2592(d.Data.PublicKey)
-			v := observed[k]
-			observed[k] = v + d.Data.Amount
+		for _, blk := range blks.BlockContainers {
+			sb, err := blocks.BeaconBlockContainerToSignedBeaconBlock(blk)
+			if err != nil {
+				return errors.Wrap(err, "failed to convert api response type to SignedBeaconBlock interface")
+			}
+			b := sb.Block()
+			deposits := b.Body().Deposits()
+			for _, d := range deposits {
+				k := bytesutil.ToBytes2592(d.Data.PublicKey)
+				v := observed[k]
+				observed[k] = v + d.Data.Amount
+			}
 		}
 	}
 	mismatches := []string{}
@@ -332,34 +333,24 @@ func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 	conn := conns[0]
 	valClient := qrysmpb.NewBeaconNodeValidatorClient(conn)
 	beaconClient := qrysmpb.NewBeaconChainClient(conn)
-	debugClient := qrysmpb.NewDebugClient(conn)
 
 	ctx := context.Background()
 	chainHead, err := beaconClient.GetChainHead(ctx, &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "could not get chain head")
 	}
-	stObj, err := debugClient.GetBeaconState(ctx, &qrysmpb.BeaconStateRequest{QueryFilter: &qrysmpb.BeaconStateRequest_Slot{Slot: chainHead.HeadSlot}})
+
+	validators, err := getAllValidators(beaconClient)
 	if err != nil {
-		return errors.Wrap(err, "could not get state object")
+		return errors.Wrap(err, "could not get validators")
 	}
-	versionedMarshaler, err := detect.FromState(stObj.Encoded)
-	if err != nil {
-		return errors.Wrap(err, "could not get state marshaler")
-	}
-	st, err := versionedMarshaler.UnmarshalBeaconState(stObj.Encoded)
-	if err != nil {
-		return errors.Wrap(err, "could not get state")
-	}
+
 	execIndices := []int{}
-	err = st.ReadFromEveryValidator(func(idx int, val state.ReadOnlyValidator) error {
-		if val.WithdrawalCredentials()[0] == params.BeaconConfig().ExecutionAddressWithdrawalPrefixByte {
+	for idx, val := range validators {
+		withdrawalRecipient := val.GetWithdrawalRecipient()
+		if len(withdrawalRecipient) == field_params.WithdrawalRecipientLength {
 			execIndices = append(execIndices, idx)
 		}
-		return nil
-	})
-	if err != nil {
-		return err
 	}
 	if len(execIndices) > numOfExits {
 		execIndices = execIndices[:numOfExits]
@@ -387,7 +378,10 @@ func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 		if err != nil {
 			return err
 		}
-		signature := privKeys[exitedIndex].Sign(signingData[:])
+		signature, err := privKeys[exitedIndex].Sign(signingData[:])
+		if err != nil {
+			return err
+		}
 		signedExit := &qrysmpb.SignedVoluntaryExit{
 			Exit:      voluntaryExit,
 			Signature: signature.Marshal(),

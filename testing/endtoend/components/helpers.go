@@ -28,17 +28,23 @@ var _ e2etypes.MultipleComponentRunners = (*ProxySet)(nil)
 var _ e2etypes.EngineProxy = (*Proxy)(nil)
 
 // WaitForBlocks waits for a certain amount of blocks to be included before returning.
-func WaitForBlocks(web3 *qrlclient.Client, blocksToWait uint64) error {
-	block, err := web3.BlockByNumber(context.Background(), nil)
+// The ctx is propagated into every web3 call so that caller cancellation (e.g.
+// post test-cleanup) interrupts polling instead of hammering the EL node.
+// (upstream PR #15703)
+func WaitForBlocks(ctx context.Context, web3 *qrlclient.Client, blocksToWait uint64) error {
+	block, err := web3.BlockByNumber(ctx, nil)
 	if err != nil {
 		return err
 	}
 	finishBlock := block.NumberU64() + blocksToWait
 
 	for block.NumberU64() <= finishBlock {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		time.Sleep(timeGapPerMiningTX)
 
-		block, err = web3.BlockByNumber(context.Background(), nil)
+		block, err = web3.BlockByNumber(ctx, nil)
 		if err != nil {
 			return err
 		}

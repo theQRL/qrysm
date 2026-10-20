@@ -361,3 +361,19 @@ func TestNaiveSyncContributionAggregation(t *testing.T) {
 		})
 	}
 }
+
+func TestAggregate_TailSignatureOrder(t *testing.T) {
+	got, err := aggregate(
+		&qrysmpb.SyncCommitteeContribution{
+			AggregationBits: bitfield.Bitvector128{0b00000011},
+			Signatures:      [][]byte{{0}, {1}},
+		},
+		&qrysmpb.SyncCommitteeContribution{
+			AggregationBits: bitfield.Bitvector128{0b00001100},
+			Signatures:      [][]byte{{2}, {3}},
+		},
+	)
+	require.NoError(t, err)
+	require.DeepSSZEqual(t, bitfield.Bitvector128{0b00001111}, got.AggregationBits)
+	require.DeepEqual(t, [][]byte{{0}, {1}, {2}, {3}}, got.Signatures)
+}

@@ -10,10 +10,12 @@ import (
 	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/qrysm/async"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/container/trie"
-	"github.com/theQRL/qrysm/contracts/deposit"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	"github.com/theQRL/qrysm/crypto/randao"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
@@ -113,10 +115,12 @@ func createDepositData(privKey ml_dsa_87.MLDSA87Key, pubKey ml_dsa_87.PublicKey)
 		return nil, err
 	}
 
+	randaoCommitment := randaoCommitmentForKey(privKey)
 	depositMessage := &qrysmpb.DepositMessage{
-		PublicKey:             pubKey.Marshal(),
-		WithdrawalCredentials: deposit.WithdrawalCredentialsAddress(withdrawalAddr),
-		Amount:                params.BeaconConfig().MaxEffectiveBalance,
+		PublicKey:           pubKey.Marshal(),
+		WithdrawalRecipient: withdrawalAddr.Bytes(),
+		Amount:              params.BeaconConfig().MaxEffectiveBalance,
+		RandaoCommitment:    randaoCommitment[:],
 	}
 
 	sr, err := depositMessage.HashTreeRoot()
@@ -131,11 +135,33 @@ func createDepositData(privKey ml_dsa_87.MLDSA87Key, pubKey ml_dsa_87.PublicKey)
 	if err != nil {
 		return nil, err
 	}
+	sig, err := privKey.Sign(root[:])
+	if err != nil {
+		return nil, err
+	}
 	di := &qrysmpb.Deposit_Data{
-		PublicKey:             depositMessage.PublicKey,
-		WithdrawalCredentials: depositMessage.WithdrawalCredentials,
-		Amount:                depositMessage.Amount,
-		Signature:             privKey.Sign(root[:]).Marshal(),
+		PublicKey:           depositMessage.PublicKey,
+		WithdrawalRecipient: depositMessage.WithdrawalRecipient,
+		Amount:              depositMessage.Amount,
+		RandaoCommitment:    depositMessage.RandaoCommitment,
+		Signature:           sig.Marshal(),
 	}
 	return di, nil
+}
+
+// randaoCommitments caches the RANDAO hash-onion commitment of every key seen,
+// keyed by seed: building one costs randao.DefaultLayers hashes and the same
+// deterministic keys are reused across genesis generations.
+var randaoCommitments sync.Map // [fieldparams.MLDSA87SeedLength]byte -> [32]byte
+
+// randaoCommitmentForKey returns the default-length RANDAO onion commitment
+// for the validator key, matching what the validator client will derive.
+func randaoCommitmentForKey(privKey ml_dsa_87.MLDSA87Key) [fieldparams.RandaoCommitmentLength]byte {
+	seed := bytesutil.ToBytes48(privKey.Marshal())
+	if c, ok := randaoCommitments.Load(seed); ok {
+		return c.([fieldparams.RandaoCommitmentLength]byte)
+	}
+	c := randao.Commitment(seed[:], randao.DefaultLayers)
+	randaoCommitments.Store(seed, c)
+	return c
 }

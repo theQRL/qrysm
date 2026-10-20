@@ -25,6 +25,9 @@ func TestBuilderInvalidBlock(t *testing.T) {
 	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	builder := NewBuilder(t, st, blk)
+	blk, err = blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
+	blk.SetSlot(2)
+	require.NoError(t, err)
 	builder.InvalidBlock(t, blk)
 }
 

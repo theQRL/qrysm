@@ -483,6 +483,10 @@ message DutiesResponse {
 
     repeated Duty next_epoch_duties = 2;
 
+    bytes previous_duty_dependent_root = 3 [(theqrl.qrl.ext.ssz_size) = "32"];
+
+    bytes current_duty_dependent_root = 4 [(theqrl.qrl.ext.ssz_size) = "32"];
+
     message Duty {
         // The committee a validator is assigned to.
         repeated uint64 committee = 1 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
@@ -507,6 +511,10 @@ message DutiesResponse {
 
         // Whether the validator belongs in the sync committee and has to perform sync committee duty.
         bool is_sync_committee = 8;
+
+        // Chain-bound epoch seed for public aggregator selection. Refresh with
+        // the duties after a reorganization; signatures do not affect eligibility.
+        bytes aggregator_selection_seed = 9 [(theqrl.qrl.ext.ssz_size) = "32"];
     }
 }
 
@@ -514,8 +522,8 @@ message BlockRequest {
     // Slot for which the block should be proposed.
     uint64 slot = 1 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 
-    // Validator's 32 byte randao reveal secret of the current epoch.
-    bytes randao_reveal = 2 [(theqrl.qrl.ext.ssz_size) = "4627"];
+    // Validator's 32 byte RANDAO reveal: the pre-image of its current randao_commitment.
+    bytes randao_reveal = 2 [(theqrl.qrl.ext.ssz_size) = "32"];
 
     // Validator's 32 byte graffiti message for the new block.
     bytes graffiti = 3 [(theqrl.qrl.ext.ssz_size) = "32"];
@@ -591,8 +599,8 @@ message Validator {
     // 2592 byte ML-DSA-87 public key used for the validator's activities.
     bytes public_key = 1 [(theqrl.qrl.ext.ssz_size) = "2592", (theqrl.qrl.ext.spec_name) = "pubkey"];
 
-    // 32 byte hash of the withdrawal destination public key.
-    bytes withdrawal_credentials = 2 [(theqrl.qrl.ext.ssz_size) = "32"];
+    // QRL address that receives withdrawals.
+    bytes withdrawal_recipient = 2 [(theqrl.qrl.ext.ssz_size) = "64"];
 
     // The validators current effective balance in shor.
     uint64 effective_balance = 3;
@@ -601,12 +609,12 @@ message Validator {
     bool slashed = 4;
 
     // Epoch when the validator became eligible for activation. This field may
-    // be zero if the validator was present in the Ethereum proof of stake genesis. This
+    // be zero if the validator was present in the QRL proof of stake genesis. This
     // field is FAR_FUTURE_EPOCH if the validator has not been activated.
     uint64 activation_eligibility_epoch = 5 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 
     // Epoch when the validator was activated. This field may be zero if the
-    // validator was present in the Ethereum proof of stake genesis. This field is
+    // validator was present in the QRL proof of stake genesis. This field is
     // FAR_FUTURE_EPOCH if the validator has not been activated.
     uint64 activation_epoch = 6 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 
@@ -621,6 +629,11 @@ message Validator {
     // FAR_FUTURE_EPOCH is a constant defined by the official Ethereum Beacon Chain specification:
     // https://github.com/ethereum/consensus-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#constants
     uint64 withdrawable_epoch = 8 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
+
+    // 32 byte RANDAO hash-onion commitment. A block proposed by this validator
+    // must carry a randao_reveal whose SHA-256 equals this value; the reveal
+    // then becomes the new commitment.
+    bytes randao_commitment = 9 [(theqrl.qrl.ext.ssz_size) = "32"];
 }
 
 // ValidatorParticipation stores participation metrics during a given epoch.
@@ -713,7 +726,7 @@ message StreamBlocksRequest {
 message PrepareBeaconProposerRequest {
     message FeeRecipientContainer {
         // The address of the fee recipient.
-        bytes fee_recipient = 1 [(theqrl.qrl.ext.ssz_size) = "20"];
+        bytes fee_recipient = 1 [(theqrl.qrl.ext.ssz_size) = "64"];
 
         // The proposer validator index.
         uint64 validator_index = 2 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
@@ -726,7 +739,7 @@ message FeeRecipientByPubKeyRequest {
 }
 
 message FeeRecipientByPubKeyResponse {
-    bytes fee_recipient = 1 [(theqrl.qrl.ext.ssz_size) = "20"];
+    bytes fee_recipient = 1 [(theqrl.qrl.ext.ssz_size) = "64"];
 }
 
 message AssignValidatorToSubnetRequest {

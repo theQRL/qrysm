@@ -1,6 +1,8 @@
 package types
 
 import (
+	"errors"
+
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
@@ -36,8 +38,8 @@ var GoodbyeCodeMessages = map[RPCGoodbyeCode]string{
 
 // ErrToGoodbyeCode converts given error to RPC goodbye code.
 func ErrToGoodbyeCode(err error) RPCGoodbyeCode {
-	switch err {
-	case ErrWrongForkDigestVersion:
+	switch {
+	case errors.Is(err, ErrWrongForkDigestVersion):
 		return GoodbyeCodeWrongNetwork
 	default:
 		return GoodbyeCodeGenericError

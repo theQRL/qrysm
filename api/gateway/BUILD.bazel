@@ -39,7 +39,9 @@ go_test(
         "//testing/assert",
         "//testing/require",
         "@com_github_gorilla_mux//:mux",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//runtime",
         "@com_github_sirupsen_logrus//hooks/test",
+        "@com_github_stretchr_testify//require",
         "@com_github_urfave_cli_v2//:cli",
     ],
 )

@@ -11,7 +11,6 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/beacon-chain/core/epoch/precompute"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
-	coreTime "github.com/theQRL/qrysm/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/beacon-chain/core/validators"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
@@ -392,7 +391,8 @@ func (bs *Server) GetValidator(
 func (bs *Server) GetValidatorActiveSetChanges(
 	ctx context.Context, req *qrysmpb.GetValidatorActiveSetChangesRequest,
 ) (*qrysmpb.ActiveSetChanges, error) {
-	currentEpoch := slots.ToEpoch(bs.GenesisTimeFetcher.CurrentSlot())
+	currentSlot := bs.GenesisTimeFetcher.CurrentSlot()
+	currentEpoch := slots.ToEpoch(currentSlot)
 
 	var requestedEpoch primitives.Epoch
 	switch q := req.QueryFilter.(type) {
@@ -412,30 +412,50 @@ func (bs *Server) GetValidatorActiveSetChanges(
 		)
 	}
 
-	s, err := slots.EpochStart(requestedEpoch)
+	// Activations, exits and ejections are scheduled by the registry updates
+	// that close the previous epoch, so the state at the epoch's first slot,
+	// before that slot's block, already lists them.
+	startSlot, err := slots.EpochStart(requestedEpoch)
 	if err != nil {
 		return nil, err
 	}
-	requestedState, err := bs.ReplayerBuilder.ReplayerForSlot(s).ReplayBlocks(ctx)
+	var startState state.BeaconState
+	if startSlot == 0 {
+		startState, err = bs.ReplayerBuilder.ReplayerForSlot(startSlot).ReplayBlocks(ctx)
+	} else {
+		startState, err = bs.ReplayerBuilder.ReplayerForSlot(startSlot-1).ReplayToSlot(ctx, startSlot)
+	}
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("error replaying blocks for state at slot %d: %v", s, err))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("error replaying blocks for state at slot %d: %v", startSlot, err))
 	}
 
-	activeValidatorCount, err := helpers.ActiveValidatorCount(ctx, requestedState, coreTime.CurrentEpoch(requestedState))
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not get active validator count: %v", err)
-	}
-	vs := requestedState.Validators()
-	activatedIndices := validators.ActivatedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs)
-	exitedIndices, err := validators.ExitedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs, activeValidatorCount)
+	vs := startState.Validators()
+	activatedIndices := validators.ActivatedValidatorIndices(requestedEpoch, vs)
+	exitedIndices, err := validators.ExitedValidatorIndices(requestedEpoch, vs)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not determine exited validator indices: %v", err)
 	}
-	slashedIndices := validators.SlashedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs)
-	ejectedIndices, err := validators.EjectedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs, activeValidatorCount)
+	ejectedIndices, err := validators.EjectedValidatorIndices(requestedEpoch, vs)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not determine ejected validator indices: %v", err)
 	}
+
+	// Slashings are applied by the epoch's own blocks, so they only show once
+	// those blocks are replayed. Compare the slashed flags before the epoch's
+	// first block with those after its last processed slot; the flag is never
+	// cleared, so the difference is exactly this epoch's slashings.
+	endSlot, err := slots.EpochEnd(requestedEpoch)
+	if err != nil {
+		return nil, err
+	}
+	if endSlot > currentSlot {
+		endSlot = currentSlot
+	}
+	endState, err := bs.ReplayerBuilder.ReplayerForSlot(endSlot).ReplayBlocks(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("error replaying blocks for state at slot %d: %v", endSlot, err))
+	}
+	slashedIndices := validators.NewlySlashedValidatorIndices(vs, endState.Validators())
 
 	// Retrieve public keys for the indices.
 	activatedKeys := make([][]byte, len(activatedIndices))
@@ -443,19 +463,19 @@ func (bs *Server) GetValidatorActiveSetChanges(
 	slashedKeys := make([][]byte, len(slashedIndices))
 	ejectedKeys := make([][]byte, len(ejectedIndices))
 	for i, idx := range activatedIndices {
-		pubkey := requestedState.PubkeyAtIndex(idx)
+		pubkey := startState.PubkeyAtIndex(idx)
 		activatedKeys[i] = pubkey[:]
 	}
 	for i, idx := range exitedIndices {
-		pubkey := requestedState.PubkeyAtIndex(idx)
+		pubkey := startState.PubkeyAtIndex(idx)
 		exitedKeys[i] = pubkey[:]
 	}
 	for i, idx := range slashedIndices {
-		pubkey := requestedState.PubkeyAtIndex(idx)
+		pubkey := endState.PubkeyAtIndex(idx)
 		slashedKeys[i] = pubkey[:]
 	}
 	for i, idx := range ejectedIndices {
-		pubkey := requestedState.PubkeyAtIndex(idx)
+		pubkey := startState.PubkeyAtIndex(idx)
 		ejectedKeys[i] = pubkey[:]
 	}
 	return &qrysmpb.ActiveSetChanges{

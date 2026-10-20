@@ -12,11 +12,11 @@ import (
 
 func fillPrecompileTest(gst *GstMaker, fork string) {
 	// Add a contract which calls a precompile
-	dest, _ := common.NewAddressFromString("Q00000000000000000000000000000ca1100b1a7e")
+	dest, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ca1100b1a7e")
 	gst.AddAccount(dest, GenesisAccount{
 		Code:    randCallPrecompile(),
 		Balance: new(big.Int),
-		Storage: make(map[common.Hash]common.Hash),
+		Storage: make(map[common.Hash]common.StorageValue64),
 	})
 	// The transaction
 	gst.SetTx(&StTransaction{

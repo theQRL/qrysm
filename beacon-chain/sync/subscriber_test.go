@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	testifyrequire "github.com/stretchr/testify/require"
 	"github.com/theQRL/qrysm/async/abool"
 	mockChain "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/cache"
@@ -37,6 +39,20 @@ import (
 	"github.com/theQRL/qrysm/time/slots"
 	"google.golang.org/protobuf/proto"
 )
+
+type blockingSubnetSearchP2P struct {
+	*p2ptest.FakeP2P
+	searchContexts chan context.Context
+}
+
+func (p *blockingSubnetSearchP2P) FindPeersWithSubnet(ctx context.Context, _ string, _ uint64, _ int) (bool, error) {
+	select {
+	case p.searchContexts <- ctx:
+	default:
+	}
+	<-ctx.Done()
+	return false, ctx.Err()
+}
 
 func TestSubscribe_ReceivesValidMessage(t *testing.T) {
 	p2pService := p2ptest.NewTestP2P(t)
@@ -343,6 +359,47 @@ func TestStaticSubnets(t *testing.T) {
 	cancel()
 }
 
+func TestSubscribeAggregatorSubnet_SearchDoesNotBlockWantedUpdates(t *testing.T) {
+	currentTimeout := subnetPeerSearchTimeout
+	subnetPeerSearchTimeout = 20 * time.Millisecond
+	defer func() {
+		subnetPeerSearchTimeout = currentTimeout
+	}()
+
+	p2pService := &blockingSubnetSearchP2P{
+		FakeP2P:        p2ptest.NewFuzzTestP2P(),
+		searchContexts: make(chan context.Context, 4),
+	}
+	r := Service{
+		ctx: context.Background(),
+		cfg: &config{
+			p2p: p2pService,
+		},
+	}
+
+	start := time.Now()
+	r.findPeersWithSubnetAsync("topic", 1)
+	require.Equal(t, true, time.Since(start) < 100*time.Millisecond)
+
+	var searchCtx context.Context
+	select {
+	case searchCtx = <-p2pService.searchContexts:
+	case <-time.After(time.Second):
+		t.Fatal("did not start subnet search")
+	}
+
+	deadline, ok := searchCtx.Deadline()
+	require.Equal(t, true, ok)
+	require.Equal(t, true, time.Until(deadline) <= 50*time.Millisecond)
+
+	r.findPeersWithSubnetAsync("topic", 1)
+	select {
+	case <-p2pService.searchContexts:
+		t.Fatal("started duplicate subnet search while one was already running")
+	case <-time.After(40 * time.Millisecond):
+	}
+}
+
 func Test_wrapAndReportValidation(t *testing.T) {
 	mChain := &mockChain.ChainService{
 		Genesis:        time.Now(),
@@ -516,8 +573,11 @@ func TestFilterSubnetPeers(t *testing.T) {
 	p.Connect(p2)
 	p.Connect(p3)
 
-	// Sleep a while to allow peers to connect.
-	time.Sleep(100 * time.Millisecond)
+	testifyrequire.Eventually(t, func() bool {
+		return slices.Contains(p.PubSub().ListPeers(subnet10), p1.PeerID()) &&
+			slices.Contains(p.PubSub().ListPeers(subnet10), p2.PeerID()) &&
+			slices.Contains(p.PubSub().ListPeers(subnet20), p2.PeerID())
+	}, 15*time.Second, 100*time.Millisecond)
 
 	wantedPeers := []peer.ID{p1.PeerID(), p2.PeerID(), p3.PeerID()}
 	// Expect Peer 3 to be marked as suitable.
@@ -530,8 +590,10 @@ func TestFilterSubnetPeers(t *testing.T) {
 	for i := 1; i <= flags.Get().MinimumPeersPerSubnet; i++ {
 		nPeer := createPeer(t, subnet20)
 		p.Connect(nPeer)
+		testifyrequire.Eventually(t, func() bool {
+			return slices.Contains(p.PubSub().ListPeers(subnet20), nPeer.PeerID())
+		}, 15*time.Second, 100*time.Millisecond)
 		wantedPeers = append(wantedPeers, nPeer.BHost.ID())
-		time.Sleep(100 * time.Millisecond)
 	}
 
 	recPeers = r.filterNeededPeers(wantedPeers)

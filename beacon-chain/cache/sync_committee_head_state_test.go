@@ -20,11 +20,13 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 	})
 	require.NoError(t, err)
 	type put struct {
+		root  [32]byte
 		slot  primitives.Slot
 		state state.BeaconState
 	}
 	tests := []struct {
 		name       string
+		root       [32]byte
 		key        primitives.Slot
 		put        *put
 		want       state.BeaconState
@@ -65,6 +67,17 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 			want: zondState,
 		},
 		{
+			name: "same slot on another head is a miss",
+			root: [32]byte{2},
+			key:  primitives.Slot(1),
+			put: &put{
+				root:  [32]byte{1},
+				slot:  primitives.Slot(1),
+				state: zondState,
+			},
+			wantErr: true,
+		},
+		{
 			name: "not found when non-existent key in non-empty cache (bellatrix state)",
 			key:  primitives.Slot(2),
 			put: &put{
@@ -87,12 +100,12 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewSyncCommitteeHeadState()
 			if tt.put != nil {
-				err := c.Put(tt.put.slot, tt.put.state)
+				err := c.Put(tt.put.root, tt.put.slot, tt.put.state)
 				if (err != nil) != tt.wantPutErr {
 					t.Fatalf("Put() error = %v, wantErr %v", err, tt.wantErr)
 				}
 			}
-			got, err := c.Get(tt.key)
+			got, err := c.Get(tt.root, tt.key)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Get() error = %v, wantErr %v", err, tt.wantErr)
 			}

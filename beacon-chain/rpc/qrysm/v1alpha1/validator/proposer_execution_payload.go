@@ -49,10 +49,10 @@ func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBe
 	proposerID, payloadId, ok := vs.ProposerSlotIndexCache.GetProposerPayloadIDs(slot, headRoot)
 	feeRecipient := params.BeaconConfig().DefaultFeeRecipient
 	recipient, err := vs.BeaconDB.FeeRecipientByValidatorID(ctx, vIdx)
-	switch err == nil {
-	case true:
+	switch {
+	case err == nil:
 		feeRecipient = recipient
-	case errors.As(err, kv.ErrNotFoundFeeRecipient):
+	case errors.Is(err, kv.ErrNotFoundFeeRecipient):
 		// If fee recipient is not found in DB and not set from beacon node CLI,
 		// use the burn address.
 		if feeRecipient.String() == params.BeaconConfig().QRLBurnAddress {
@@ -126,7 +126,7 @@ func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBe
 	default:
 		return nil, false, errors.New("unknown beacon state version")
 	}
-	payloadID, _, err := vs.ExecutionEngineCaller.ForkchoiceUpdated(ctx, f, attr)
+	payloadID, err := vs.forkchoiceUpdateForPayload(ctx, f, attr)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "could not prepare payload")
 	}
@@ -139,6 +139,16 @@ func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBe
 	}
 	warnIfFeeRecipientDiffers(payload, feeRecipient)
 	return payload, overrideBuilder, nil
+}
+
+// forkchoiceUpdateForPayload can move execution to a proposal's parent after a
+// concurrent reorg. Invalidate both before and after the call so the chain
+// service retries its selected head even if it acknowledged an FCU in between.
+func (vs *Server) forkchoiceUpdateForPayload(ctx context.Context, f *enginev1.ForkchoiceState, attr payloadattribute.Attributer) (*enginev1.PayloadIDBytes, error) {
+	vs.ForkchoiceFetcher.InvalidateForkchoiceUpdate()
+	defer vs.ForkchoiceFetcher.InvalidateForkchoiceUpdate()
+	id, _, err := vs.ExecutionEngineCaller.ForkchoiceUpdated(ctx, f, attr)
+	return id, err
 }
 
 // warnIfFeeRecipientDiffers logs a warning if the fee recipient in the included payload does not
@@ -156,7 +166,8 @@ func warnIfFeeRecipientDiffers(payload interfaces.ExecutionData, feeRecipient co
 
 func (vs *Server) getBuilderPayload(ctx context.Context,
 	slot primitives.Slot,
-	vIdx primitives.ValidatorIndex) (interfaces.ExecutionData, error) {
+	vIdx primitives.ValidatorIndex,
+	parentGasLimit uint64) (interfaces.ExecutionData, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.getBuilderPayload")
 	defer span.End()
 
@@ -169,7 +180,7 @@ func (vs *Server) getBuilderPayload(ctx context.Context,
 		return nil, nil
 	}
 
-	return vs.getPayloadHeaderFromBuilder(ctx, slot, vIdx)
+	return vs.getPayloadHeaderFromBuilder(ctx, slot, vIdx, parentGasLimit)
 }
 
 // getParentBlockHash retrieves the parent block hash of the block at the given slot.

@@ -19,7 +19,7 @@ func TestCommitteeKeyFuzz_OK(t *testing.T) {
 		fuzzer.Fuzz(c)
 		k, err := committeeKeyFn(c)
 		require.NoError(t, err)
-		assert.Equal(t, key(c.Seed), k)
+		assert.Equal(t, committeeKey(NewCommitteeKey(c.Seed, c.SortedIndices)), k)
 	}
 }
 
@@ -31,7 +31,7 @@ func TestCommitteeCache_FuzzCommitteesByEpoch(t *testing.T) {
 	for range 100000 {
 		fuzzer.Fuzz(c)
 		require.NoError(t, cache.AddCommitteeShuffledList(context.Background(), c))
-		_, err := cache.Committee(context.Background(), 0, c.Seed, 0)
+		_, err := cache.Committee(context.Background(), 0, NewCommitteeKey(c.Seed, c.SortedIndices), 0)
 		require.NoError(t, err)
 	}
 
@@ -47,7 +47,7 @@ func TestCommitteeCache_FuzzActiveIndices(t *testing.T) {
 		fuzzer.Fuzz(c)
 		require.NoError(t, cache.AddCommitteeShuffledList(context.Background(), c))
 
-		indices, err := cache.ActiveIndices(context.Background(), c.Seed)
+		indices, err := cache.ActiveIndices(context.Background(), NewCommitteeKey(c.Seed, c.SortedIndices))
 		require.NoError(t, err)
 		assert.DeepEqual(t, c.SortedIndices, indices)
 	}

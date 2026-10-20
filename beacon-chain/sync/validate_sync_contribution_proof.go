@@ -26,8 +26,8 @@ import (
 // [IGNORE] The contribution's slot is for the current slot (with a MAXIMUM_GOSSIP_CLOCK_DISPARITY allowance), i.e. contribution.slot == current_slot.
 // [REJECT] The subcommittee index is in the allowed range, i.e. contribution.subcommittee_index < SYNC_COMMITTEE_SUBNET_COUNT.
 // [REJECT] The contribution has participants -- that is, any(contribution.aggregation_bits).
-// [REJECT] contribution_and_proof.selection_proof selects the validator as an aggregator for the slot -- i.e.
-// is_sync_committee_aggregator(contribution_and_proof.selection_proof) returns True.
+// [REJECT] The shared epoch seed selects this committee member as an aggregator
+// for the contribution's slot and subcommittee.
 // [REJECT] The aggregator's validator index is in the declared subcommittee of the current sync committee -- i.e.
 // state.validators[contribution_and_proof.aggregator_index].pubkey in get_sync_subcommittee_pubkeys(state, contribution.subcommittee_index).
 // [IGNORE] The sync committee contribution is the first valid contribution received for the aggregator with
@@ -69,7 +69,7 @@ func (s *Service) validateSyncContributionAndProof(ctx context.Context, pid peer
 		rejectIncorrectSubcommitteeIndex(m),
 		rejectEmptyContribution(m),
 		s.ignoreSeenSyncContribution(m),
-		rejectInvalidAggregator(m),
+		s.rejectInvalidAggregator(m),
 		s.rejectInvalidIndexInSubCommittee(m),
 		s.rejectInvalidSelectionProof(m),
 		s.rejectInvalidContributionSignature(m),
@@ -159,10 +159,14 @@ func (s *Service) ignoreSeenSyncContribution(m *qrysmpb.SignedContributionAndPro
 	}
 }
 
-func rejectInvalidAggregator(m *qrysmpb.SignedContributionAndProof) validationFn {
+func (s *Service) rejectInvalidAggregator(m *qrysmpb.SignedContributionAndProof) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
-		// The `contribution_and_proof.selection_proof` selects the validator as an aggregator for the slot.
-		if isAggregator, err := altair.IsSyncCommitteeAggregator(m.Message.SelectionProof); err != nil || !isAggregator {
+		contribution := m.Message.Contribution
+		seed, err := s.cfg.chain.HeadAggregatorSelectionSeed(ctx, contribution.Slot)
+		if err != nil {
+			return pubsub.ValidationIgnore, err
+		}
+		if isAggregator, err := altair.IsSyncCommitteeAggregator(seed[:], contribution.Slot, contribution.SubcommitteeIndex, m.Message.AggregatorIndex); err != nil || !isAggregator {
 			return pubsub.ValidationReject, err
 		}
 		return pubsub.ValidationAccept, nil
@@ -205,6 +209,9 @@ func (s *Service) rejectInvalidSelectionProof(m *qrysmpb.SignedContributionAndPr
 		// The `contribution_and_proof.selection_proof` is a valid signature of the `SyncAggregatorSelectionData`.
 		if err := s.verifySyncSelectionData(ctx, m.Message); err != nil {
 			tracing.AnnotateError(span, err)
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return pubsub.ValidationIgnore, err
+			}
 			return pubsub.ValidationReject, err
 		}
 		return pubsub.ValidationAccept, nil
@@ -241,7 +248,7 @@ func (s *Service) rejectInvalidContributionSignature(m *qrysmpb.SignedContributi
 			Signatures:   [][][]byte{{m.Signature}},
 			Descriptions: []string{signing.ContributionSignature},
 		}
-		return s.validateWithBatchVerifier(ctx, "sync contribution signature", set)
+		return s.validateSignatures(ctx, "sync contribution signature", set)
 	}
 }
 
@@ -290,7 +297,7 @@ func (s *Service) rejectInvalidSyncAggregateSignature(m *qrysmpb.SignedContribut
 			Signatures:   [][][]byte{m.Message.Contribution.Signatures},
 			Descriptions: []string{signing.SyncAggregateSignature},
 		}
-		return s.validateWithBatchVerifier(ctx, "sync contribution aggregate signature", set)
+		return s.validateSignatures(ctx, "sync contribution aggregate signature", set)
 	}
 }
 
@@ -402,7 +409,7 @@ func (s *Service) verifySyncSelectionData(ctx context.Context, m *qrysmpb.Contri
 		Signatures:   [][][]byte{{m.SelectionProof}},
 		Descriptions: []string{signing.SyncSelectionProof},
 	}
-	valid, err := s.validateWithBatchVerifier(ctx, "sync contribution selection signature", set)
+	valid, err := s.validateSignatures(ctx, "sync contribution selection signature", set)
 	if err != nil {
 		return err
 	}

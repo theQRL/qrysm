@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -10,11 +11,15 @@ import (
 	gqrltypes "github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/qrysm/beacon-chain/cache"
 	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/db"
 	"github.com/theQRL/qrysm/beacon-chain/execution"
 	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
 	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
 	bstate "github.com/theQRL/qrysm/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/beacon-chain/verification"
 	"github.com/theQRL/qrysm/config/features"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
@@ -82,7 +87,10 @@ func Test_NotifyForkchoiceUpdate_GetPayloadAttrErrorCanContinue(t *testing.T) {
 	service.cfg.ProposerSlotIndexCache.SetProposerAndPayloadIDs(1, 0, [8]byte{}, [32]byte{})
 	got, err := service.notifyForkchoiceUpdate(ctx, arg)
 	require.NoError(t, err)
-	require.DeepEqual(t, got, pid) // We still get a payload ID even though the state is bad. This means it returns until the end.
+	// notifyForkchoiceUpdate now returns (nil, nil) when HeadBlockHash is
+	// empty/zero AND the headRoot is not the genesis root (defensive guard).
+	require.Equal(t, (*v1.PayloadIDBytes)(nil), got)
+	_ = pid
 }
 
 func Test_NotifyForkchoiceUpdate(t *testing.T) {
@@ -99,6 +107,7 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 	service.head = &head{
 		state: st,
 	}
+	badHash := [32]byte{'h'}
 
 	ojc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	ofc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
@@ -198,7 +207,9 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 			blk: func() interfaces.ReadOnlyBeaconBlock {
 				b, err := consensusblocks.NewBeaconBlock(&qrysmpb.BeaconBlockZond{
 					Body: &qrysmpb.BeaconBlockBodyZond{
-						ExecutionPayload: &v1.ExecutionPayloadZond{},
+						// Non-empty BlockHash so the new genesis-FCU guard
+						// does not short-circuit before the engine call.
+						ExecutionPayload: &v1.ExecutionPayloadZond{BlockHash: badHash[:]},
 					},
 				})
 				require.NoError(t, err)
@@ -214,8 +225,16 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service.cfg.ExecutionEngineCaller = &mockExecution.EngineClient{ErrForkchoiceUpdated: tt.newForkchoiceErr}
 			st, _ := util.DeterministicGenesisStateZond(t, 1)
+			header, err := st.LatestExecutionPayloadHeader()
+			require.NoError(t, err)
+			header.Proto().(*v1.ExecutionPayloadHeaderZond).BlockHash = bytesutil.PadTo([]byte{'g'}, 32)
+			require.NoError(t, st.SetLatestExecutionPayloadHeader(header))
+			// Reject the requested head while accepting the genesis fallback.
+			service.cfg.ExecutionEngineCaller = &mockExecution.EngineClient{
+				ErrForkchoiceUpdated: tt.newForkchoiceErr,
+				OverrideValidHash:    bytesutil.ToBytes32(header.BlockHash()),
+			}
 			require.NoError(t, beaconDB.SaveState(ctx, st, tt.finalizedRoot))
 			require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, tt.finalizedRoot))
 			arg := &notifyForkchoiceUpdateArg{
@@ -271,7 +290,9 @@ func Test_NotifyForkchoiceUpdate_NIlLVH(t *testing.T) {
 	brd, err := wbd.Block().HashTreeRoot()
 	require.NoError(t, err)
 
-	fcs.SetBalancesByRooter(func(context.Context, [32]byte) ([]uint64, error) { return []uint64{50, 100, 200}, nil })
+	fcs.SetBalancesByRooter(func(context.Context, *forkchoicetypes.Checkpoint) (*forkchoicetypes.JustifiedBalances, error) {
+		return &forkchoicetypes.JustifiedBalances{Balances: []uint64{50, 100, 200}, TotalActiveBalance: 350}, nil
+	})
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{}))
 	ojc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	ofc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
@@ -382,11 +403,13 @@ func Test_NotifyForkchoiceUpdateRecursive_DoublyLinkedTree(t *testing.T) {
 	brg, err := wbg.Block().HashTreeRoot()
 	require.NoError(t, err)
 
-	fcs.SetBalancesByRooter(func(context.Context, [32]byte) ([]uint64, error) { return []uint64{50, 100, 200}, nil })
+	fcs.SetBalancesByRooter(func(context.Context, *forkchoicetypes.Checkpoint) (*forkchoicetypes.JustifiedBalances, error) {
+		return &forkchoicetypes.JustifiedBalances{Balances: []uint64{50, 100, 200}, TotalActiveBalance: 350}, nil
+	})
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{}))
 	ojc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	ofc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	state, blkRoot, err := prepareForkchoiceState(ctx, 1, bra, [32]byte{}, [32]byte{'A'}, ojc, ofc)
+	state, blkRoot, err := prepareForkchoiceState(ctx, 0, bra, [32]byte{}, [32]byte{'A'}, ojc, ofc)
 	require.NoError(t, err)
 
 	bState, _ := util.DeterministicGenesisStateZond(t, 10)
@@ -416,10 +439,12 @@ func Test_NotifyForkchoiceUpdateRecursive_DoublyLinkedTree(t *testing.T) {
 	fcs.ProcessAttestation(ctx, []uint64{0}, brd, 1)
 	fcs.ProcessAttestation(ctx, []uint64{1}, brf, 1)
 	fcs.ProcessAttestation(ctx, []uint64{2}, brg, 1)
-	fcs.SetBalancesByRooter(service.cfg.StateGen.ActiveNonSlashedBalancesByRoot)
+	fcs.SetBalancesByRooter(service.cfg.StateGen.BalancesByCheckpoint)
 	jc := &forkchoicetypes.Checkpoint{Epoch: 0, Root: bra}
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, jc))
-	fcs.SetBalancesByRooter(func(context.Context, [32]byte) ([]uint64, error) { return []uint64{50, 100, 200}, nil })
+	fcs.SetBalancesByRooter(func(context.Context, *forkchoicetypes.Checkpoint) (*forkchoicetypes.JustifiedBalances, error) {
+		return &forkchoicetypes.JustifiedBalances{Balances: []uint64{50, 100, 200}, TotalActiveBalance: 350}, nil
+	})
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{}))
 	headRoot, err := fcs.Head(ctx)
 	require.NoError(t, err)
@@ -442,7 +467,9 @@ func Test_NotifyForkchoiceUpdateRecursive_DoublyLinkedTree(t *testing.T) {
 	}
 	_, err = service.notifyForkchoiceUpdate(ctx, a)
 	require.Equal(t, true, IsInvalidBlock(err))
-	require.Equal(t, brf, InvalidBlockRoot(err))
+	// Keep the original rejected head and every branch removed during recovery.
+	require.Equal(t, brg, InvalidBlockRoot(err))
+	require.DeepEqual(t, [][32]byte{brg, brf}, InvalidAncestorRoots(err))
 
 	// Ensure Head is D
 	headRoot, err = fcs.Head(ctx)
@@ -453,6 +480,108 @@ func Test_NotifyForkchoiceUpdateRecursive_DoublyLinkedTree(t *testing.T) {
 	require.Equal(t, false, fcs.HasNode(brf))
 	require.Equal(t, false, fcs.HasNode(brg))
 	require.Equal(t, true, fcs.HasNode(bre))
+}
+
+type invalidRecoveryForkChoice struct {
+	forkchoice.ForkChoicer
+	invalidationErr error
+	headErr         error
+}
+
+func (f *invalidRecoveryForkChoice) SetOptimisticToInvalid(ctx context.Context, root, parent, lastValid [32]byte) ([][32]byte, error) {
+	if f.invalidationErr != nil {
+		return nil, f.invalidationErr
+	}
+	return f.ForkChoicer.SetOptimisticToInvalid(ctx, root, parent, lastValid)
+}
+
+func (f *invalidRecoveryForkChoice) Head(ctx context.Context) ([32]byte, error) {
+	if f.headErr != nil {
+		return [32]byte{}, f.headErr
+	}
+	return f.ForkChoicer.Head(ctx)
+}
+
+type invalidRecoveryDB struct {
+	db.HeadAccessDatabase
+	root        [32]byte
+	blockErr    error
+	stateErr    error
+	saveHeadErr error
+}
+
+func (d *invalidRecoveryDB) Block(ctx context.Context, root [32]byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
+	if root == d.root && d.blockErr != nil {
+		return nil, d.blockErr
+	}
+	return d.HeadAccessDatabase.Block(ctx, root)
+}
+
+func (d *invalidRecoveryDB) State(ctx context.Context, root [32]byte) (bstate.BeaconState, error) {
+	if root == d.root && d.stateErr != nil {
+		return nil, d.stateErr
+	}
+	return d.HeadAccessDatabase.State(ctx, root)
+}
+
+func (d *invalidRecoveryDB) SaveHeadBlockRoot(ctx context.Context, root [32]byte) error {
+	if root == d.root && d.saveHeadErr != nil {
+		return d.saveHeadErr
+	}
+	return d.HeadAccessDatabase.SaveHeadBlockRoot(ctx, root)
+}
+
+func Test_NotifyForkchoiceUpdate_InvalidRecoveryErrors(t *testing.T) {
+	for _, failure := range []string{"invalidation", "head selection", "block lookup", "state lookup", "head persistence"} {
+		t.Run(failure, func(t *testing.T) {
+			f := newBatchExecutionFixture(t, 2)
+			validPayload, err := f.blks[0].Block().Body().Execution()
+			require.NoError(t, err)
+			f.engine.ErrForkchoiceUpdated = execution.ErrInvalidPayloadStatus
+			f.engine.ForkChoiceUpdatedResp = validPayload.BlockHash()
+			f.engine.OverrideValidHash = bytesutil.ToBytes32(validPayload.BlockHash())
+			recoveryErr := errors.New("temporary " + failure + " failure")
+			fc := &invalidRecoveryForkChoice{ForkChoicer: f.s.cfg.ForkChoiceStore}
+			beaconDB := &invalidRecoveryDB{HeadAccessDatabase: f.s.cfg.BeaconDB, root: f.blks[0].Root()}
+			f.s.cfg.ForkChoiceStore = fc
+			f.s.cfg.BeaconDB = beaconDB
+			switch failure {
+			case "invalidation":
+				fc.invalidationErr = recoveryErr
+			case "head selection":
+				fc.headErr = recoveryErr
+			case "block lookup":
+				beaconDB.blockErr = recoveryErr
+				f.s.initSyncBlocksLock.Lock()
+				delete(f.s.initSyncBlocks, f.blks[0].Root())
+				f.s.initSyncBlocksLock.Unlock()
+			case "state lookup":
+				require.NoError(t, beaconDB.SaveState(f.ctx, f.states[1], f.blks[0].Root()))
+				beaconDB.stateErr = recoveryErr
+				// Use an empty state cache so recovery reads the replacement state from DB.
+				f.s.cfg.StateGen = stategen.New(beaconDB, fc)
+			case "head persistence":
+				beaconDB.saveHeadErr = recoveryErr
+			}
+			fc.Lock()
+			defer fc.Unlock()
+			_, err = f.s.notifyForkchoiceUpdate(f.ctx, &notifyForkchoiceUpdateArg{
+				headState: f.states[2],
+				headRoot:  f.blks[1].Root(),
+				headBlock: f.blks[1].Block(),
+			})
+			require.ErrorContains(t, "received an INVALID payload", err)
+			require.Equal(t, true, errors.Is(err, recoveryErr))
+			require.Equal(t, true, errors.Is(err, verification.ErrInvalid))
+			require.Equal(t, true, IsInvalidBlock(err))
+			require.Equal(t, f.blks[1].Root(), InvalidBlockRoot(err))
+			require.Equal(t, bytesutil.ToBytes32(validPayload.BlockHash()), InvalidBlockLVH(err))
+			if failure != "invalidation" {
+				require.DeepEqual(t, [][32]byte{f.blks[1].Root()}, InvalidAncestorRoots(err))
+				require.Equal(t, false, fc.HasNode(f.blks[1].Root()))
+			}
+		})
+	}
 }
 
 func Test_NotifyNewPayload(t *testing.T) {
@@ -607,8 +736,9 @@ func Test_NotifyNewPayload(t *testing.T) {
 				require.NoError(t, err)
 				return b
 			}(),
-			newPayloadErr: ErrInvalidBlockHashPayloadStatus,
+			newPayloadErr: execution.ErrInvalidBlockHashPayloadStatus,
 			errString:     ErrInvalidBlockHashPayloadStatus.Error(),
+			invalidBlock:  true,
 		},
 	}
 	for _, tt := range tests {
@@ -712,6 +842,53 @@ func Test_reportInvalidBlock(t *testing.T) {
 	require.Equal(t, [32]byte{'B'}, invalidRoots[2])
 }
 
+// Test_pruneInvalidBlock_UnderForkchoiceLock is a regression test for the
+// self-deadlock where pruneInvalidBlock acquired the forkchoice write lock
+// (via the Service.SetOptimisticToInvalid wrapper) while the caller already
+// held it. ReceiveBlockBatch holds the forkchoice lock across onBlockBatch, so
+// an INVALID execution payload with a non-zero last-valid-hash reached
+// handleInvalidExecutionError -> pruneInvalidBlock -> a second Lock() on the
+// non-reentrant RWMutex, freezing the node until restart. pruneInvalidBlock now
+// calls the forkchoice store directly and requires the caller to hold the lock.
+func Test_pruneInvalidBlock_UnderForkchoiceLock(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	params.OverrideBeaconConfig(params.MainnetConfig())
+	service, tr := minimalTestService(t)
+	ctx, fcs := tr.ctx, tr.fcs
+	jcp := &qrysmpb.Checkpoint{}
+	st, root, err := prepareForkchoiceState(ctx, 0, [32]byte{'A'}, [32]byte{}, [32]byte{'a'}, jcp, jcp)
+	require.NoError(t, err)
+	require.NoError(t, fcs.InsertNode(ctx, st, root))
+	st, root, err = prepareForkchoiceState(ctx, 1, [32]byte{'B'}, [32]byte{'A'}, [32]byte{'b'}, jcp, jcp)
+	require.NoError(t, err)
+	require.NoError(t, fcs.InsertNode(ctx, st, root))
+	st, root, err = prepareForkchoiceState(ctx, 2, [32]byte{'C'}, [32]byte{'B'}, [32]byte{'c'}, jcp, jcp)
+	require.NoError(t, err)
+	require.NoError(t, fcs.InsertNode(ctx, st, root))
+	st, root, err = prepareForkchoiceState(ctx, 3, [32]byte{'D'}, [32]byte{'C'}, [32]byte{'d'}, jcp, jcp)
+	require.NoError(t, err)
+	require.NoError(t, fcs.InsertNode(ctx, st, root))
+	require.NoError(t, fcs.SetOptimisticToValid(ctx, [32]byte{'A'}))
+
+	// Reproduce the ReceiveBlockBatch condition: the forkchoice lock is held
+	// across the call to pruneInvalidBlock.
+	done := make(chan error, 1)
+	go func() {
+		fcs.Lock()
+		defer fcs.Unlock()
+		done <- service.pruneInvalidBlock(ctx, [32]byte{'D'}, [32]byte{'C'}, [32]byte{'a'})
+	}()
+
+	select {
+	case err := <-done:
+		require.Equal(t, true, IsInvalidBlock(err))
+		require.Equal(t, [32]byte{'a'}, InvalidBlockLVH(err))
+		require.Equal(t, 3, len(InvalidAncestorRoots(err)))
+	case <-time.After(15 * time.Second):
+		t.Fatal("pruneInvalidBlock deadlocked while the forkchoice lock was held")
+	}
+}
+
 func Test_GetPayloadAttribute_PrepareAllPayloads(t *testing.T) {
 	hook := logTest.NewGlobal()
 	resetCfg := features.InitWithReset(&features.Flags{
@@ -754,7 +931,7 @@ func Test_GetPayloadAttributeV2(t *testing.T) {
 	require.Equal(t, 0, len(a))
 
 	// Cache hit, advance state, has fee recipient
-	suggestedAddr, err := common.NewAddressFromString("Q0000000000000000000000000000000000000123")
+	suggestedAddr, err := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123")
 	require.NoError(t, err)
 	require.NoError(t, service.cfg.BeaconDB.SaveFeeRecipientsByValidatorIDs(ctx, []primitives.ValidatorIndex{suggestedVid}, []common.Address{suggestedAddr}))
 	service.cfg.ProposerSlotIndexCache.SetProposerAndPayloadIDs(slot, suggestedVid, [8]byte{}, [32]byte{})
@@ -822,7 +999,8 @@ func Test_UpdateLastValidatedCheckpoint(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
 	assert.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, opRoot))
-	require.NoError(t, service.updateFinalized(ctx, opCheckpoint))
+	_, err = service.updateFinalized(ctx, opCheckpoint)
+	require.NoError(t, err)
 	cp, err := service.cfg.BeaconDB.LastValidatedCheckpoint(ctx)
 	require.NoError(t, err)
 	require.DeepEqual(t, origCheckpoint.Root, cp.Root)
@@ -849,11 +1027,14 @@ func Test_UpdateLastValidatedCheckpoint(t *testing.T) {
 	twentyfc := &qrysmpb.Checkpoint{Epoch: 20, Root: validRoot[:]}
 	state, blkRoot, err = prepareForkchoiceState(ctx, 640, validRoot, genesisRoot, params.BeaconConfig().ZeroHash, twentyjc, twentyfc)
 	require.NoError(t, err)
-	fcs.SetBalancesByRooter(func(_ context.Context, _ [32]byte) ([]uint64, error) { return []uint64{}, nil })
+	fcs.SetBalancesByRooter(func(context.Context, *forkchoicetypes.Checkpoint) (*forkchoicetypes.JustifiedBalances, error) {
+		return &forkchoicetypes.JustifiedBalances{}, nil
+	})
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
 	require.NoError(t, fcs.SetOptimisticToValid(ctx, validRoot))
 	assert.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, validRoot))
-	require.NoError(t, service.updateFinalized(ctx, validCheckpoint))
+	_, err = service.updateFinalized(ctx, validCheckpoint)
+	require.NoError(t, err)
 	cp, err = service.cfg.BeaconDB.LastValidatedCheckpoint(ctx)
 	require.NoError(t, err)
 
@@ -870,7 +1051,8 @@ func Test_UpdateLastValidatedCheckpoint(t *testing.T) {
 		Epoch: oldCp.Epoch - 1,
 	}
 	// Nothing should happen as we no-op on an invalid checkpoint.
-	require.NoError(t, service.updateFinalized(ctx, invalidCp))
+	_, err = service.updateFinalized(ctx, invalidCp)
+	require.NoError(t, err)
 	got, err := service.cfg.BeaconDB.FinalizedCheckpoint(ctx)
 	require.NoError(t, err)
 	require.DeepEqual(t, oldCp, got)

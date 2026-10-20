@@ -46,3 +46,12 @@ func WithAuthenticationToken(token string) ClientOpt {
 		c.token = token
 	}
 }
+
+// WithMaxBodySize overrides the default 8MB cap on HTTP response body reads.
+// Useful for downloads (e.g. checkpoint sync states) that legitimately exceed
+// the default cap.
+func WithMaxBodySize(size int64) ClientOpt {
+	return func(c *Client) {
+		c.maxBodySize = size
+	}
+}

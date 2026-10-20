@@ -149,12 +149,6 @@ var (
 		Usage: "Enables the peer id of the node to be fixed by saving the generated network key to the default key path.",
 		Value: false,
 	}
-	// P2PMetadata defines a flag to specify the location of the peer metadata file.
-	P2PMetadata = &cli.StringFlag{
-		Name:  "p2p-metadata",
-		Usage: "The file containing the metadata to communicate with other peers.",
-		Value: "",
-	}
 	// P2PMaxPeers defines a flag to specify the max number of peers in libp2p.
 	P2PMaxPeers = &cli.IntFlag{
 		Name:  "p2p-max-peers",
@@ -176,6 +170,13 @@ var (
 			"Using \"private\" would deny all private subnets. Example: " +
 			"192.168.0.0/16 would deny connections from peers on your local network only. The " +
 			"default is to accept all connections.",
+	}
+	// P2PColocationWhitelist defines a list of CIDR addresses to exempt from IP colocation restrictions.
+	P2PColocationWhitelist = &cli.StringSliceFlag{
+		Name: "p2p-colocation-whitelist",
+		Usage: "CIDR addresses to exempt from the IP colocation restrictions (peer limit per IP and " +
+			"gossipsub colocation scoring). Can be specified multiple times. Example: " +
+			"192.168.1.1/32 would exempt that specific IP from colocation restrictions.",
 	}
 	// ForceClearDB removes any previously stored data at the data directory.
 	ForceClearDB = &cli.BoolFlag{

@@ -1,4 +1,4 @@
-load("@qrysm//tools/go:def.bzl", "go_library")
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "checkpointsync",
@@ -13,5 +13,20 @@ go_library(
         "//api/client/beacon",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_urfave_cli_v2//:cli",
+    ],
+)
+
+go_test(
+    name = "checkpointsync_test",
+    srcs = ["download_test.go"],
+    embed = [":checkpointsync"],
+    deps = [
+        "//api/client",
+        "//api/client/beacon",
+        "//config/fieldparams",
+        "//config/params",
+        "//proto/qrysm/v1alpha1",
+        "//testing/require",
+        "//testing/util",
     ],
 )

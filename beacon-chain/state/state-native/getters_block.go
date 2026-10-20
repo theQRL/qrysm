@@ -10,10 +10,6 @@ import (
 
 // LatestBlockHeader stored within the beacon state.
 func (b *BeaconState) LatestBlockHeader() *qrysmpb.BeaconBlockHeader {
-	if b.latestBlockHeader == nil {
-		return nil
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 

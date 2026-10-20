@@ -148,6 +148,36 @@ func TestExitsForInclusion(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(exits))
 	})
+	t.Run("old state preserves exits eligible on another branch", func(t *testing.T) {
+		pool := NewPool()
+		index := types.ValidatorIndex(len(signedExits) - 2)
+		recovered := signedExits[index]
+		pool.InsertVoluntaryExit(recovered)
+		pool.InsertVoluntaryExit(signedExits[0])
+		replacement := st.Copy()
+		v, err := replacement.ValidatorAtIndex(index)
+		require.NoError(t, err)
+		v.ExitEpoch = params.BeaconConfig().FarFutureEpoch
+		require.NoError(t, replacement.UpdateValidatorAtIndex(index, v))
+		for range 2 {
+			selected, err := pool.ExitsForInclusion(st, stateSlot)
+			require.NoError(t, err)
+			require.Equal(t, 1, len(selected), "skip the exited validator and keep scanning")
+			require.Equal(t, types.ValidatorIndex(0), selected[0].Exit.ValidatorIndex)
+			pending, err := pool.PendingExits()
+			require.NoError(t, err)
+			require.Equal(t, 2, len(pending), "a branch snapshot must not delete the recovered exit")
+			selected, err = pool.ExitsForInclusion(replacement, stateSlot)
+			require.NoError(t, err)
+			require.Equal(t, 2, len(selected))
+			require.DeepEqual(t, recovered, selected[0])
+		}
+		pool.MarkIncluded(recovered)
+		selected, err := pool.ExitsForInclusion(replacement, stateSlot)
+		require.NoError(t, err)
+		require.Equal(t, 1, len(selected), "canonical inclusion still removes the exit")
+		require.Equal(t, types.ValidatorIndex(0), selected[0].Exit.ValidatorIndex)
+	})
 }
 
 func TestInsertExit(t *testing.T) {

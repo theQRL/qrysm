@@ -14,6 +14,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
@@ -31,9 +32,30 @@ type HeadSyncCommitteeFetcher interface {
 // HeadDomainFetcher is the interface that wraps the head sync domain related functions.
 // The head sync committee domain functions return callers domain data with respect to slot and head state.
 type HeadDomainFetcher interface {
+	HeadAggregatorSelectionSeed(ctx context.Context, slot primitives.Slot) ([32]byte, error)
 	HeadSyncCommitteeDomain(ctx context.Context, slot primitives.Slot) ([]byte, error)
 	HeadSyncSelectionProofDomain(ctx context.Context, slot primitives.Slot) ([]byte, error)
 	HeadSyncContributionProofDomain(ctx context.Context, slot primitives.Slot) ([]byte, error)
+}
+
+// HeadAggregatorSelectionSeed uses the message slot's epoch, including the final
+// slot before a sync committee period boundary. Snapshot the state and root
+// together so slot processing cannot combine different branches during a reorg.
+func (s *Service) HeadAggregatorSelectionSeed(ctx context.Context, slot primitives.Slot) ([32]byte, error) {
+	st, root, err := s.HeadStateAndRoot(ctx)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	if st == nil || st.IsNil() {
+		return [32]byte{}, errors.New("nil state")
+	}
+	if st.Slot() < slot {
+		st, err = transition.ProcessSlotsUsingNextSlotCache(ctx, st, root, slot)
+		if err != nil {
+			return [32]byte{}, err
+		}
+	}
+	return helpers.AggregatorSelectionSeed(st, slots.ToEpoch(slot))
 }
 
 // HeadSyncCommitteeDomain returns the head sync committee domain using current head state advanced up to `slot`.
@@ -133,40 +155,54 @@ func (s *Service) domainWithHeadState(ctx context.Context, slot primitives.Slot,
 	return signing.Domain(headState.Fork(), slots.ToEpoch(headState.Slot()), domain, headState.GenesisValidatorsRoot())
 }
 
-// returns the head state that is advanced up to `slot`. It utilizes the cache `syncCommitteeHeadState` by retrieving using `slot` as key.
-// For the cache miss, it processes head state up to slot and fill the cache with `slot` as key.
+// getSyncCommitteeHeadState returns the head branch's state at slot, cached by
+// head root and slot. An in-flight lookup may finish after a reorg, but its
+// cached state must never be reused for the replacement head.
 func (s *Service) getSyncCommitteeHeadState(ctx context.Context, slot primitives.Slot) (state.BeaconState, error) {
-	var headState state.BeaconState
-	var err error
 	mLock := async.NewMultilock(fmt.Sprintf("%s-%d", "syncHeadState", slot))
 	mLock.Lock()
 	defer mLock.Unlock()
 
-	// If there's already a head state exists with the request slot, we don't need to process slots.
-	cachedState, err := syncCommitteeHeadStateCache.Get(slot)
+	// Cache hits only need the root, avoiding a state copy for every message.
+	headRoot, err := s.HeadRoot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cachedState, err := syncCommitteeHeadStateCache.Get(bytesutil.ToBytes32(headRoot), slot)
 	switch {
 	case err == nil:
 		syncHeadStateHit.Inc()
-		headState = cachedState
-		return headState, nil
+		return cachedState, nil
 	case errors.Is(err, cache.ErrNotFound):
-		headState, err = s.HeadState(ctx)
+		// The head may have changed since the cache lookup. Obtain both the
+		// state and its cache key from the same published snapshot.
+		headState, headRoot, err := s.HeadStateAndRoot(ctx)
 		if err != nil {
 			return nil, err
 		}
 		if headState == nil || headState.IsNil() {
 			return nil, errors.New("nil state")
 		}
-		headRoot, err := s.HeadRoot(ctx)
-		if err != nil {
-			return nil, err
+		cacheRoot := bytesutil.ToBytes32(headRoot)
+		if headState.Slot() > slot {
+			// Gossip may still request the previous slot after head advances.
+			// Use this branch's ancestor state so a period transition does
+			// not substitute the newly rotated committee for the old one.
+			headRoot, err = helpers.BlockRootAtSlot(headState, slot)
+			if err != nil {
+				return nil, err
+			}
+			headState, err = s.cfg.StateGen.StateByRoot(ctx, bytesutil.ToBytes32(headRoot))
+			if err != nil {
+				return nil, err
+			}
 		}
 		headState, err = transition.ProcessSlotsUsingNextSlotCache(ctx, headState, headRoot, slot)
 		if err != nil {
 			return nil, err
 		}
 		syncHeadStateMiss.Inc()
-		err = syncCommitteeHeadStateCache.Put(slot, headState)
+		err = syncCommitteeHeadStateCache.Put(cacheRoot, slot, headState)
 		return headState, err
 	default:
 		// In the event, we encounter another error

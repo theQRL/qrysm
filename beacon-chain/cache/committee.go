@@ -5,6 +5,7 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -20,7 +21,7 @@ import (
 )
 
 const (
-	// maxCommitteesCacheSize defines the max number of shuffled committees on per randao basis can cache.
+	// maxCommitteesCacheSize bounds the cached seed and active-validator combinations.
 	// Due to reorgs and long finality, it's good to keep the old cache around for quickly switch over.
 	maxCommitteesCacheSize = int(32)
 )
@@ -38,20 +39,20 @@ var (
 	})
 )
 
-// CommitteeCache is a struct with 1 queue for looking up shuffled indices list by seed.
+// CommitteeCache looks up shuffled indices by seed and active-validator membership.
 type CommitteeCache struct {
 	CommitteeCache *lru.Cache
 	lock           sync.RWMutex
 	inProgress     map[string]bool
 }
 
-// committeeKeyFn takes the seed as the key to retrieve shuffled indices of a committee in a given epoch.
+// committeeKeyFn includes both the seed and the ordered active indices.
 func committeeKeyFn(obj any) (string, error) {
 	info, ok := obj.(*Committees)
 	if !ok {
 		return "", ErrNotCommittee
 	}
-	return key(info.Seed), nil
+	return committeeKey(NewCommitteeKey(info.Seed, info.SortedIndices)), nil
 }
 
 // NewCommitteesCache creates a new committee cache for storing/accessing shuffled indices of a committee.
@@ -71,12 +72,12 @@ func (c *CommitteeCache) Clear() {
 
 // Committee fetches the shuffled indices by slot and committee index. Every list of indices
 // represent one committee. Returns true if the list exists with slot and committee index. Otherwise returns false, nil.
-func (c *CommitteeCache) Committee(ctx context.Context, slot primitives.Slot, seed [32]byte, index primitives.CommitteeIndex) ([]primitives.ValidatorIndex, error) {
-	if err := c.checkInProgress(ctx, seed); err != nil {
+func (c *CommitteeCache) Committee(ctx context.Context, slot primitives.Slot, cacheKey CommitteeKey, index primitives.CommitteeIndex) ([]primitives.ValidatorIndex, error) {
+	if err := c.checkInProgress(ctx, cacheKey); err != nil {
 		return nil, err
 	}
 
-	obj, exists := c.CommitteeCache.Get(key(seed))
+	obj, exists := c.CommitteeCache.Get(committeeKey(cacheKey))
 	if exists {
 		CommitteeCacheHit.Inc()
 	} else {
@@ -93,10 +94,21 @@ func (c *CommitteeCache) Committee(ctx context.Context, slot primitives.Slot, se
 	if item.CommitteeCount/uint64(params.BeaconConfig().SlotsPerEpoch) > 1 {
 		committeeCountPerSlot = item.CommitteeCount / uint64(params.BeaconConfig().SlotsPerEpoch)
 	}
+	// Mirror the spec's data.index < committees_per_slot bound so an index
+	// equal to the per-slot count cannot resolve to the next slot's committee.
+	if uint64(index) >= committeeCountPerSlot {
+		return nil, fmt.Errorf("requested index out of bound: committee index %d >= committees per slot %d", index, committeeCountPerSlot)
+	}
 
 	indexOffSet, err := mathutil.Add64(uint64(index), uint64(slot.ModSlot(params.BeaconConfig().SlotsPerEpoch).Mul(committeeCountPerSlot)))
 	if err != nil {
 		return nil, err
+	}
+	// startEndIndices multiplies the validator count by the offset in uint64;
+	// bound the offset first so a wrapped product cannot yield the positions
+	// of a legitimate committee.
+	if indexOffSet >= item.CommitteeCount {
+		return nil, fmt.Errorf("requested index out of bound: committee offset %d >= committee count %d", indexOffSet, item.CommitteeCount)
 	}
 	start, end := startEndIndices(item, indexOffSet)
 
@@ -123,12 +135,12 @@ func (c *CommitteeCache) AddCommitteeShuffledList(ctx context.Context, committee
 	return nil
 }
 
-// ActiveIndices returns the active indices of a given seed stored in cache.
-func (c *CommitteeCache) ActiveIndices(ctx context.Context, seed [32]byte) ([]primitives.ValidatorIndex, error) {
-	if err := c.checkInProgress(ctx, seed); err != nil {
+// ActiveIndices returns the active indices for a seed and membership combination.
+func (c *CommitteeCache) ActiveIndices(ctx context.Context, cacheKey CommitteeKey) ([]primitives.ValidatorIndex, error) {
+	if err := c.checkInProgress(ctx, cacheKey); err != nil {
 		return nil, err
 	}
-	obj, exists := c.CommitteeCache.Get(key(seed))
+	obj, exists := c.CommitteeCache.Get(committeeKey(cacheKey))
 
 	if exists {
 		CommitteeCacheHit.Inc()
@@ -145,13 +157,13 @@ func (c *CommitteeCache) ActiveIndices(ctx context.Context, seed [32]byte) ([]pr
 	return item.SortedIndices, nil
 }
 
-// ActiveIndicesCount returns the active indices count of a given seed stored in cache.
-func (c *CommitteeCache) ActiveIndicesCount(ctx context.Context, seed [32]byte) (int, error) {
-	if err := c.checkInProgress(ctx, seed); err != nil {
+// ActiveIndicesCount returns the count for a seed and membership combination.
+func (c *CommitteeCache) ActiveIndicesCount(ctx context.Context, cacheKey CommitteeKey) (int, error) {
+	if err := c.checkInProgress(ctx, cacheKey); err != nil {
 		return 0, err
 	}
 
-	obj, exists := c.CommitteeCache.Get(key(seed))
+	obj, exists := c.CommitteeCache.Get(committeeKey(cacheKey))
 	if exists {
 		CommitteeCacheHit.Inc()
 	} else {
@@ -168,17 +180,17 @@ func (c *CommitteeCache) ActiveIndicesCount(ctx context.Context, seed [32]byte) 
 }
 
 // HasEntry returns true if the committee cache has a value.
-func (c *CommitteeCache) HasEntry(seed string) bool {
-	_, ok := c.CommitteeCache.Get(seed)
+func (c *CommitteeCache) HasEntry(cacheKey CommitteeKey) bool {
+	_, ok := c.CommitteeCache.Get(committeeKey(cacheKey))
 	return ok
 }
 
 // MarkInProgress a request so that any other similar requests will block on
 // Get until MarkNotInProgress is called.
-func (c *CommitteeCache) MarkInProgress(seed [32]byte) error {
+func (c *CommitteeCache) MarkInProgress(cacheKey CommitteeKey) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	s := key(seed)
+	s := committeeKey(cacheKey)
 	if c.inProgress[s] {
 		return ErrAlreadyInProgress
 	}
@@ -188,10 +200,10 @@ func (c *CommitteeCache) MarkInProgress(seed [32]byte) error {
 
 // MarkNotInProgress will release the lock on a given request. This should be
 // called after put.
-func (c *CommitteeCache) MarkNotInProgress(seed [32]byte) error {
+func (c *CommitteeCache) MarkNotInProgress(cacheKey CommitteeKey) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	s := key(seed)
+	s := committeeKey(cacheKey)
 	delete(c.inProgress, s)
 	return nil
 }
@@ -203,15 +215,15 @@ func startEndIndices(c *Committees, index uint64) (uint64, uint64) {
 	return start, end
 }
 
-// Using seed as source for key to handle reorgs in the same epoch.
-// The seed is derived from state's array of randao mixes and epoch value
-// hashed together. This avoids collisions on different validator set. Spec definition:
-// https://github.com/ethereum/consensus-specs/blob/v0.9.3/specs/core/0_beacon-chain.md#get_seed
-func key(seed [32]byte) string {
-	return string(seed[:])
+func key(root [32]byte) string {
+	return string(root[:])
 }
 
-func (c *CommitteeCache) checkInProgress(ctx context.Context, seed [32]byte) error {
+func committeeKey(cacheKey CommitteeKey) string {
+	return string(cacheKey.seed[:]) + string(cacheKey.indicesRoot[:])
+}
+
+func (c *CommitteeCache) checkInProgress(ctx context.Context, cacheKey CommitteeKey) error {
 	delay := minDelay
 	// Another identical request may be in progress already. Let's wait until
 	// any in progress request resolves or our timeout is exceeded.
@@ -221,7 +233,7 @@ func (c *CommitteeCache) checkInProgress(ctx context.Context, seed [32]byte) err
 		}
 
 		c.lock.RLock()
-		if !c.inProgress[key(seed)] {
+		if !c.inProgress[committeeKey(cacheKey)] {
 			c.lock.RUnlock()
 			break
 		}

@@ -4,15 +4,22 @@ import (
 	"context"
 	"crypto/rand"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/pkg/errors"
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-qrl/p2p/discover"
 	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/theQRL/go-qrl/p2p/qnr"
 	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/config/params"
@@ -212,7 +219,7 @@ func Test_AttSubnets(t *testing.T) {
 				convertedKey, err := ecdsaqrysm.ConvertFromInterfacePrivKey(priv)
 				assert.NoError(t, err)
 				localNode := qnode.NewLocalNode(db, convertedKey)
-				entry := qnr.WithEntry(attSubnetQnrKey, make([]byte, byteCount(int(attestationSubnetCount))+1))
+				entry := qnr.WithEntry(attSubnetQnrKey, make([]byte, byteCount(attnetsBitvectorBits)+1))
 				localNode.Set(entry)
 				return localNode.Node().Record()
 			},
@@ -230,7 +237,7 @@ func Test_AttSubnets(t *testing.T) {
 				convertedKey, err := ecdsaqrysm.ConvertFromInterfacePrivKey(priv)
 				assert.NoError(t, err)
 				localNode := qnode.NewLocalNode(db, convertedKey)
-				entry := qnr.WithEntry(attSubnetQnrKey, make([]byte, byteCount(int(attestationSubnetCount))+100))
+				entry := qnr.WithEntry(attSubnetQnrKey, make([]byte, byteCount(attnetsBitvectorBits)+100))
 				localNode.Set(entry)
 				return localNode.Node().Record()
 			},
@@ -280,9 +287,8 @@ func Test_AttSubnets(t *testing.T) {
 				localNode.Set(entry)
 				return localNode.Node().Record()
 			},
-			want: []uint64{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20,
-				22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48,
-				50, 52, 54, 56, 58, 60, 62},
+			// Only bits below AttestationSubnetCount (4) are reported.
+			want:    []uint64{0, 2},
 			wantErr: false,
 		},
 		{
@@ -303,9 +309,29 @@ func Test_AttSubnets(t *testing.T) {
 				localNode.Set(entry)
 				return localNode.Node().Record()
 			},
-			want: []uint64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-				21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-				50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63},
+			// Only bits below AttestationSubnetCount (4) are reported.
+			want:    []uint64{0, 1, 2, 3},
+			wantErr: false,
+		},
+		{
+			name: "bits above the subnet count are ignored",
+			record: func(t *testing.T) *qnr.Record {
+				db, err := qnode.OpenDB("")
+				assert.NoError(t, err)
+				priv, _, err := crypto.GenerateSecp256k1Key(rand.Reader)
+				assert.NoError(t, err)
+				convertedKey, err := ecdsaqrysm.ConvertFromInterfacePrivKey(priv)
+				assert.NoError(t, err)
+				localNode := qnode.NewLocalNode(db, convertedKey)
+				bitV := bitfield.NewBitvector64()
+				bitV.SetBitAt(0, true)
+				bitV.SetBitAt(attestationSubnetCount, true)
+				bitV.SetBitAt(63, true)
+				entry := qnr.WithEntry(attSubnetQnrKey, bitV.Bytes())
+				localNode.Set(entry)
+				return localNode.Node().Record()
+			},
+			want:    []uint64{0},
 			wantErr: false,
 		},
 	}
@@ -440,4 +466,190 @@ func Test_SyncSubnets(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestService_UpdateSubnetRecord_PersistsSeqNumWithStaticPeerID(t *testing.T) {
+	beaconDB := testDB.SetupDB(t)
+	ctx := context.Background()
+
+	s := &Service{
+		ctx: ctx,
+		cfg: &Config{
+			StaticPeerID: true,
+			DB:           beaconDB,
+		},
+		metaData: wrapper.WrappedMetadataV1(&pb.MetaDataV1{
+			SeqNumber: 4,
+			Attnets:   bitfield.NewBitvector64(),
+			Syncnets:  bitfield.NewBitvector4(),
+		}),
+	}
+
+	bitV := bitfield.NewBitvector64()
+	bitV.SetBitAt(1, true)
+	bitS := bitfield.NewBitvector4()
+	require.NoError(t, s.updateSubnetRecordWithMetadata(bitV, bitS))
+
+	got, err := beaconDB.MetadataSeqNum(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(5), got)
+}
+
+func TestService_UpdateSubnetRecord_DoesNotPersistWithoutStaticPeerID(t *testing.T) {
+	beaconDB := testDB.SetupDB(t)
+	ctx := context.Background()
+
+	s := &Service{
+		ctx: ctx,
+		cfg: &Config{
+			StaticPeerID: false,
+			DB:           beaconDB,
+		},
+		metaData: wrapper.WrappedMetadataV1(&pb.MetaDataV1{
+			SeqNumber: 4,
+			Attnets:   bitfield.NewBitvector64(),
+			Syncnets:  bitfield.NewBitvector4(),
+		}),
+	}
+
+	bitV := bitfield.NewBitvector64()
+	bitS := bitfield.NewBitvector4()
+	require.NoError(t, s.updateSubnetRecordWithMetadata(bitV, bitS))
+
+	_, err := beaconDB.MetadataSeqNum(ctx)
+	require.Equal(t, true, errors.Is(err, kv.ErrNotFoundMetadataSeqNum))
+}
+
+// sliceIterator is a minimal qnode.Iterator backed by a fixed slice of nodes,
+// used by searchForPeers regression tests. It mimics discv5's behavior where
+// the same node ID can appear multiple times in succession with different ENR
+// sequence numbers.
+type sliceIterator struct {
+	nodes []*qnode.Node
+	idx   int
+}
+
+func (it *sliceIterator) Next() bool {
+	if it.idx >= len(it.nodes) {
+		return false
+	}
+	it.idx++
+	return true
+}
+
+func (it *sliceIterator) Node() *qnode.Node { return it.nodes[it.idx-1] }
+func (it *sliceIterator) Close()            {}
+
+// makeNullSignedNode builds a *qnode.Node with a deterministic ID and the given
+// sequence number. Uses the null signature scheme so tests don't need real keys.
+func makeNullSignedNode(t *testing.T, id qnode.ID, seq uint64) *qnode.Node {
+	t.Helper()
+	r := new(qnr.Record)
+	r.SetSeq(seq)
+	return qnode.SignNull(r, id)
+}
+
+// TestSearchForPeers_NewerEnrFailsFilter_RemovesStale is the regression test
+// for upstream PR #15578. Before the fix, searchForPeers ran the filter before
+// deduping by node ID, so a node observed first at a low Seq (passing the
+// filter) and then again at a higher Seq (failing the filter) would leave the
+// stale lower-Seq record in the dial set. The fix dedups first and removes the
+// stale entry when the newer ENR fails the filter.
+func TestSearchForPeers_NewerEnrFailsFilter_RemovesStale(t *testing.T) {
+	id := qnode.ID{0x01}
+	low := makeNullSignedNode(t, id, 1)
+	high := makeNullSignedNode(t, id, 2)
+
+	// Filter passes only for the low-seq record (e.g. the older ENR was
+	// subscribed to the requested subnet but the newer ENR is not).
+	filter := func(n *qnode.Node) bool { return n.Seq() == low.Seq() }
+
+	it := &sliceIterator{nodes: []*qnode.Node{low, high}}
+	got := searchForPeers(context.Background(), it, 16, 4, filter)
+	assert.Equal(t, 0, len(got), "stale lower-Seq node must not be returned when newer ENR fails filter")
+}
+
+// TestSearchForPeers_NewerEnrPassesFilter keeps the freshest record when an
+// older ENR for the same node ID was rejected by the filter. This passed
+// before PR #15578 too, but the test guards against future regressions in the
+// dedup-first ordering.
+func TestSearchForPeers_NewerEnrPassesFilter(t *testing.T) {
+	id := qnode.ID{0x02}
+	low := makeNullSignedNode(t, id, 1)
+	high := makeNullSignedNode(t, id, 2)
+
+	filter := func(n *qnode.Node) bool { return n.Seq() == high.Seq() }
+
+	it := &sliceIterator{nodes: []*qnode.Node{low, high}}
+	got := searchForPeers(context.Background(), it, 16, 4, filter)
+	require.Equal(t, 1, len(got))
+	assert.Equal(t, high.Seq(), got[0].Seq())
+}
+
+// blockingIterator is a qnode.Iterator whose Next blocks until Close is
+// called, like discv5's random-node iterator does when its table is empty.
+type blockingIterator struct {
+	closed    chan struct{}
+	closeOnce sync.Once
+}
+
+func newBlockingIterator() *blockingIterator {
+	return &blockingIterator{closed: make(chan struct{})}
+}
+
+func (it *blockingIterator) Next() bool {
+	<-it.closed
+	return false
+}
+
+func (it *blockingIterator) Node() *qnode.Node { return nil }
+
+func (it *blockingIterator) Close() {
+	it.closeOnce.Do(func() { close(it.closed) })
+}
+
+func (it *blockingIterator) isClosed() bool {
+	select {
+	case <-it.closed:
+		return true
+	default:
+		return false
+	}
+}
+
+type blockingIteratorListener struct {
+	mockListener
+	iterator *blockingIterator
+}
+
+func (l blockingIteratorListener) RandomNodes() qnode.Iterator { return l.iterator }
+
+// TestFindPeersWithSubnet_HonoursContext is a regression test for
+// FindPeersWithSubnet hanging past its context deadline: the discovery
+// iterator's Next blocks until Close, and the context used to be checked only
+// between batches, so a search with an empty discovery table never returned
+// and the subnet broadcast lock it was called under stayed held.
+func TestFindPeersWithSubnet_HonoursContext(t *testing.T) {
+	p1 := p2ptest.NewTestP2P(t)
+	it := newBlockingIterator()
+	s := &Service{
+		ctx:         context.Background(),
+		host:        p1.BHost,
+		pubsub:      p1.PubSub(),
+		cfg:         &Config{},
+		dv5Listener: blockingIteratorListener{iterator: it},
+		peers: peers.NewStatus(context.Background(), &peers.StatusConfig{
+			ScorerParams: &scorers.Config{},
+		}),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	found, err := s.FindPeersWithSubnet(ctx, AttestationSubnetTopicFormat, 1, 1)
+	require.Equal(t, false, found)
+	require.ErrorContains(t, "unable to find requisite number of peers", err)
+	require.Equal(t, true, time.Since(start) < 2*time.Second, "search did not stop when its context expired")
+	require.Equal(t, true, it.isClosed(), "discovery iterator must be closed when the search context ends")
 }

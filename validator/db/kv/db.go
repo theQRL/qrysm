@@ -11,7 +11,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	prombolt "github.com/prysmaticlabs/prombbolt"
 	"github.com/theQRL/qrysm/async/abool"
-	"github.com/theQRL/qrysm/async/event"
 	"github.com/theQRL/qrysm/config/features"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
@@ -64,7 +63,6 @@ type Store struct {
 	databasePath                       string
 	batchedAttestations                *QueuedAttestationRecords
 	batchedAttestationsChan            chan *AttestationRecordSaveRequest
-	batchAttestationsFlushedFeed       *event.Feed
 	batchedAttestationsFlushInProgress abool.AtomicBool
 }
 
@@ -87,6 +85,9 @@ func (s *Store) ClearDB() error {
 		return nil
 	}
 	prometheus.Unregister(createBoltCollector(s.db))
+	if err := s.db.Close(); err != nil {
+		return errors.Wrap(err, "could not close database before clear")
+	}
 	return os.Remove(filepath.Join(s.databasePath, ProtectionDbFileName))
 }
 
@@ -130,11 +131,10 @@ func NewKVStore(ctx context.Context, dirPath string, config *Config) (*Store, er
 	}
 
 	kv := &Store{
-		db:                           boltDB,
-		databasePath:                 dirPath,
-		batchedAttestations:          NewQueuedAttestationRecords(),
-		batchedAttestationsChan:      make(chan *AttestationRecordSaveRequest, attestationBatchCapacity),
-		batchAttestationsFlushedFeed: new(event.Feed),
+		db:                      boltDB,
+		databasePath:            dirPath,
+		batchedAttestations:     NewQueuedAttestationRecords(),
+		batchedAttestationsChan: make(chan *AttestationRecordSaveRequest, attestationBatchCapacity),
 	}
 
 	if err := kv.db.Update(func(tx *bolt.Tx) error {

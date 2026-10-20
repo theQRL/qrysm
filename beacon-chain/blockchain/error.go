@@ -1,6 +1,13 @@
 package blockchain
 
-import "github.com/pkg/errors"
+import (
+	stderrors "errors"
+	"slices"
+
+	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/beacon-chain/verification"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+)
 
 var (
 	// ErrInvalidPayload is returned when the payload is invalid
@@ -21,14 +28,75 @@ var (
 	errBlockNotFoundInCacheOrDB = errors.New("block not found in cache or db")
 	// errWSBlockNotFound is returned when a block is not found in the WS cache or DB.
 	errWSBlockNotFound = errors.New("weak subjectivity root not found in db")
-	// errWSBlockNotFoundInEpoch is returned when a block is not found in the WS cache or DB within epoch.
-	errWSBlockNotFoundInEpoch = errors.New("weak subjectivity root not found in db within epoch")
+	// errWSCheckpointMismatch is returned when the supplied root is not the canonical checkpoint block.
+	errWSCheckpointMismatch = errors.New("weak subjectivity root does not match the canonical checkpoint")
+	// errWSBlockNotCanonical is returned when a block is in the DB but not part of the finalized canonical chain.
+	errWSBlockNotCanonical = errors.New("weak subjectivity root is not canonical")
 	// ErrNotDescendantOfFinalized is returned when a block is not a descendant of the finalized checkpoint
-	ErrNotDescendantOfFinalized = invalidBlock{error: errors.New("not descendant of finalized checkpoint")}
+	ErrNotDescendantOfFinalized = errors.New("not descendant of finalized checkpoint")
 	// ErrNotCheckpoint is returned when a given checkpoint is not a
 	// checkpoint in any chain known to forkchoice
 	ErrNotCheckpoint = errors.New("not a checkpoint in forkchoice")
+	// errBlockBeingSynced is returned when a block is being synced.
+	errBlockBeingSynced = errors.New("block is being synced")
+	// errNotGenesisRoot is returned when the root passed to hashForGenesisBlock
+	// is not the genesis block root.
+	errNotGenesisRoot = errors.New("root is not the genesis block root")
 )
+
+// attestationDependencyError identifies a failed block or state read that can
+// be retried without receiving the attestation again.
+type attestationDependencyError struct {
+	error
+}
+
+func (e attestationDependencyError) Unwrap() error {
+	return e.error
+}
+
+// unrelatedBlockError retains an execution rejection's diagnostics and roots
+// for sync cleanup, without blaming the peer supplying a different branch.
+type unrelatedBlockError struct {
+	error
+}
+
+// There is deliberately no Unwrap method: traversing the original error would
+// expose its verification marker again. Forward all other Is and As queries.
+func (e unrelatedBlockError) Is(target error) bool {
+	return target != verification.ErrInvalid && stderrors.Is(e.error, target)
+}
+
+func (e unrelatedBlockError) As(target any) bool {
+	return stderrors.As(e.error, target)
+}
+
+// IsUnrelatedBlockError reports whether err carries an execution rejection of
+// another branch, met while importing blocks that were themselves accepted.
+// Callers can record the rejected roots yet treat their own import as done.
+func IsUnrelatedBlockError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var u unrelatedBlockError
+	return stderrors.As(err, &u)
+}
+
+// classifyForkchoiceError limits peer penalties to rejected imports. FCU may
+// instead reject a previously imported head on another branch, including more
+// branches rejected recursively while selecting a replacement.
+func classifyForkchoiceError(err error, imported []blocks.ROBlock) error {
+	root := InvalidBlockRoot(err)
+	if root == [32]byte{} {
+		return err
+	}
+	invalidRoots := InvalidAncestorRoots(err)
+	for _, b := range imported {
+		if b.Root() == root || slices.Contains(invalidRoots, b.Root()) {
+			return err
+		}
+	}
+	return unrelatedBlockError{error: err}
+}
 
 // An invalid block is the block that fails state transition based on the core protocol rules.
 // The beacon node shall not be accepting nor building blocks that branch off from an invalid block.
@@ -72,6 +140,16 @@ func IsInvalidBlock(e error) bool {
 	}
 	var d invalidBlockError
 	return errors.As(e, &d)
+}
+
+// Unwrap ensures that any error wrapped in invalidBlock satisfies
+// errors.Is(err, verification.ErrInvalid). Sync code uses that check to
+// downscore peers that serve invalid blocks during range sync.
+func (e invalidBlock) Unwrap() error {
+	if !stderrors.Is(e.error, verification.ErrInvalid) {
+		return stderrors.Join(e.error, verification.ErrInvalid)
+	}
+	return e.error
 }
 
 // InvalidBlockLVH returns the invalid block last valid hash root. If the error

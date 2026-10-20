@@ -100,5 +100,6 @@ go_test(
         "@com_github_sirupsen_logrus//hooks/test",
         "@com_github_theqrl_go_qrl//common",
         "@com_github_theqrl_go_qrl//common/hexutil",
+        "@org_golang_google_protobuf//proto",
     ],
 )

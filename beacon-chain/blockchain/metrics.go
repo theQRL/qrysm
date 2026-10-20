@@ -273,7 +273,7 @@ func reportEpochMetrics(ctx context.Context, postState, headState state.BeaconSt
 			if currentEpoch < validator.ExitEpoch() {
 				exitingInstances++
 				exitingBalance += bal
-				slashingEffectiveBalance += validator.EffectiveBalance()
+				exitingEffectiveBalance += validator.EffectiveBalance()
 			} else {
 				exitedInstances++
 			}
@@ -319,7 +319,7 @@ func reportEpochMetrics(ctx context.Context, postState, headState state.BeaconSt
 	beaconFinalizedEpoch.Set(float64(postState.FinalizedCheckpointEpoch()))
 	beaconFinalizedRoot.Set(float64(bytesutil.ToLowInt64(postState.FinalizedCheckpoint().Root)))
 	currentExecutionDataDepositCount.Set(float64(postState.ExecutionData().DepositCount))
-	processedDepositsCount.Set(float64(postState.ExecutionDepositIndex() + 1))
+	processedDepositsCount.Set(float64(postState.ExecutionDepositIndex()))
 
 	var b *precompute.Balance
 	var v []*precompute.Validator

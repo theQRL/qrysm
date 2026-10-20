@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -24,6 +25,28 @@ import (
 
 const getAttesterDutiesTestEndpoint = "/qrl/v1/validator/duties/attester"
 const getProposerDutiesTestEndpoint = "/qrl/v1/validator/duties/proposer"
+
+func TestGetDutiesForEpoch_RejectsInvalidAggregatorSeed(t *testing.T) {
+	for _, seed := range []string{"", "0x", "0xgg", "0x" + strings.Repeat("01", 31), "0x" + strings.Repeat("01", 33)} {
+		t.Run(seed, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			provider := mock.NewMockdutiesProvider(ctrl)
+			provider.EXPECT().GetAttesterDuties(gomock.Any(), gomock.Any(), gomock.Any()).Return(&validator.GetAttesterDutiesResponse{
+				DependentRoot: "0x" + strings.Repeat("aa", 32), AggregatorSelectionSeed: seed,
+			}, nil)
+			provider.EXPECT().GetProposerDuties(gomock.Any(), gomock.Any()).Return(&validator.GetProposerDutiesResponse{
+				DependentRoot: "0x" + strings.Repeat("bb", 32),
+			}, nil)
+			provider.EXPECT().GetSyncDuties(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*validator.SyncCommitteeDuty{}, nil)
+			provider.EXPECT().GetCommittees(gomock.Any(), gomock.Any()).Return([]*shared.Committee{}, nil)
+			client := &beaconApiValidatorClient{dutiesProvider: provider}
+			duties, _, _, err := client.getDutiesForEpoch(context.Background(), 0, &qrysmpb.MultipleValidatorStatusResponse{})
+			require.ErrorContains(t, "invalid aggregator selection seed", err)
+			require.Equal(t, true, duties == nil)
+		})
+	}
+}
+
 const getSyncDutiesTestEndpoint = "/qrl/v1/validator/duties/sync"
 const getCommitteesTestEndpoint = "/qrl/v1/beacon/states/head/committees"
 
@@ -81,7 +104,7 @@ func TestGetAttesterDuties_Valid(t *testing.T) {
 	dutiesProvider := &beaconApiDutiesProvider{jsonRestHandler: jsonRestHandler}
 	attesterDuties, err := dutiesProvider.GetAttesterDuties(ctx, epoch, validatorIndices)
 	require.NoError(t, err)
-	assert.DeepEqual(t, expectedAttesterDuties.Data, attesterDuties)
+	assert.DeepEqual(t, expectedAttesterDuties.Data, attesterDuties.Data)
 }
 
 func TestGetAttesterDuties_HttpError(t *testing.T) {
@@ -179,7 +202,7 @@ func TestGetProposerDuties_Valid(t *testing.T) {
 	dutiesProvider := &beaconApiDutiesProvider{jsonRestHandler: jsonRestHandler}
 	proposerDuties, err := dutiesProvider.GetProposerDuties(ctx, epoch)
 	require.NoError(t, err)
-	assert.DeepEqual(t, expectedProposerDuties.Data, proposerDuties)
+	assert.DeepEqual(t, expectedProposerDuties.Data, proposerDuties.Data)
 }
 
 func TestGetProposerDuties_HttpError(t *testing.T) {
@@ -709,7 +732,7 @@ func TestGetDutiesForEpoch_Error(t *testing.T) {
 				epoch,
 				gomock.Any(),
 			).Return(
-				attesterDuties,
+				&validator.GetAttesterDutiesResponse{Data: attesterDuties, DependentRoot: "0x" + strings.Repeat("aa", 32)},
 				testCase.fetchAttesterDutiesError,
 			).AnyTimes()
 
@@ -717,7 +740,7 @@ func TestGetDutiesForEpoch_Error(t *testing.T) {
 				ctx,
 				epoch,
 			).Return(
-				proposerDuties,
+				&validator.GetProposerDutiesResponse{Data: proposerDuties, DependentRoot: "0x" + strings.Repeat("bb", 32)},
 				testCase.fetchProposerDutiesError,
 			).AnyTimes()
 
@@ -739,7 +762,7 @@ func TestGetDutiesForEpoch_Error(t *testing.T) {
 			).AnyTimes()
 
 			validatorClient := &beaconApiValidatorClient{dutiesProvider: dutiesProvider}
-			_, err := validatorClient.getDutiesForEpoch(
+			_, _, _, err := validatorClient.getDutiesForEpoch(
 				ctx,
 				epoch,
 				&qrysmpb.MultipleValidatorStatusResponse{
@@ -837,7 +860,11 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 				epoch,
 				multipleValidatorStatus.Indices,
 			).Return(
-				generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots),
+				&validator.GetAttesterDutiesResponse{
+					Data:                    generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots),
+					AggregatorSelectionSeed: "0x" + strings.Repeat("12", 32),
+					DependentRoot:           "0x" + strings.Repeat("aa", 32),
+				},
 				nil,
 			).Times(1)
 
@@ -845,7 +872,10 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 				ctx,
 				epoch,
 			).Return(
-				generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+				&validator.GetProposerDutiesResponse{
+					Data:          generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+					DependentRoot: "0x" + strings.Repeat("bb", 32),
+				},
 				nil,
 			).Times(1)
 
@@ -991,8 +1021,12 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 				},
 			}
 
+			for _, duty := range expectedDuties {
+				duty.AggregatorSelectionSeed = bytes.Repeat([]byte{0x12}, 32)
+			}
+
 			validatorClient := &beaconApiValidatorClient{dutiesProvider: dutiesProvider}
-			duties, err := validatorClient.getDutiesForEpoch(
+			duties, _, _, err := validatorClient.getDutiesForEpoch(
 				ctx,
 				epoch,
 				multipleValidatorStatus,
@@ -1075,7 +1109,11 @@ func TestGetDuties_Valid(t *testing.T) {
 				testCase.epoch,
 				multipleValidatorStatus.Indices,
 			).Return(
-				generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots),
+				&validator.GetAttesterDutiesResponse{
+					Data:                    generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots),
+					AggregatorSelectionSeed: "0x" + strings.Repeat("12", 32),
+					DependentRoot:           "0x" + strings.Repeat("aa", 32),
+				},
 				nil,
 			).Times(2)
 
@@ -1083,7 +1121,10 @@ func TestGetDuties_Valid(t *testing.T) {
 				ctx,
 				testCase.epoch,
 			).Return(
-				generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+				&validator.GetProposerDutiesResponse{
+					Data:          generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+					DependentRoot: "0x" + strings.Repeat("bb", 32),
+				},
 				nil,
 			).Times(2)
 
@@ -1109,7 +1150,11 @@ func TestGetDuties_Valid(t *testing.T) {
 				testCase.epoch+1,
 				validatorIndices,
 			).Return(
-				reverseSlice(generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots)),
+				&validator.GetAttesterDutiesResponse{
+					Data:                    reverseSlice(generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots)),
+					AggregatorSelectionSeed: "0x" + strings.Repeat("34", 32),
+					DependentRoot:           "0x" + strings.Repeat("aa", 32),
+				},
 				nil,
 			).Times(2)
 
@@ -1117,7 +1162,10 @@ func TestGetDuties_Valid(t *testing.T) {
 				ctx,
 				testCase.epoch+1,
 			).Return(
-				generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+				&validator.GetProposerDutiesResponse{
+					Data:          generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+					DependentRoot: "0x" + strings.Repeat("bb", 32),
+				},
 				nil,
 			).Times(2)
 
@@ -1246,14 +1294,14 @@ func TestGetDuties_Valid(t *testing.T) {
 				stateValidatorsProvider: stateValidatorsProvider,
 			}
 
-			expectedCurrentEpochDuties, err := validatorClient.getDutiesForEpoch(
+			expectedCurrentEpochDuties, expectedPrevDependentRoot, expectedCurrDependentRoot, err := validatorClient.getDutiesForEpoch(
 				ctx,
 				testCase.epoch,
 				multipleValidatorStatus,
 			)
 			require.NoError(t, err)
 
-			expectedNextEpochDuties, err := validatorClient.getDutiesForEpoch(
+			expectedNextEpochDuties, _, _, err := validatorClient.getDutiesForEpoch(
 				ctx,
 				testCase.epoch+1,
 				multipleValidatorStatus,
@@ -1261,8 +1309,10 @@ func TestGetDuties_Valid(t *testing.T) {
 			require.NoError(t, err)
 
 			expectedDuties := &qrysmpb.DutiesResponse{
-				CurrentEpochDuties: expectedCurrentEpochDuties,
-				NextEpochDuties:    expectedNextEpochDuties,
+				CurrentEpochDuties:        expectedCurrentEpochDuties,
+				NextEpochDuties:           expectedNextEpochDuties,
+				PreviousDutyDependentRoot: expectedPrevDependentRoot,
+				CurrentDutyDependentRoot:  expectedCurrDependentRoot,
 			}
 
 			duties, err := validatorClient.getDuties(ctx, &qrysmpb.DutiesRequest{
@@ -1299,7 +1349,7 @@ func TestGetDuties_GetValidatorStatusFailed(t *testing.T) {
 
 	_, err := validatorClient.getDuties(ctx, &qrysmpb.DutiesRequest{
 		Epoch:      1,
-		PublicKeys: [][]byte{},
+		PublicKeys: [][]byte{{1}},
 	})
 	assert.ErrorContains(t, "failed to get validator status", err)
 	assert.ErrorContains(t, "foo error", err)
@@ -1341,7 +1391,7 @@ func TestGetDuties_GetDutiesForEpochFailed(t *testing.T) {
 
 	_, err := validatorClient.getDuties(ctx, &qrysmpb.DutiesRequest{
 		Epoch:      1,
-		PublicKeys: [][]byte{},
+		PublicKeys: [][]byte{{1}},
 	})
 	assert.ErrorContains(t, "failed to get duties for current epoch `1`", err)
 	assert.ErrorContains(t, "foo error", err)

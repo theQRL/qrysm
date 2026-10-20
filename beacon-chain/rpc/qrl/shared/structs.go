@@ -9,6 +9,7 @@ import (
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/consensus-types/validator"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
@@ -115,6 +116,9 @@ type Fork struct {
 }
 
 func (s *Fork) ToConsensus() (*qrysmpb.Fork, error) {
+	if s == nil {
+		return nil, NewDecodeError(errNilValue, "Fork")
+	}
 	previousVersion, err := hexutil.Decode(s.PreviousVersion)
 	if err != nil {
 		return nil, NewDecodeError(err, "PreviousVersion")
@@ -142,6 +146,12 @@ type SyncCommitteeMessage struct {
 }
 
 func (s *SignedValidatorRegistration) ToConsensus() (*qrysmpb.SignedValidatorRegistrationV1, error) {
+	if s == nil {
+		return nil, NewDecodeError(errNilValue, "SignedValidatorRegistration")
+	}
+	if s.Message == nil {
+		return nil, NewDecodeError(errNilValue, "Message")
+	}
 	msg, err := s.Message.ToConsensus()
 	if err != nil {
 		return nil, NewDecodeError(err, "Message")
@@ -160,6 +170,9 @@ func (s *SignedValidatorRegistration) ToConsensus() (*qrysmpb.SignedValidatorReg
 }
 
 func (s *ValidatorRegistration) ToConsensus() (*qrysmpb.ValidatorRegistrationV1, error) {
+	if s == nil {
+		return nil, NewDecodeError(errNilValue, "ValidatorRegistration")
+	}
 	feeRecipient, err := hexutil.DecodeQ(s.FeeRecipient)
 	if err != nil {
 		return nil, NewDecodeError(err, "FeeRecipient")
@@ -217,6 +230,12 @@ func SignedValidatorRegistrationFromConsensus(vr *qrysmpb.SignedValidatorRegistr
 }
 
 func (s *SignedContributionAndProof) ToConsensus() (*qrysmpb.SignedContributionAndProof, error) {
+	if s == nil {
+		return nil, NewDecodeError(errNilValue, "SignedContributionAndProof")
+	}
+	if s.Message == nil {
+		return nil, NewDecodeError(errNilValue, "Message")
+	}
 	msg, err := s.Message.ToConsensus()
 	if err != nil {
 		return nil, NewDecodeError(err, "Message")
@@ -233,6 +252,12 @@ func (s *SignedContributionAndProof) ToConsensus() (*qrysmpb.SignedContributionA
 }
 
 func (c *ContributionAndProof) ToConsensus() (*qrysmpb.ContributionAndProof, error) {
+	if c == nil {
+		return nil, NewDecodeError(errNilValue, "ContributionAndProof")
+	}
+	if c.Contribution == nil {
+		return nil, NewDecodeError(errNilValue, "Contribution")
+	}
 	contribution, err := c.Contribution.ToConsensus()
 	if err != nil {
 		return nil, NewDecodeError(err, "Contribution")
@@ -254,6 +279,9 @@ func (c *ContributionAndProof) ToConsensus() (*qrysmpb.ContributionAndProof, err
 }
 
 func (s *SyncCommitteeContribution) ToConsensus() (*qrysmpb.SyncCommitteeContribution, error) {
+	if s == nil {
+		return nil, NewDecodeError(errNilValue, "SyncCommitteeContribution")
+	}
 	slot, err := strconv.ParseUint(s.Slot, 10, 64)
 	if err != nil {
 		return nil, NewDecodeError(err, "Slot")
@@ -290,6 +318,12 @@ func (s *SyncCommitteeContribution) ToConsensus() (*qrysmpb.SyncCommitteeContrib
 }
 
 func (s *SignedAggregateAttestationAndProof) ToConsensus() (*qrysmpb.SignedAggregateAttestationAndProof, error) {
+	if s == nil {
+		return nil, NewDecodeError(errNilValue, "SignedAggregateAttestationAndProof")
+	}
+	if s.Message == nil {
+		return nil, NewDecodeError(errNilValue, "Message")
+	}
 	msg, err := s.Message.ToConsensus()
 	if err != nil {
 		return nil, NewDecodeError(err, "Message")
@@ -306,6 +340,12 @@ func (s *SignedAggregateAttestationAndProof) ToConsensus() (*qrysmpb.SignedAggre
 }
 
 func (a *AggregateAttestationAndProof) ToConsensus() (*qrysmpb.AggregateAttestationAndProof, error) {
+	if a == nil {
+		return nil, NewDecodeError(errNilValue, "AggregateAttestationAndProof")
+	}
+	if a.Aggregate == nil {
+		return nil, NewDecodeError(errNilValue, "Aggregate")
+	}
 	aggIndex, err := strconv.ParseUint(a.AggregatorIndex, 10, 64)
 	if err != nil {
 		return nil, NewDecodeError(err, "AggregatorIndex")
@@ -326,6 +366,12 @@ func (a *AggregateAttestationAndProof) ToConsensus() (*qrysmpb.AggregateAttestat
 }
 
 func (a *Attestation) ToConsensus() (*qrysmpb.Attestation, error) {
+	if a == nil {
+		return nil, NewDecodeError(errNilValue, "Attestation")
+	}
+	if a.Data == nil {
+		return nil, NewDecodeError(errNilValue, "Data")
+	}
 	aggBits, err := hexutil.Decode(a.AggregationBits)
 	if err != nil {
 		return nil, NewDecodeError(err, "AggregationBits")
@@ -365,6 +411,15 @@ func AttestationFromConsensus(a *qrysmpb.Attestation) *Attestation {
 }
 
 func (a *AttestationData) ToConsensus() (*qrysmpb.AttestationData, error) {
+	if a == nil {
+		return nil, NewDecodeError(errNilValue, "AttestationData")
+	}
+	if a.Source == nil {
+		return nil, NewDecodeError(errNilValue, "Source")
+	}
+	if a.Target == nil {
+		return nil, NewDecodeError(errNilValue, "Target")
+	}
 	slot, err := strconv.ParseUint(a.Slot, 10, 64)
 	if err != nil {
 		return nil, NewDecodeError(err, "Slot")
@@ -373,7 +428,7 @@ func (a *AttestationData) ToConsensus() (*qrysmpb.AttestationData, error) {
 	if err != nil {
 		return nil, NewDecodeError(err, "CommitteeIndex")
 	}
-	bbRoot, err := hexutil.Decode(a.BeaconBlockRoot)
+	bbRoot, err := DecodeHexWithLength(a.BeaconBlockRoot, fieldparams.RootLength)
 	if err != nil {
 		return nil, NewDecodeError(err, "BeaconBlockRoot")
 	}
@@ -406,11 +461,14 @@ func AttestationDataFromConsensus(a *qrysmpb.AttestationData) *AttestationData {
 }
 
 func (c *Checkpoint) ToConsensus() (*qrysmpb.Checkpoint, error) {
+	if c == nil {
+		return nil, NewDecodeError(errNilValue, "Checkpoint")
+	}
 	epoch, err := strconv.ParseUint(c.Epoch, 10, 64)
 	if err != nil {
 		return nil, NewDecodeError(err, "Epoch")
 	}
-	root, err := hexutil.Decode(c.Root)
+	root, err := DecodeHexWithLength(c.Root, fieldparams.RootLength)
 	if err != nil {
 		return nil, NewDecodeError(err, "Root")
 	}
@@ -429,6 +487,9 @@ func CheckpointFromConsensus(c *qrysmpb.Checkpoint) *Checkpoint {
 }
 
 func (s *SyncCommitteeSubscription) ToConsensus() (*validator.SyncCommitteeSubscription, error) {
+	if s == nil {
+		return nil, NewDecodeError(errNilValue, "SyncCommitteeSubscription")
+	}
 	index, err := strconv.ParseUint(s.ValidatorIndex, 10, 64)
 	if err != nil {
 		return nil, NewDecodeError(err, "ValidatorIndex")
@@ -453,6 +514,9 @@ func (s *SyncCommitteeSubscription) ToConsensus() (*validator.SyncCommitteeSubsc
 }
 
 func (b *BeaconCommitteeSubscription) ToConsensus() (*validator.BeaconCommitteeSubscription, error) {
+	if b == nil {
+		return nil, NewDecodeError(errNilValue, "BeaconCommitteeSubscription")
+	}
 	valIndex, err := strconv.ParseUint(b.ValidatorIndex, 10, 64)
 	if err != nil {
 		return nil, NewDecodeError(err, "ValidatorIndex")
@@ -480,6 +544,12 @@ func (b *BeaconCommitteeSubscription) ToConsensus() (*validator.BeaconCommitteeS
 }
 
 func (e *SignedVoluntaryExit) ToConsensus() (*qrysmpb.SignedVoluntaryExit, error) {
+	if e == nil {
+		return nil, NewDecodeError(errNilValue, "SignedVoluntaryExit")
+	}
+	if e.Message == nil {
+		return nil, NewDecodeError(errNilValue, "Message")
+	}
 	sig, err := hexutil.Decode(e.Signature)
 	if err != nil {
 		return nil, NewDecodeError(err, "Signature")
@@ -503,6 +573,9 @@ func SignedVoluntaryExitFromConsensus(e *qrysmpb.SignedVoluntaryExit) *SignedVol
 }
 
 func (e *VoluntaryExit) ToConsensus() (*qrysmpb.VoluntaryExit, error) {
+	if e == nil {
+		return nil, NewDecodeError(errNilValue, "VoluntaryExit")
+	}
 	epoch, err := strconv.ParseUint(e.Epoch, 10, 64)
 	if err != nil {
 		return nil, NewDecodeError(err, "Epoch")
@@ -519,6 +592,9 @@ func (e *VoluntaryExit) ToConsensus() (*qrysmpb.VoluntaryExit, error) {
 }
 
 func (m *SyncCommitteeMessage) ToConsensus() (*qrysmpb.SyncCommitteeMessage, error) {
+	if m == nil {
+		return nil, NewDecodeError(errNilValue, "SyncCommitteeMessage")
+	}
 	slot, err := strconv.ParseUint(m.Slot, 10, 64)
 	if err != nil {
 		return nil, NewDecodeError(err, "Slot")
@@ -533,6 +609,9 @@ func (m *SyncCommitteeMessage) ToConsensus() (*qrysmpb.SyncCommitteeMessage, err
 	}
 	sig, err := DecodeHexWithLength(m.Signature, fieldparams.MLDSA87SignatureLength)
 	if err != nil {
+		return nil, NewDecodeError(err, "Signature")
+	}
+	if _, err := ml_dsa_87.SignatureFromBytes(sig); err != nil {
 		return nil, NewDecodeError(err, "Signature")
 	}
 

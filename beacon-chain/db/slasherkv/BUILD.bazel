@@ -3,9 +3,11 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "slasherkv",
     srcs = [
+        "attestation_record_merge.go",
         "kv.go",
         "log.go",
         "metrics.go",
+        "migration_attestation_records.go",
         "pruning.go",
         "schema.go",
         "slasher.go",
@@ -37,6 +39,7 @@ go_test(
     name = "slasherkv_test",
     srcs = [
         "kv_test.go",
+        "migration_attestation_records_test.go",
         "pruning_test.go",
         "slasher_test.go",
         "slasherkv_test.go",
@@ -44,8 +47,10 @@ go_test(
     embed = [":slasherkv"],
     deps = [
         "//beacon-chain/slasher/types",
+        "//config/fieldparams",
         "//config/params",
         "//consensus-types/primitives",
+        "//container/slice",
         "//encoding/bytesutil",
         "//proto/qrysm/v1alpha1",
         "//testing/assert",

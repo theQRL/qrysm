@@ -22,9 +22,14 @@ func (b *BeaconState) SetLatestBlockHeader(val *qrysmpb.BeaconBlockHeader) error
 
 // SetBlockRoots for the beacon state. Updates the entire
 // list to a new value by overwriting the previous one.
+// The input must contain exactly fieldparams.BlockRootsLength roots.
 func (b *BeaconState) SetBlockRoots(val [][]byte) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
+
+	if len(val) != fieldparams.BlockRootsLength {
+		return errors.Errorf("block roots length %d does not match expected length %d", len(val), fieldparams.BlockRootsLength)
+	}
 
 	if features.Get().EnableExperimentalState {
 		if b.blockRootsMultiValue != nil {

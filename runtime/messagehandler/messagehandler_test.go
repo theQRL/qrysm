@@ -15,7 +15,6 @@ func TestSafelyHandleMessage(t *testing.T) {
 
 	messagehandler.SafelyHandleMessage(context.Background(), func(_ context.Context, _ *pubsub.Message) error {
 		panic("bad!")
-		return nil
 	}, &pubsub.Message{})
 
 	require.LogsContain(t, hook, "Panicked when handling p2p message!")
@@ -26,7 +25,6 @@ func TestSafelyHandleMessage_NoData(t *testing.T) {
 
 	messagehandler.SafelyHandleMessage(context.Background(), func(_ context.Context, _ *pubsub.Message) error {
 		panic("bad!")
-		return nil
 	}, nil)
 
 	entry := hook.LastEntry()

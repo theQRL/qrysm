@@ -14,16 +14,19 @@ import (
 	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/blockchain"
 	"github.com/theQRL/qrysm/beacon-chain/builder"
+	coreblocks "github.com/theQRL/qrysm/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/beacon-chain/core/feed"
 	blockfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/block"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/beacon-chain/db/kv"
 	"github.com/theQRL/qrysm/beacon-chain/state"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
@@ -57,17 +60,16 @@ func (vs *Server) GetBeaconBlock(ctx context.Context, req *qrysmpb.BlockRequest)
 		"sinceSlotStartTime": time.Since(t),
 	}).Info("Begin building block")
 
+	// Building a block advances the head state to req.Slot, so bound the work a
+	// request can trigger. Two epochs is far beyond any clock skew a proposer
+	// could legitimately have.
+	if maxSlot := vs.TimeFetcher.CurrentSlot() + 2*params.BeaconConfig().SlotsPerEpoch; req.Slot > maxSlot {
+		return nil, status.Errorf(codes.InvalidArgument, "Requested slot %d is too far in the future, latest allowed is %d", req.Slot, maxSlot)
+	}
+
 	// A syncing validator should not produce a block.
 	if vs.SyncChecker.Syncing() {
 		return nil, status.Error(codes.Unavailable, "Syncing to latest head, not ready to respond")
-	}
-
-	// process attestations and update head in forkchoice
-	vs.ForkchoiceFetcher.UpdateHead(ctx, vs.TimeFetcher.CurrentSlot())
-	headRoot := vs.ForkchoiceFetcher.CachedHeadRoot()
-	parentRoot := vs.ForkchoiceFetcher.GetProposerHead()
-	if parentRoot != headRoot {
-		blockchain.LateBlockAttemptedReorgCount.Inc()
 	}
 
 	// An optimistic validator MUST NOT produce a block (i.e., sign across the DOMAIN_BEACON_PROPOSER domain).
@@ -75,17 +77,25 @@ func (vs *Server) GetBeaconBlock(ctx context.Context, req *qrysmpb.BlockRequest)
 		return nil, status.Errorf(codes.Unavailable, "Validator is not ready to propose: %v", err)
 	}
 
+	head, parentRoot, err := vs.getParentState(ctx, req.Slot)
+	if err != nil {
+		return nil, err
+	}
+	// Fail fast on a reveal that does not open the proposer's RANDAO
+	// commitment: the block would be invalid, so there is no point building
+	// it. A zero reveal is allowed for callers that only want a state root
+	// (REST skip_randao_verification).
+	if len(req.RandaoReveal) != fieldparams.RandaoRevealLength {
+		return nil, status.Errorf(codes.InvalidArgument, "randao reveal must be %d bytes, got %d", fieldparams.RandaoRevealLength, len(req.RandaoReveal))
+	}
+	if reveal := bytesutil.ToBytes32(req.RandaoReveal); reveal != [32]byte{} {
+		if err := coreblocks.VerifyRandaoReveal(ctx, head, reveal); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "Could not verify randao reveal: %v", err)
+		}
+	}
 	sBlk, err := getEmptyBlock(req.Slot)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not prepare block: %v", err)
-	}
-	head, err := vs.HeadFetcher.HeadState(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not get head state: %v", err)
-	}
-	head, err = transition.ProcessSlotsUsingNextSlotCache(ctx, head, parentRoot[:], req.Slot)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not process slots up to %d: %v", req.Slot, err)
 	}
 
 	// Set slot, graffiti, randao reveal, and parent root.
@@ -120,13 +130,94 @@ func (vs *Server) GetBeaconBlock(ctx context.Context, req *qrysmpb.BlockRequest)
 	return vs.constructGenericBeaconBlock(sBlk)
 }
 
+func (vs *Server) getParentState(ctx context.Context, slot primitives.Slot) (state.BeaconState, [32]byte, error) {
+	// process attestations and update head in forkchoice
+	oldHeadRoot := vs.ForkchoiceFetcher.CachedHeadRoot()
+	vs.ForkchoiceFetcher.UpdateHead(ctx, vs.TimeFetcher.CurrentSlot())
+	headRoot := vs.ForkchoiceFetcher.CachedHeadRoot()
+	parentRoot := vs.ForkchoiceFetcher.GetProposerHead()
+	head, err := vs.getParentStateFromReorgData(ctx, slot, oldHeadRoot, parentRoot, headRoot)
+	return head, parentRoot, err
+}
+
+func (vs *Server) getParentStateFromReorgData(ctx context.Context, slot primitives.Slot, oldHeadRoot, parentRoot, headRoot [32]byte) (state.BeaconState, error) {
+	var head state.BeaconState
+	var err error
+	if parentRoot != headRoot {
+		head, err = vs.handleSuccessfulReorgAttempt(ctx, slot, parentRoot)
+	} else {
+		if oldHeadRoot != headRoot {
+			logFailedReorgAttempt(slot, oldHeadRoot, headRoot)
+		}
+		head, err = vs.getHeadNoReorg(ctx, slot, parentRoot)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if head.Slot() >= slot {
+		return head, nil
+	}
+	head, err = transition.ProcessSlotsUsingNextSlotCache(ctx, head, parentRoot[:], slot)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not process slots up to %d: %v", slot, err)
+	}
+	return head, nil
+}
+
+func (vs *Server) handleSuccessfulReorgAttempt(ctx context.Context, slot primitives.Slot, parentRoot [32]byte) (state.BeaconState, error) {
+	// Try to get the state from the NSC
+	head := transition.NextSlotState(parentRoot[:], slot)
+	if head != nil {
+		return head, nil
+	}
+	// cache miss
+	head, err := vs.StateGen.StateByRoot(ctx, parentRoot)
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, "could not obtain head state")
+	}
+	return head, nil
+}
+
+func logFailedReorgAttempt(slot primitives.Slot, oldHeadRoot, headRoot [32]byte) {
+	blockchain.LateBlockAttemptedReorgCount.Inc()
+	log.WithFields(logrus.Fields{
+		"slot":        slot,
+		"oldHeadRoot": fmt.Sprintf("%#x", oldHeadRoot),
+		"headRoot":    fmt.Sprintf("%#x", headRoot),
+	}).Warn("Late block attempted reorg failed")
+}
+
+func (vs *Server) getHeadNoReorg(ctx context.Context, slot primitives.Slot, parentRoot [32]byte) (state.BeaconState, error) {
+	// Try to get the state from the NSC
+	head := transition.NextSlotState(parentRoot[:], slot)
+	if head != nil {
+		return head, nil
+	}
+	// The published head can change after parent selection. Load the state
+	// for that selected root, just as the intentional reorg path does.
+	head, err := vs.StateGen.StateByRoot(ctx, parentRoot)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not get parent state: %v", err)
+	}
+	return head, nil
+}
+
 func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.SignedBeaconBlock, head state.BeaconState, skipMevBoost bool) error {
+	// Slashing selection applies every pending slashing to the state it selects
+	// from, so that exit selection right after it drops exits of validators
+	// slashed in this block. Give the consensus-fields goroutine its own copy:
+	// the execution payload's withdrawals are derived from the state handed to
+	// getLocalPayload, and the transition validates them against the state
+	// before this block's operations, so that state must never see those
+	// mutations while the two run concurrently.
+	consensusHead := head.Copy()
+
 	// Build consensus fields in background
 	var wg sync.WaitGroup
 	wg.Go(func() {
 
 		// Set execution data.
-		executionData, err := vs.executionDataMajorityVote(ctx, head)
+		executionData, err := vs.executionDataMajorityVote(ctx, consensusHead)
 		if err != nil {
 			executionData = &qrysmpb.ExecutionData{DepositRoot: params.BeaconConfig().ZeroHash[:], BlockHash: params.BeaconConfig().ZeroHash[:]}
 			log.WithError(err).Error("Could not get executiondata")
@@ -134,7 +225,7 @@ func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.Signed
 		sBlk.SetExecutionData(executionData)
 
 		// Set deposit and attestation.
-		deposits, atts, err := vs.packDepositsAndAttestations(ctx, head, executionData) // TODO: split attestations and deposits
+		deposits, atts, err := vs.packDepositsAndAttestations(ctx, consensusHead, executionData) // TODO: split attestations and deposits
 		if err != nil {
 			sBlk.SetDeposits([]*qrysmpb.Deposit{})
 			sBlk.SetAttestations([]*qrysmpb.Attestation{})
@@ -145,15 +236,15 @@ func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.Signed
 		}
 
 		// Set slashings.
-		validProposerSlashings, validAttSlashings := vs.getSlashings(ctx, head)
+		validProposerSlashings, validAttSlashings := vs.getSlashings(ctx, consensusHead)
 		sBlk.SetProposerSlashings(validProposerSlashings)
 		sBlk.SetAttesterSlashings(validAttSlashings)
 
 		// Set exits.
-		sBlk.SetVoluntaryExits(vs.getExits(head, sBlk.Block().Slot()))
+		sBlk.SetVoluntaryExits(vs.getExits(consensusHead, sBlk.Block().Slot()))
 
 		// Set sync aggregate.
-		vs.setSyncAggregate(ctx, sBlk)
+		vs.setSyncAggregate(ctx, sBlk, consensusHead)
 	})
 
 	localPayload, overrideBuilder, err := vs.getLocalPayload(ctx, sBlk.Block(), head)
@@ -165,7 +256,12 @@ func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.Signed
 	var builderPayload interfaces.ExecutionData
 	overrideBuilder = overrideBuilder || skipMevBoost // Skip using mev-boost if requested by the caller.
 	if !overrideBuilder {
-		builderPayload, err = vs.getBuilderPayload(ctx, sBlk.Block().Slot(), sBlk.Block().ProposerIndex())
+		latestHeader, headerErr := head.LatestExecutionPayloadHeader()
+		if headerErr != nil {
+			return status.Errorf(codes.Internal, "Could not get latest execution payload header: %v", headerErr)
+		}
+		parentGasLimit := latestHeader.GasLimit()
+		builderPayload, err = vs.getBuilderPayload(ctx, sBlk.Block().Slot(), sBlk.Block().ProposerIndex(), parentGasLimit)
 		if err != nil {
 			builderGetPayloadMissCount.Inc()
 			log.WithError(err).Error("Could not get builder payload")
@@ -186,6 +282,10 @@ func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.Signed
 func (vs *Server) ProposeBeaconBlock(ctx context.Context, req *qrysmpb.GenericSignedBeaconBlock) (*qrysmpb.ProposeResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.ProposeBeaconBlock")
 	defer span.End()
+
+	if err := validateProposedBlockFieldLengths(req); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s: %v", CouldNotDecodeBlock, err)
+	}
 
 	blk, err := blocks.NewSignedBeaconBlock(req.Block)
 	if err != nil {
@@ -220,7 +320,12 @@ func (vs *Server) ProposeBeaconBlock(ctx context.Context, req *qrysmpb.GenericSi
 	}).Debug("Broadcasting block")
 
 	if err := vs.BlockReceiver.ReceiveBlock(ctx, blk, root); err != nil {
-		return nil, fmt.Errorf("could not process beacon block: %v", err)
+		if !blockchain.IsUnrelatedBlockError(err) {
+			return nil, fmt.Errorf("could not process beacon block: %v", err)
+		}
+		// The execution rejection concerns another branch. This block was
+		// imported, so the proposal succeeded.
+		log.WithError(err).WithField("slot", blk.Block().Slot()).Warn("Proposed block imported while another branch was invalidated")
 	}
 
 	log.WithField("slot", blk.Block().Slot()).Debugf(
@@ -235,6 +340,53 @@ func (vs *Server) ProposeBeaconBlock(ctx context.Context, req *qrysmpb.GenericSi
 	}, nil
 }
 
+// validateProposedBlockFieldLengths checks fields whose lengths would be lost
+// when NewSignedBeaconBlock copies them into fixed-size arrays. Validate at the
+// RPC boundary so internal callers can still construct unfinished blocks.
+func validateProposedBlockFieldLengths(req *qrysmpb.GenericSignedBeaconBlock) error {
+	var signature, parentRoot, stateRoot, randaoReveal, graffiti []byte
+	switch b := req.GetBlock().(type) {
+	case nil:
+		return blocks.ErrNilObject
+	case *qrysmpb.GenericSignedBeaconBlock_Zond:
+		if b == nil {
+			return blocks.ErrNilObject
+		}
+		block := b.Zond.GetBlock()
+		body := block.GetBody()
+		signature = b.Zond.GetSignature()
+		parentRoot, stateRoot = block.GetParentRoot(), block.GetStateRoot()
+		randaoReveal, graffiti = body.GetRandaoReveal(), body.GetGraffiti()
+	case *qrysmpb.GenericSignedBeaconBlock_BlindedZond:
+		if b == nil {
+			return blocks.ErrNilObject
+		}
+		block := b.BlindedZond.GetBlock()
+		body := block.GetBody()
+		signature = b.BlindedZond.GetSignature()
+		parentRoot, stateRoot = block.GetParentRoot(), block.GetStateRoot()
+		randaoReveal, graffiti = body.GetRandaoReveal(), body.GetGraffiti()
+	default:
+		return errors.Wrapf(blocks.ErrUnsupportedSignedBeaconBlock, "unable to validate block from type %T", b)
+	}
+	for _, field := range []struct {
+		name  string
+		value []byte
+		size  int
+	}{
+		{"signature", signature, fieldparams.MLDSA87SignatureLength},
+		{"parent root", parentRoot, fieldparams.RootLength},
+		{"state root", stateRoot, fieldparams.RootLength},
+		{"randao reveal", randaoReveal, fieldparams.RandaoRevealLength},
+		{"graffiti", graffiti, fieldparams.RootLength},
+	} {
+		if len(field.value) != field.size {
+			return fmt.Errorf("%s must be %d bytes, got %d", field.name, field.size, len(field.value))
+		}
+	}
+	return nil
+}
+
 // PrepareBeaconProposer caches and updates the fee recipient for the given proposer.
 func (vs *Server) PrepareBeaconProposer(
 	ctx context.Context, request *qrysmpb.PrepareBeaconProposerRequest,
@@ -244,8 +396,19 @@ func (vs *Server) PrepareBeaconProposer(
 	var feeRecipients []common.Address
 	var validatorIndices []primitives.ValidatorIndex
 
+	// Fee recipients are stored by validator index and never removed, so only
+	// indices of validators in the registry are accepted; otherwise any API
+	// client could grow the database without bound.
+	headState, err := vs.HeadFetcher.HeadStateReadOnly(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not get head state: %v", err)
+	}
+	numValidators := uint64(headState.NumValidators())
 	newRecipients := make([]*qrysmpb.PrepareBeaconProposerRequest_FeeRecipientContainer, 0, len(request.Recipients))
 	for _, r := range request.Recipients {
+		if uint64(r.ValidatorIndex) >= numValidators {
+			return nil, status.Errorf(codes.InvalidArgument, "Validator index %d is not in the registry of %d validators", r.ValidatorIndex, numValidators)
+		}
 		f, err := vs.BeaconDB.FeeRecipientByValidatorID(ctx, r.ValidatorIndex)
 		switch {
 		case errors.Is(err, kv.ErrNotFoundFeeRecipient):

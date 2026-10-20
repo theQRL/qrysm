@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/dgraph-io/ristretto"
@@ -24,12 +25,23 @@ import (
 
 var _ iface.Database = (*Store)(nil)
 
+// OpenTimeout is how long NewKVStore retries the database file lock before
+// giving up (bolt retries it every 50 ms). A tool that replaces the database
+// file relies on it: holding the lock for longer than this after the file is
+// replaced sees off every node that was waiting for the lock.
+const OpenTimeout = 1 * time.Second
+
 const (
 	// NumOfValidatorEntries is the size of the validator cache entries.
 	// we expect to hold a max of 200K validators, so setting it to 2 million (10x the capacity).
 	NumOfValidatorEntries = 1 << 21
-	// ValidatorEntryMaxCost is set to ~64Mb to allow 200K validators entries to be cached.
-	ValidatorEntryMaxCost = 1 << 26
+	// ValidatorEntryMaxCost bounds the validator entry cache by the encoded size
+	// of its entries. A QRL validator entry carries a 2592-byte ML-DSA-87 public
+	// key and encodes to about 2.7 KB (the upstream value of 64 MiB assumed
+	// ~121-byte entries and would hold only ~25k QRL validators, after which every
+	// state read decodes the whole registry from disk). 512 MiB holds the ~200K
+	// validators NumOfValidatorEntries is sized for.
+	ValidatorEntryMaxCost = 1 << 29
 	// BeaconNodeDbDirName is the name of the directory containing the beacon node database.
 	BeaconNodeDbDirName = "beaconchaindata"
 	// DatabaseFileName is the name of the beacon node database.
@@ -66,9 +78,12 @@ var (
 	})
 )
 
-// BlockCacheSize specifies 1000 slots worth of blocks cached, which
-// would be approximately 2MB
-var BlockCacheSize = int64(1 << 21)
+// BlockCacheSize bounds the block cache by the encoded size of the cached
+// blocks. QRL blocks carry ML-DSA-87 signatures (4627 bytes each, one per
+// attester) and run to a few megabytes, so the upstream value of 2 MiB (sized
+// for ~1000 Ethereum blocks) held one or two blocks and left Block() reads
+// effectively uncached. 128 MiB keeps roughly the last epoch of blocks.
+var BlockCacheSize = int64(128 << 20)
 
 // blockedBuckets represents the buckets that we want to restrict
 // from our metrics fetching for performance reasons. For a detailed
@@ -90,6 +105,12 @@ type Store struct {
 	validatorEntryCache *ristretto.Cache
 	stateSummaryCache   *stateSummaryCache
 	ctx                 context.Context
+	// blockWriteLock serializes a block save with a block deletion, each
+	// together with its cache update. The cache is populated after a save
+	// commits; a deletion that ran in between would otherwise leave the cache
+	// serving a block the database no longer holds, and SaveBlock would then
+	// skip persisting it again.
+	blockWriteLock sync.Mutex
 }
 
 // KVStoreDatafilePath is the canonical construction of a full
@@ -150,7 +171,7 @@ func NewKVStore(ctx context.Context, dirPath string) (*Store, error) {
 		datafile,
 		params.BeaconIoConfig().ReadWritePermissions,
 		&bolt.Options{
-			Timeout:         1 * time.Second,
+			Timeout:         OpenTimeout,
 			InitialMmapSize: mmapSize,
 		},
 	)
@@ -161,13 +182,21 @@ func NewKVStore(ctx context.Context, dirPath string) (*Store, error) {
 		return nil, err
 	}
 	boltDB.AllocSize = boltAllocSize
+	// An initialization failure must release the file lock, or the database
+	// cannot be reopened until the process exits.
+	closeOnError := func(initErr error) error {
+		if closeErr := boltDB.Close(); closeErr != nil {
+			log.WithError(closeErr).Error("Could not close the database after a failed initialization")
+		}
+		return initErr
+	}
 	blockCache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: 1000,           // number of keys to track frequency of (1000).
 		MaxCost:     BlockCacheSize, // maximum cost of cache (1000 Blocks).
 		BufferItems: 64,             // number of keys per Get buffer.
 	})
 	if err != nil {
-		return nil, err
+		return nil, closeOnError(err)
 	}
 
 	validatorCache, err := ristretto.NewCache(&ristretto.Config{
@@ -176,7 +205,7 @@ func NewKVStore(ctx context.Context, dirPath string) (*Store, error) {
 		BufferItems: 64,                    // number of keys per Get buffer.
 	})
 	if err != nil {
-		return nil, err
+		return nil, closeOnError(err)
 	}
 
 	kv := &Store{
@@ -190,14 +219,20 @@ func NewKVStore(ctx context.Context, dirPath string) (*Store, error) {
 	if err := kv.db.Update(func(tx *bolt.Tx) error {
 		return createBuckets(tx, Buckets...)
 	}); err != nil {
-		return nil, err
+		return nil, closeOnError(err)
 	}
 	if err = prometheus.Register(createBoltCollector(kv.db)); err != nil {
-		return nil, err
+		return nil, closeOnError(err)
 	}
 	// Setup the type of block storage used depending on whether or not this is a fresh database.
 	if err := kv.setupBlockStorageType(ctx); err != nil {
-		return nil, err
+		prometheus.Unregister(createBoltCollector(kv.db))
+		return nil, closeOnError(err)
+	}
+	// A genesis block stored blinded by an older release cannot be served.
+	if err := kv.repairBlindedGenesisBlock(ctx); err != nil {
+		prometheus.Unregister(createBoltCollector(kv.db))
+		return nil, closeOnError(errors.Wrap(err, "could not repair the stored genesis block"))
 	}
 
 	return kv, nil
@@ -209,6 +244,11 @@ func (s *Store) ClearDB() error {
 		return nil
 	}
 	prometheus.Unregister(createBoltCollector(s.db))
+	// Close the bolt DB before removing the underlying file so we don't
+	// race an unmap with file deletion (matters on Windows; defensive on Linux).
+	if err := s.db.Close(); err != nil {
+		return errors.Wrap(err, "could not close database before clear")
+	}
 	if err := os.Remove(path.Join(s.databasePath, DatabaseFileName)); err != nil {
 		return errors.Wrap(err, "could not remove database file")
 	}

@@ -26,8 +26,10 @@ func TestKV_Aggregated_AggregateUnaggregatedAttestations(t *testing.T) {
 	cache := NewAttCaches()
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig1 := priv.Sign([]byte{'a'})
-	sig2 := priv.Sign([]byte{'b'})
+	sig1, err := priv.Sign([]byte{'a'})
+	require.NoError(t, err)
+	sig2, err := priv.Sign([]byte{'b'})
+	require.NoError(t, err)
 	att1 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig1.Marshal()}})
 	att2 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1010}, Signatures: [][]byte{sig1.Marshal()}})
 	att3 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1100}, Signatures: [][]byte{sig1.Marshal()}})
@@ -283,6 +285,64 @@ func TestKV_Aggregated_DeleteAggregatedAttestation(t *testing.T) {
 	})
 }
 
+func TestKV_Aggregated_DeleteMarksOnlyRemovedEntriesSeen(t *testing.T) {
+	cache := NewAttCaches()
+	pooled := recoveryAttestation(0b10101)
+	require.NoError(t, cache.SaveAggregatedAttestation(pooled))
+
+	// A block-included aggregate covers the pooled entry but also carries a
+	// participant the pool never authenticated.
+	included := recoveryAttestation(0b10111)
+	require.NoError(t, cache.DeleteAggregatedAttestation(included))
+	require.Equal(t, 0, cache.AggregatedAttestationCount())
+	seen, err := cache.hasSeenBit(pooled)
+	require.NoError(t, err)
+	assert.Equal(t, true, seen)
+	seen, err = cache.hasSeenAggregatedBit(pooled)
+	require.NoError(t, err)
+	assert.Equal(t, true, seen)
+	extra := recoveryAttestation(0b10010)
+	seen, err = cache.hasSeenBit(extra)
+	require.NoError(t, err)
+	assert.Equal(t, false, seen, "a participant only the block vouched for must not be seen")
+	seen, err = cache.HasAggregatedAttestation(extra)
+	require.NoError(t, err)
+	assert.Equal(t, false, seen)
+
+	// Deleting something that never was in the pool marks nothing.
+	absent := recoveryAttestation(0b11010)
+	require.NoError(t, cache.DeleteAggregatedAttestation(absent))
+	seen, err = cache.hasSeenBit(absent)
+	require.NoError(t, err)
+	assert.Equal(t, false, seen)
+}
+
+func TestKV_MarkAppliedAttestation(t *testing.T) {
+	cache := NewAttCaches()
+	applied := recoveryAttestation(0b10011)
+	require.ErrorContains(t, "attestation can't be nil", cache.MarkAppliedAttestation(nil))
+	require.NoError(t, cache.MarkAppliedAttestation(applied))
+
+	seen, err := cache.HasAggregatedAttestation(applied)
+	require.NoError(t, err)
+	assert.Equal(t, true, seen)
+	require.NoError(t, cache.SaveAggregatedAttestation(applied))
+	assert.Equal(t, 0, cache.AggregatedAttestationCount())
+	subset := recoveryAttestation(0b10001)
+	seen, err = cache.HasAggregatedAttestation(subset)
+	require.NoError(t, err)
+	assert.Equal(t, true, seen, "gossip for a subset of applied participants adds nothing")
+	other := recoveryAttestation(0b10100)
+	seen, err = cache.HasAggregatedAttestation(other)
+	require.NoError(t, err)
+	assert.Equal(t, false, seen)
+	// The containing block may not be canonical: proposal deduplication is
+	// left to canonical pruning.
+	seen, err = cache.hasSeenBit(applied)
+	require.NoError(t, err)
+	assert.Equal(t, false, seen)
+}
+
 func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -475,7 +535,7 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, result)
 
-				// Same test for block attestations
+				// Pending included votes are unverified and never count as seen.
 				cache = NewAttCaches()
 
 				for _, att := range tt.existing {
@@ -483,7 +543,7 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 				}
 				result, err = cache.HasAggregatedAttestation(tt.input)
 				require.NoError(t, err)
-				assert.Equal(t, tt.want, result)
+				assert.Equal(t, false, result)
 			}
 		})
 	}
@@ -493,7 +553,9 @@ func TestKV_Aggregated_DuplicateAggregatedAttestations(t *testing.T) {
 	cache := NewAttCaches()
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte{'a'}).Marshal()
+	lsig1, err := priv.Sign([]byte{'a'})
+	require.NoError(t, err)
+	sig := lsig1.Marshal()
 
 	att1 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}, Signatures: [][]byte{sig, sig}})
 	att2 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1111}, Signatures: [][]byte{sig, sig, sig}})
@@ -508,4 +570,40 @@ func TestKV_Aggregated_DuplicateAggregatedAttestations(t *testing.T) {
 	// It should have only returned att2.
 	assert.DeepSSZEqual(t, att2, returned[0], "Did not receive correct aggregated atts")
 	assert.Equal(t, 1, len(returned), "Did not receive correct aggregated atts")
+}
+
+func TestKV_Aggregated_HasAggregatedAttestation_AfterBlockDeletion(t *testing.T) {
+	cache := NewAttCaches()
+
+	applied := recoveryAttestation(0b1111000)
+	pending := recoveryAttestation(0b1100111)
+	require.NoError(t, cache.SaveBlockAttestation(applied))
+	require.NoError(t, cache.SaveBlockAttestation(pending))
+
+	// Neither vote has been verified against its target state yet.
+	for _, att := range []*qrysmpb.Attestation{applied, pending} {
+		result, err := cache.HasAggregatedAttestation(att)
+		require.NoError(t, err)
+		assert.Equal(t, false, result)
+	}
+
+	// Applying one marks only its own participants seen.
+	require.NoError(t, cache.DeleteBlockAttestation(applied))
+	result, err := cache.HasAggregatedAttestation(applied)
+	require.NoError(t, err)
+	assert.Equal(t, true, result)
+	require.NoError(t, cache.SaveAggregatedAttestation(applied))
+	assert.Equal(t, 0, cache.AggregatedAttestationCount())
+	result, err = cache.HasAggregatedAttestation(pending)
+	require.NoError(t, err)
+	assert.Equal(t, false, result)
+
+	// Discarding the other unapplied leaves its participants unseen, so a
+	// genuine aggregate for the same data and bits is still accepted.
+	require.NoError(t, cache.DiscardBlockAttestation(pending))
+	result, err = cache.HasAggregatedAttestation(pending)
+	require.NoError(t, err)
+	assert.Equal(t, false, result)
+	require.NoError(t, cache.SaveAggregatedAttestation(pending))
+	assert.Equal(t, 1, cache.AggregatedAttestationCount())
 }

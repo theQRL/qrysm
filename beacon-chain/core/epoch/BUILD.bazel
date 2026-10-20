@@ -36,6 +36,7 @@ go_test(
         "//beacon-chain/state",
         "//beacon-chain/state/state-native",
         "//beacon-chain/state/stateutil",
+        "//config/features",
         "//config/fieldparams",
         "//config/params",
         "//consensus-types/primitives",

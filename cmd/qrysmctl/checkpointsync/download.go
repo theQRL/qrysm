@@ -46,7 +46,10 @@ func cliActionDownload(_ *cli.Context) error {
 	ctx := context.Background()
 	f := downloadFlags
 
-	opts := []client.ClientOpt{client.WithTimeout(f.Timeout)}
+	opts := []client.ClientOpt{
+		client.WithTimeout(f.Timeout),
+		client.WithMaxBodySize(beacon.MaxStateBodySize),
+	}
 	client, err := beacon.NewClient(downloadFlags.BeaconNodeHost, opts...)
 	if err != nil {
 		return err
@@ -66,13 +69,13 @@ func cliActionDownload(_ *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("saved ssz-encoded block to %s", blockPath)
+	log.Printf("Saved ssz-encoded block to %s", blockPath)
 
 	statePath, err := od.SaveState(cwd)
 	if err != nil {
 		return err
 	}
-	log.Printf("saved ssz-encoded state to %s", statePath)
+	log.Printf("Saved ssz-encoded state to %s", statePath)
 
 	return nil
 }

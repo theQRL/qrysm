@@ -8,24 +8,24 @@ import (
 
 // CurrentEpochParticipation corresponding to participation bits on the beacon chain.
 func (b *BeaconState) CurrentEpochParticipation() ([]byte, error) {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.currentEpochParticipation == nil {
 		return nil, nil
 	}
-
-	b.lock.RLock()
-	defer b.lock.RUnlock()
 
 	return b.currentEpochParticipationVal(), nil
 }
 
 // PreviousEpochParticipation corresponding to participation bits on the beacon chain.
 func (b *BeaconState) PreviousEpochParticipation() ([]byte, error) {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.previousEpochParticipation == nil {
 		return nil, nil
 	}
-
-	b.lock.RLock()
-	defer b.lock.RUnlock()
 
 	return b.previousEpochParticipationVal(), nil
 }

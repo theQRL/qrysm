@@ -153,6 +153,15 @@ func VerifyIndexedAttestation(ctx context.Context, beaconState state.ReadOnlyBea
 		return err
 	}
 	indices := indexedAtt.AttestingIndices
+	// Reject indices outside the validator registry before looking up keys.
+	// PubkeyAtIndex returns an all-zero key for an out-of-range index rather
+	// than an error, and the spec's state.validators[i] lookup would fail here.
+	numValidators := uint64(beaconState.NumValidators())
+	for _, idx := range indices {
+		if idx >= numValidators {
+			return fmt.Errorf("attesting index %d out of range for %d validators", idx, numValidators)
+		}
+	}
 	var pubkeys []ml_dsa_87.PublicKey
 	for i := range indices {
 		pubkeyAtIdx := beaconState.PubkeyAtIndex(primitives.ValidatorIndex(indices[i]))

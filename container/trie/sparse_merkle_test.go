@@ -94,16 +94,18 @@ func TestMarshalDepositWithProof(t *testing.T) {
 	proof, err := m.MerkleProof(2)
 	require.NoError(t, err)
 	require.Equal(t, len(proof), int(params.BeaconConfig().DepositContractTreeDepth)+1)
-	someRoot := [32]byte{1, 2, 3, 4}
+	withdrawalRecipient := [field_params.WithdrawalRecipientLength]byte{1, 2, 3, 4}
 	someSig := [field_params.MLDSA87SignatureLength]byte{1, 2, 3, 4}
 	someKey := [field_params.MLDSA87PubkeyLength]byte{1, 2, 3, 4}
 	dep := &qrysmpb.Deposit{
 		Proof: proof,
 		Data: &qrysmpb.Deposit_Data{
-			PublicKey:             someKey[:],
-			WithdrawalCredentials: someRoot[:],
-			Amount:                32,
-			Signature:             someSig[:],
+			PublicKey:           someKey[:],
+			WithdrawalRecipient: withdrawalRecipient[:],
+			Amount:              32,
+			Signature:           someSig[:],
+
+			RandaoCommitment: make([]byte, 32),
 		},
 	}
 	enc, err := dep.MarshalSSZ()

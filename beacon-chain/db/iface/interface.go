@@ -46,6 +46,7 @@ type ReadOnlyDatabase interface {
 	HasArchivedPoint(ctx context.Context, slot primitives.Slot) bool
 	LastArchivedRoot(ctx context.Context) [32]byte
 	LastArchivedSlot(ctx context.Context) (primitives.Slot, error)
+	StateMigrationCursor(ctx context.Context) (primitives.Slot, bool, error)
 	LastValidatedCheckpoint(ctx context.Context) (*qrysmpb.Checkpoint, error)
 	// Deposit contract related handlers.
 	DepositContractAddress(ctx context.Context) ([]byte, error)
@@ -58,6 +59,18 @@ type ReadOnlyDatabase interface {
 	// origin checkpoint sync support
 	OriginCheckpointBlockRoot(ctx context.Context) ([32]byte, error)
 	BackfillBlockRoot(ctx context.Context) ([32]byte, error)
+
+	// P2P Metadata operations.
+	MetadataSeqNum(ctx context.Context) (uint64, error)
+}
+
+// ReadOnlyDatabaseWithSeqNum defines a struct which has read access to database methods
+// and also has read/write access to the p2p metadata sequence number.
+// Only used for the p2p service.
+type ReadOnlyDatabaseWithSeqNum interface {
+	ReadOnlyDatabase
+
+	SaveMetadataSeqNum(ctx context.Context, seqNum uint64) error
 }
 
 // NoHeadAccessDatabase defines a struct without access to chain head data.
@@ -91,6 +104,10 @@ type NoHeadAccessDatabase interface {
 	SaveRegistrationsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, regs []*qrysmpb.ValidatorRegistrationV1) error
 
 	CleanUpDirtyStates(ctx context.Context, slotsPerArchivedPoint primitives.Slot) error
+	SaveStateMigrationCursor(ctx context.Context, slot primitives.Slot) error
+
+	// P2P Metadata operations.
+	SaveMetadataSeqNum(ctx context.Context, seqNum uint64) error
 }
 
 // HeadAccessDatabase defines a struct with access to reading chain head data.
@@ -124,6 +141,12 @@ type SlasherDatabase interface {
 	) error
 	SaveSlasherChunks(
 		ctx context.Context, kind slashertypes.ChunkKind, chunkKeys [][]byte, chunks [][]uint16,
+	) error
+	SaveSlasherChunksAndEpochs(
+		ctx context.Context,
+		minChunkKeys [][]byte, minChunks [][]uint16,
+		maxChunkKeys [][]byte, maxChunks [][]uint16,
+		epochByValidator map[primitives.ValidatorIndex]primitives.Epoch,
 	) error
 	SaveBlockProposals(
 		ctx context.Context, proposal []*slashertypes.SignedBlockHeaderWrapper,

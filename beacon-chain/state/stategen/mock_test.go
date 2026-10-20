@@ -90,6 +90,9 @@ type mockHistory struct {
 	hiddenStates                   map[[32]byte]state.BeaconState
 	current                        primitives.Slot
 	overrideHighestSlotBlocksBelow func(context.Context, primitives.Slot) (primitives.Slot, [][32]byte, error)
+	// Checkpoint sync bounds; nil means synced from genesis.
+	originRoot   *[32]byte
+	backfillRoot *[32]byte
 }
 
 type slotList []primitives.Slot
@@ -156,6 +159,20 @@ func (m *mockHistory) StateOrError(_ context.Context, blockRoot [32]byte) (state
 func (m *mockHistory) IsCanonical(_ context.Context, blockRoot [32]byte) (bool, error) {
 	canon, ok := m.canonical[blockRoot]
 	return ok && canon, nil
+}
+
+func (m *mockHistory) OriginCheckpointBlockRoot(_ context.Context) ([32]byte, error) {
+	if m.originRoot == nil {
+		return [32]byte{}, db.ErrNotFoundOriginBlockRoot
+	}
+	return *m.originRoot, nil
+}
+
+func (m *mockHistory) BackfillBlockRoot(_ context.Context) ([32]byte, error) {
+	if m.backfillRoot == nil {
+		return [32]byte{}, db.ErrNotFoundBackfillBlockRoot
+	}
+	return *m.backfillRoot, nil
 }
 
 func (m *mockHistory) CurrentSlot() primitives.Slot {

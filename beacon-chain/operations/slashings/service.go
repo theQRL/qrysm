@@ -30,9 +30,11 @@ func NewPool() *Pool {
 // PendingAttesterSlashings returns attester slashings that are able to be included into a block.
 // This method will return the amount of pending attester slashings for a block transition unless parameter `noLimit` is true
 // to indicate the request is for noLimit pending items.
+// The supplied state may be from an old or competing head. Filter the result
+// without deleting proofs that may still be useful on another branch.
 func (p *Pool) PendingAttesterSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*qrysmpb.AttesterSlashing {
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	p.lock.RLock()
+	defer p.lock.RUnlock()
 	_, span := trace.StartSpan(ctx, "operations.PendingAttesterSlashing")
 	defer span.End()
 
@@ -52,14 +54,12 @@ func (p *Pool) PendingAttesterSlashings(ctx context.Context, state state.ReadOnl
 			break
 		}
 		slashing := p.pendingAttesterSlashing[i]
-		valid, err := p.validatorSlashingPreconditionCheck(state, slashing.validatorToSlash)
+		valid, err := p.validatorSlashingPreconditionCheck(state, slashing.validatorToSlash, false)
 		if err != nil {
 			log.WithError(err).Error("could not validate attester slashing")
 			continue
 		}
 		if included[slashing.validatorToSlash] || !valid {
-			p.pendingAttesterSlashing = append(p.pendingAttesterSlashing[:i], p.pendingAttesterSlashing[i+1:]...)
-			i--
 			continue
 		}
 		attSlashing := slashing.attesterSlashing
@@ -77,9 +77,11 @@ func (p *Pool) PendingAttesterSlashings(ctx context.Context, state state.ReadOnl
 // PendingProposerSlashings returns proposer slashings that are able to be included into a block.
 // This method will return the amount of pending proposer slashings for a block transition unless the `noLimit` parameter
 // is set to true to indicate the request is for noLimit pending items.
+// As with attester slashings, a caller's state does not establish which proofs
+// should be removed from the shared pool; inclusion does.
 func (p *Pool) PendingProposerSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*qrysmpb.ProposerSlashing {
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	p.lock.RLock()
+	defer p.lock.RUnlock()
 	_, span := trace.StartSpan(ctx, "operations.PendingProposerSlashing")
 	defer span.End()
 
@@ -97,14 +99,12 @@ func (p *Pool) PendingProposerSlashings(ctx context.Context, state state.ReadOnl
 			break
 		}
 		slashing := p.pendingProposerSlashing[i]
-		valid, err := p.validatorSlashingPreconditionCheck(state, slashing.Header_1.Header.ProposerIndex)
+		valid, err := p.validatorSlashingPreconditionCheck(state, slashing.Header_1.Header.ProposerIndex, false)
 		if err != nil {
 			log.WithError(err).Error("could not validate proposer slashing")
 			continue
 		}
 		if !valid {
-			p.pendingProposerSlashing = append(p.pendingProposerSlashing[:i], p.pendingProposerSlashing[i+1:]...)
-			i--
 			continue
 		}
 
@@ -120,6 +120,17 @@ func (p *Pool) InsertAttesterSlashing(
 	state state.ReadOnlyBeaconState,
 	slashing *qrysmpb.AttesterSlashing,
 ) error {
+	return p.insertAttesterSlashing(ctx, state, slashing, false)
+}
+
+// RecoverAttesterSlashing revalidates an orphaned proof against the replacement
+// head and restores slashable validators, undoing their old inclusion markers.
+// Repeated recovery is idempotent. The caller must serialize head changes.
+func (p *Pool) RecoverAttesterSlashing(ctx context.Context, state state.ReadOnlyBeaconState, slashing *qrysmpb.AttesterSlashing) error {
+	return p.insertAttesterSlashing(ctx, state, slashing, true)
+}
+
+func (p *Pool) insertAttesterSlashing(ctx context.Context, state state.ReadOnlyBeaconState, slashing *qrysmpb.AttesterSlashing, reorg bool) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	ctx, span := trace.StartSpan(ctx, "operations.InsertAttesterSlashing")
@@ -134,7 +145,7 @@ func (p *Pool) InsertAttesterSlashing(
 	slashingReason := ""
 	for _, val := range slashedVal {
 		// Has this validator index been included recently?
-		ok, err := p.validatorSlashingPreconditionCheck(state, primitives.ValidatorIndex(val))
+		ok, err := p.validatorSlashingPreconditionCheck(state, primitives.ValidatorIndex(val), reorg)
 		if err != nil {
 			return err
 		}
@@ -152,6 +163,9 @@ func (p *Pool) InsertAttesterSlashing(
 			return uint64(p.pendingAttesterSlashing[i].validatorToSlash) >= val
 		})
 		if found != len(p.pendingAttesterSlashing) && uint64(p.pendingAttesterSlashing[found].validatorToSlash) == val {
+			if reorg {
+				continue
+			}
 			slashingReason = "validator already exist in list of pending slashings, no need to attempt to slash again"
 			cantSlash = append(cantSlash, val)
 			continue
@@ -185,6 +199,17 @@ func (p *Pool) InsertProposerSlashing(
 	state state.ReadOnlyBeaconState,
 	slashing *qrysmpb.ProposerSlashing,
 ) error {
+	return p.insertProposerSlashing(ctx, state, slashing, false)
+}
+
+// RecoverProposerSlashing restores an orphaned proof only if it is still valid
+// against the replacement head, undoing that validator's inclusion marker.
+// Repeated recovery is idempotent. The caller must serialize head changes.
+func (p *Pool) RecoverProposerSlashing(ctx context.Context, state state.ReadOnlyBeaconState, slashing *qrysmpb.ProposerSlashing) error {
+	return p.insertProposerSlashing(ctx, state, slashing, true)
+}
+
+func (p *Pool) insertProposerSlashing(ctx context.Context, state state.ReadOnlyBeaconState, slashing *qrysmpb.ProposerSlashing, reorg bool) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	_, span := trace.StartSpan(ctx, "operations.InsertProposerSlashing")
@@ -195,7 +220,7 @@ func (p *Pool) InsertProposerSlashing(
 	}
 
 	idx := slashing.Header_1.Header.ProposerIndex
-	ok, err := p.validatorSlashingPreconditionCheck(state, idx)
+	ok, err := p.validatorSlashingPreconditionCheck(state, idx, reorg)
 	if err != nil {
 		return err
 	}
@@ -213,6 +238,9 @@ func (p *Pool) InsertProposerSlashing(
 	})
 	if found != len(p.pendingProposerSlashing) && p.pendingProposerSlashing[found].Header_1.Header.ProposerIndex ==
 		slashing.Header_1.Header.ProposerIndex {
+		if reorg {
+			return nil
+		}
 		return errors.New("slashing object already exists in pending proposer slashings")
 	}
 
@@ -234,13 +262,7 @@ func (p *Pool) MarkIncludedAttesterSlashing(as *qrysmpb.AttesterSlashing) {
 	defer p.lock.Unlock()
 	slashedVal := slice.IntersectionUint64(as.Attestation_1.AttestingIndices, as.Attestation_2.AttestingIndices)
 	for _, val := range slashedVal {
-		i := sort.Search(len(p.pendingAttesterSlashing), func(i int) bool {
-			return uint64(p.pendingAttesterSlashing[i].validatorToSlash) >= val
-		})
-		if i != len(p.pendingAttesterSlashing) && uint64(p.pendingAttesterSlashing[i].validatorToSlash) == val {
-			p.pendingAttesterSlashing = append(p.pendingAttesterSlashing[:i], p.pendingAttesterSlashing[i+1:]...)
-		}
-		p.included[primitives.ValidatorIndex(val)] = true
+		p.markIncluded(primitives.ValidatorIndex(val))
 		numAttesterSlashingsIncluded.Inc()
 	}
 }
@@ -251,30 +273,44 @@ func (p *Pool) MarkIncludedAttesterSlashing(as *qrysmpb.AttesterSlashing) {
 func (p *Pool) MarkIncludedProposerSlashing(ps *qrysmpb.ProposerSlashing) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	i := sort.Search(len(p.pendingProposerSlashing), func(i int) bool {
-		return p.pendingProposerSlashing[i].Header_1.Header.ProposerIndex >= ps.Header_1.Header.ProposerIndex
-	})
-	if i != len(p.pendingProposerSlashing) && p.pendingProposerSlashing[i].Header_1.Header.ProposerIndex == ps.Header_1.Header.ProposerIndex {
-		p.pendingProposerSlashing = append(p.pendingProposerSlashing[:i], p.pendingProposerSlashing[i+1:]...)
-	}
-	p.included[ps.Header_1.Header.ProposerIndex] = true
+	p.markIncluded(ps.Header_1.Header.ProposerIndex)
 	numProposerSlashingsIncluded.Inc()
 }
 
-// this function checks a few items about a validator before proceeding with inserting
-// a proposer/attester slashing into the pool. First, it checks if the validator
-// has been recently included in the pool, then it checks if the validator is slashable.
-// Note: this method requires caller to hold the lock.
+// markIncluded removes both kinds of pending proof for a slashed validator.
+// Pool reads cannot do this safely using a potentially stale state snapshot.
+// The caller holds the pool write lock.
+func (p *Pool) markIncluded(index primitives.ValidatorIndex) {
+	i := sort.Search(len(p.pendingProposerSlashing), func(i int) bool {
+		return p.pendingProposerSlashing[i].Header_1.Header.ProposerIndex >= index
+	})
+	if i != len(p.pendingProposerSlashing) && p.pendingProposerSlashing[i].Header_1.Header.ProposerIndex == index {
+		p.pendingProposerSlashing = append(p.pendingProposerSlashing[:i], p.pendingProposerSlashing[i+1:]...)
+	}
+	i = sort.Search(len(p.pendingAttesterSlashing), func(i int) bool {
+		return p.pendingAttesterSlashing[i].validatorToSlash >= index
+	})
+	if i != len(p.pendingAttesterSlashing) && p.pendingAttesterSlashing[i].validatorToSlash == index {
+		p.pendingAttesterSlashing = append(p.pendingAttesterSlashing[:i], p.pendingAttesterSlashing[i+1:]...)
+	}
+	p.included[index] = true
+}
+
+// validatorSlashingPreconditionCheck verifies that a validator can still be
+// slashed. Reorg recovery may clear its inclusion marker, but only after the
+// proof has been verified and the replacement state confirms slashability.
+// The caller holds the pool lock, exclusively when reorg is true.
 func (p *Pool) validatorSlashingPreconditionCheck(
 	state state.ReadOnlyBeaconState,
 	valIdx primitives.ValidatorIndex,
+	reorg bool,
 ) (bool, error) {
 	if !mutexasserts.RWMutexLocked(&p.lock) && !mutexasserts.RWMutexRLocked(&p.lock) {
 		return false, errors.New("pool.validatorSlashingPreconditionCheck: caller must hold read/write lock")
 	}
 
 	// Check if the validator index has been included recently.
-	if p.included[valIdx] {
+	if p.included[valIdx] && !reorg {
 		return false, nil
 	}
 	validator, err := state.ValidatorAtIndexReadOnly(valIdx)
@@ -284,6 +320,9 @@ func (p *Pool) validatorSlashingPreconditionCheck(
 	// Checking if the validator is slashable.
 	if !helpers.IsSlashableValidatorUsingTrie(validator, time.CurrentEpoch(state)) {
 		return false, nil
+	}
+	if reorg {
+		delete(p.included, valIdx)
 	}
 	return true, nil
 }

@@ -62,8 +62,9 @@ type Flags struct {
 
 	DisableResourceManager     bool // Disables running the node with libp2p's resource manager.
 	DisableStakinContractCheck bool // Disables check for deposit contract when proposing blocks
+	DisableLastEpochTargets    bool // Disables treating blocks from the previous epoch as viable checkpoint roots when computing attestation pre-state.
 
-	EnableVerboseSigVerification bool // EnableVerboseSigVerification specifies whether to verify individual signature if batch verification fails
+	EnableVerboseSigVerification bool // EnableVerboseSigVerification enables bounded diagnostics for invalid block signatures.
 	EnableOptionalEngineMethods  bool // EnableOptionalEngineMethods specifies whether to activate zond specific engine methods
 	EnableEIP4881                bool // EnableEIP4881 specifies whether to use the deposit tree from EIP4881
 
@@ -197,7 +198,9 @@ func ConfigureBeaconChain(ctx *cli.Context) error {
 		logEnabled(enableFullSSZDataLogging)
 		cfg.EnableFullSSZDataLogging = true
 	}
-	if ctx.IsSet(enableVerboseSigVerification.Name) {
+	// Signature diagnostics require an explicit opt-in. Retain the old disable
+	// flag for existing configurations, with disabling taking precedence.
+	if ctx.Bool(enableVerboseSigVerification.Name) && !ctx.Bool(disableVerboseSigVerification.Name) {
 		logEnabled(enableVerboseSigVerification)
 		cfg.EnableVerboseSigVerification = true
 	}
@@ -219,13 +222,17 @@ func ConfigureBeaconChain(ctx *cli.Context) error {
 		logEnabled(disableResourceManager)
 		cfg.DisableResourceManager = true
 	}
-	if ctx.IsSet(enableEIP4881.Name) {
-		logEnabled(enableEIP4881)
+	if ctx.IsSet(EnableEIP4881.Name) {
+		logEnabled(EnableEIP4881)
 		cfg.EnableEIP4881 = true
 	}
 	if ctx.IsSet(forceHeadFlag.Name) {
 		logEnabled(forceHeadFlag)
 		cfg.ForceHead = ctx.String(forceHeadFlag.Name)
+	}
+	if ctx.IsSet(disableLastEpochTargets.Name) {
+		logEnabled(disableLastEpochTargets)
+		cfg.DisableLastEpochTargets = true
 	}
 	cfg.AggregateIntervals = [3]time.Duration{aggregateFirstInterval.Value, aggregateSecondInterval.Value, aggregateThirdInterval.Value}
 	Init(cfg)

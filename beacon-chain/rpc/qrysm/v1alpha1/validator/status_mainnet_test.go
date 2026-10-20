@@ -31,9 +31,11 @@ func TestValidatorStatus_Active(t *testing.T) {
 	pubkey := generatePubkey(1)
 
 	depData := &qrysmpb.Deposit_Data{
-		PublicKey:             pubkey,
-		Signature:             bytesutil.PadTo([]byte("hi"), 96),
-		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
+		PublicKey:           pubkey,
+		Signature:           bytesutil.PadTo([]byte("hi"), 96),
+		WithdrawalRecipient: bytesutil.PadTo([]byte("hey"), 64),
+
+		RandaoCommitment: make([]byte, 32),
 	}
 
 	deposit := &qrysmpb.Deposit{

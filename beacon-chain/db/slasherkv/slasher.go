@@ -24,7 +24,20 @@ const (
 	// Signing root (32 bytes)
 	attestationRecordKeySize = 32 // Bytes.
 	signingRootSize          = 32 // Bytes.
+
+	// For database performance reasons, database read/write operations
+	// are chunked into batches of maximum `batchSize` elements. Without
+	// chunking, a single Save/Load over a full slot's attestations would
+	// hold a write transaction open for long enough to back up the
+	// attestation queue and grow memory unboundedly.
+	batchSize = 10_000
 )
+
+// ChunkSaveBatchSize is the number of span chunks SaveSlasherChunksAndEpochs
+// writes in one transaction. A save of at most this many chunks is a single
+// transaction, which commits the chunks and their epoch markers together; the
+// detector sizes its flushes by it.
+const ChunkSaveBatchSize = batchSize
 
 // LastEpochWrittenForValidators given a list of validator indices returns the latest
 // epoch we have recorded the validators writing data for.
@@ -81,7 +94,7 @@ func (s *Store) SaveLastEpochsWrittenForValidators(
 	// The list of validators might be too massive for boltdb to handle in a single transaction,
 	// so instead we split it into batches and write each batch.
 	batchSize := 10000
-	for i := 0; i < len(encodedIndices); i += batchSize {
+	for start := 0; start < len(encodedIndices); start += batchSize {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
@@ -90,15 +103,15 @@ func (s *Store) SaveLastEpochsWrittenForValidators(
 				return ctx.Err()
 			}
 			bkt := tx.Bucket(attestedEpochsByValidator)
-			min := i + batchSize
-			if min > len(encodedIndices) {
-				min = len(encodedIndices)
+			end := start + batchSize
+			if end > len(encodedIndices) {
+				end = len(encodedIndices)
 			}
-			for j, encodedIndex := range encodedIndices[i:min] {
+			for j, encodedIndex := range encodedIndices[start:end] {
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
-				if err := bkt.Put(encodedIndex, encodedEpochs[j]); err != nil {
+				if err := bkt.Put(encodedIndex, encodedEpochs[j+start]); err != nil {
 					return err
 				}
 			}
@@ -139,7 +152,7 @@ func (s *Store) CheckAttesterDoubleVotes(
 					if len(attRecordsKey) < attestationRecordKeySize {
 						continue
 					}
-					encExistingAttRecord := attRecordsBkt.Get(attRecordsKey)
+					encExistingAttRecord := attRecordsBkt.Get(attestationRecordKey(encEpoch, attRecordsKey))
 					if encExistingAttRecord == nil {
 						continue
 					}
@@ -196,7 +209,7 @@ func (s *Store) AttestationRecordForValidator(
 			return nil
 		}
 		attRecordsBkt := tx.Bucket(attestationRecordsBucket)
-		indexedAttBytes := attRecordsBkt.Get(attRecordKey)
+		indexedAttBytes := attRecordsBkt.Get(attestationRecordKey(encEpoch, attRecordKey))
 		if indexedAttBytes == nil {
 			return nil
 		}
@@ -211,106 +224,266 @@ func (s *Store) AttestationRecordForValidator(
 }
 
 // SaveAttestationRecordsForValidators saves attestation records for the specified indices.
+// Writes are chunked into `batchSize`-sized bolt transactions so a single call over a
+// slot's worth of attestations doesn't hold one transaction open long enough to back up
+// the attestation queue (root cause of the slasher OOM under high attestation volume).
 func (s *Store) SaveAttestationRecordsForValidators(
 	ctx context.Context,
 	attestations []*slashertypes.IndexedAttestationWrapper,
 ) error {
 	_, span := trace.StartSpan(ctx, "BeaconDB.SaveAttestationRecordsForValidators")
 	defer span.End()
-	encodedTargetEpoch := make([][]byte, len(attestations))
-	encodedRecords := make([][]byte, len(attestations))
-	encodedIndices := make([][]byte, len(attestations))
+
+	attCount := len(attestations)
+	if attCount == 0 {
+		return nil
+	}
+
+	// Pre-encode all target epochs and attestation records once, outside the bolt txn.
+	encodedTargetEpoch := make([][]byte, attCount)
+	encodedRecords := make([][]byte, attCount)
 	for i, att := range attestations {
-		encEpoch := encodeTargetEpoch(att.IndexedAttestation.Data.Target.Epoch)
+		encodedTargetEpoch[i] = encodeTargetEpoch(att.IndexedAttestation.Data.Target.Epoch)
 		value, err := encodeAttestationRecord(att)
 		if err != nil {
 			return err
 		}
-		indicesBytes := make([]byte, len(att.IndexedAttestation.AttestingIndices)*8)
-		for _, idx := range att.IndexedAttestation.AttestingIndices {
-			encodedIdx := encodeValidatorIndex(primitives.ValidatorIndex(idx))
-			indicesBytes = append(indicesBytes, encodedIdx...)
-		}
-		encodedIndices[i] = indicesBytes
-		encodedTargetEpoch[i] = encEpoch
 		encodedRecords[i] = value
 	}
-	return s.db.Update(func(tx *bolt.Tx) error {
-		attRecordsBkt := tx.Bucket(attestationRecordsBucket)
-		signingRootsBkt := tx.Bucket(attestationDataRootsBucket)
-		for i, att := range attestations {
-			if err := attRecordsBkt.Put(att.SigningRoot[:], encodedRecords[i]); err != nil {
-				return err
-			}
-			for _, valIdx := range att.IndexedAttestation.AttestingIndices {
-				encIdx := encodeValidatorIndex(primitives.ValidatorIndex(valIdx))
-				key := append(encodedTargetEpoch[i], encIdx...)
-				if err := signingRootsBkt.Put(key, att.SigningRoot[:]); err != nil {
-					return err
+
+	// Save attestation records to the database in `batchSize`-sized chunks.
+	for start := 0; start < attCount; start += batchSize {
+		stop := min(start+batchSize, attCount)
+
+		attestationsBatch := attestations[start:stop]
+		encodedTargetEpochBatch := encodedTargetEpoch[start:stop]
+		encodedRecordsBatch := encodedRecords[start:stop]
+
+		if len(encodedTargetEpochBatch) != len(encodedRecordsBatch) {
+			return fmt.Errorf(
+				"cannot save attestation records, got %d target epochs and %d records",
+				len(encodedTargetEpochBatch), len(encodedRecordsBatch),
+			)
+		}
+
+		if err := s.db.Update(func(tx *bolt.Tx) error {
+			attRecordsBkt := tx.Bucket(attestationRecordsBucket)
+			signingRootsBkt := tx.Bucket(attestationDataRootsBucket)
+			for i, att := range attestationsBatch {
+				record := encodedRecordsBatch[i]
+				// Records are keyed by the attestation data root, which every
+				// attestation for the same data shares. Merge the attesting
+				// indices (and their signatures) into the stored record instead
+				// of overwriting it: the per-validator index points at this root,
+				// and a slashing built from a record that lacks the validator
+				// has no slashable index.
+				recordKey := attestationRecordKey(encodedTargetEpochBatch[i], att.SigningRoot[:])
+				if existing := attRecordsBkt.Get(recordKey); existing != nil {
+					merged, changed, err := mergeAttestationRecord(existing, att)
+					if err != nil {
+						return err
+					}
+					if !changed {
+						record = nil
+					} else {
+						record = merged
+					}
+				}
+				if record != nil {
+					if err := attRecordsBkt.Put(recordKey, record); err != nil {
+						return err
+					}
+				}
+				for _, valIdx := range att.IndexedAttestation.AttestingIndices {
+					encIdx := encodeValidatorIndex(primitives.ValidatorIndex(valIdx))
+					key := append(encodedTargetEpochBatch[i], encIdx...)
+					if err := signingRootsBkt.Put(key, att.SigningRoot[:]); err != nil {
+						return err
+					}
 				}
 			}
+			return nil
+		}); err != nil {
+			return errors.Wrap(err, "failed to save attestation records")
 		}
-		return nil
-	})
+	}
+
+	return nil
 }
 
 // LoadSlasherChunks given a chunk kind and a disk keys, retrieves chunks for a validator
-// min or max span used by slasher from our database.
+// min or max span used by slasher from our database. Reads are chunked into `batchSize`-sized
+// bolt View transactions to avoid holding a long-running read transaction.
 func (s *Store) LoadSlasherChunks(
 	ctx context.Context, kind slashertypes.ChunkKind, diskKeys [][]byte,
 ) ([][]uint16, []bool, error) {
 	_, span := trace.StartSpan(ctx, "BeaconDB.LoadSlasherChunk")
 	defer span.End()
-	chunks := make([][]uint16, 0)
-	var exists []bool
-	err := s.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(slasherChunksBucket)
-		for _, diskKey := range diskKeys {
-			key := append(ssz.MarshalUint8(make([]byte, 0), uint8(kind)), diskKey...)
-			chunkBytes := bkt.Get(key)
-			if chunkBytes == nil {
-				chunks = append(chunks, []uint16{})
-				exists = append(exists, false)
-				continue
+
+	keysCount := len(diskKeys)
+	chunks := make([][]uint16, 0, keysCount)
+	exists := make([]bool, 0, keysCount)
+	encodedKeys := make([][]byte, 0, keysCount)
+
+	encodedKind := ssz.MarshalUint8(make([]byte, 0), uint8(kind))
+	for _, diskKey := range diskKeys {
+		encodedKeys = append(encodedKeys, chunkDiskKey(encodedKind, diskKey))
+	}
+
+	for start := 0; start < keysCount; start += batchSize {
+		stop := min(start+batchSize, keysCount)
+		encodedKeysBatch := encodedKeys[start:stop]
+
+		if err := s.db.View(func(tx *bolt.Tx) error {
+			bkt := tx.Bucket(slasherChunksBucket)
+			for _, encodedKey := range encodedKeysBatch {
+				chunkBytes := bkt.Get(encodedKey)
+				if chunkBytes == nil {
+					chunks = append(chunks, []uint16{})
+					exists = append(exists, false)
+					continue
+				}
+				chunk, err := decodeSlasherChunk(chunkBytes)
+				if err != nil {
+					return err
+				}
+				chunks = append(chunks, chunk)
+				exists = append(exists, true)
 			}
-			chunk, err := decodeSlasherChunk(chunkBytes)
-			if err != nil {
-				return err
-			}
-			chunks = append(chunks, chunk)
-			exists = append(exists, true)
+			return nil
+		}); err != nil {
+			return nil, nil, err
 		}
-		return nil
-	})
-	return chunks, exists, err
+	}
+
+	return chunks, exists, nil
 }
 
 // SaveSlasherChunks given a chunk kind, list of disk keys, and list of chunks,
 // saves the chunks to our database for use by slasher in slashing detection.
+// Writes are chunked into `batchSize`-sized bolt transactions to bound transaction
+// duration and prevent the attestation queue from backing up under load.
 func (s *Store) SaveSlasherChunks(
 	ctx context.Context, kind slashertypes.ChunkKind, chunkKeys [][]byte, chunks [][]uint16,
 ) error {
 	_, span := trace.StartSpan(ctx, "BeaconDB.SaveSlasherChunks")
 	defer span.End()
-	encodedKeys := make([][]byte, len(chunkKeys))
-	encodedChunks := make([][]byte, len(chunkKeys))
-	for i := range chunkKeys {
-		encodedKeys[i] = append(ssz.MarshalUint8(make([]byte, 0), uint8(kind)), chunkKeys[i]...)
-		encodedChunk, err := encodeSlasherChunk(chunks[i])
+
+	encodedKeys, encodedChunks, err := encodeSlasherChunks(kind, chunkKeys, chunks)
+	if err != nil {
+		return err
+	}
+	return s.saveEncodedSlasherChunks(encodedKeys, encodedChunks, nil, nil)
+}
+
+// SaveSlasherChunksAndEpochs saves min and max span chunks together with the
+// latest epoch written for the validators they belong to. Up to
+// ChunkSaveBatchSize chunks are written in one transaction with the epochs;
+// a larger save is split into batches, with the epochs in the last one.
+// Chunks on disk whose epoch marker still points before them would have the
+// next start reset those spans to the neutral element, erasing the votes they
+// record, so callers keep a save within one batch (the detector does) and a
+// failure before the last batch is treated as if nothing had been written:
+// the detector then reverts its in-memory markers.
+func (s *Store) SaveSlasherChunksAndEpochs(
+	ctx context.Context,
+	minChunkKeys [][]byte, minChunks [][]uint16,
+	maxChunkKeys [][]byte, maxChunks [][]uint16,
+	epochByValidator map[primitives.ValidatorIndex]primitives.Epoch,
+) error {
+	_, span := trace.StartSpan(ctx, "BeaconDB.SaveSlasherChunksAndEpochs")
+	defer span.End()
+
+	encodedKeys, encodedChunks, err := encodeSlasherChunks(slashertypes.MinSpan, minChunkKeys, minChunks)
+	if err != nil {
+		return err
+	}
+	maxKeys, maxEncoded, err := encodeSlasherChunks(slashertypes.MaxSpan, maxChunkKeys, maxChunks)
+	if err != nil {
+		return err
+	}
+	encodedKeys = append(encodedKeys, maxKeys...)
+	encodedChunks = append(encodedChunks, maxEncoded...)
+
+	encodedIndices := make([][]byte, 0, len(epochByValidator))
+	encodedEpochs := make([][]byte, 0, len(epochByValidator))
+	for valIdx, epoch := range epochByValidator {
+		encodedEpoch, err := epoch.MarshalSSZ()
 		if err != nil {
 			return err
 		}
+		encodedIndices = append(encodedIndices, encodeValidatorIndex(valIdx))
+		encodedEpochs = append(encodedEpochs, encodedEpoch)
+	}
+	if len(encodedKeys) == 0 && len(encodedIndices) == 0 {
+		return nil
+	}
+	return s.saveEncodedSlasherChunks(encodedKeys, encodedChunks, encodedIndices, encodedEpochs)
+}
+
+// encodeSlasherChunks encodes chunk keys and chunks of one kind for storage.
+func encodeSlasherChunks(kind slashertypes.ChunkKind, chunkKeys [][]byte, chunks [][]uint16) ([][]byte, [][]byte, error) {
+	if len(chunkKeys) != len(chunks) {
+		return nil, nil, fmt.Errorf(
+			"cannot save slasher chunks, got %d keys and %d chunks",
+			len(chunkKeys), len(chunks),
+		)
+	}
+	chunksCount := len(chunks)
+	encodedKind := ssz.MarshalUint8(make([]byte, 0), uint8(kind))
+	encodedKeys := make([][]byte, chunksCount)
+	encodedChunks := make([][]byte, chunksCount)
+	for i := 0; i < chunksCount; i++ {
+		encodedKeys[i] = chunkDiskKey(encodedKind, chunkKeys[i])
+		encodedChunk, err := encodeSlasherChunk(chunks[i])
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to encode slasher chunk for key %v", chunkKeys[i])
+		}
 		encodedChunks[i] = encodedChunk
 	}
-	return s.db.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(slasherChunksBucket)
-		for i := range chunkKeys {
-			if err := bkt.Put(encodedKeys[i], encodedChunks[i]); err != nil {
-				return err
+	return encodedKeys, encodedChunks, nil
+}
+
+// chunkDiskKey prefixes a chunk key with its kind in a fresh allocation. An
+// append onto the shared prefix would reuse its spare capacity for every key
+// short enough to fit, leaving all of them aliased to the last one written.
+func chunkDiskKey(encodedKind, chunkKey []byte) []byte {
+	key := make([]byte, 0, len(encodedKind)+len(chunkKey))
+	key = append(key, encodedKind...)
+	return append(key, chunkKey...)
+}
+
+// saveEncodedSlasherChunks writes encoded chunks in transaction-sized batches
+// and the encoded epoch markers, if any, in the last of those transactions.
+func (s *Store) saveEncodedSlasherChunks(encodedKeys, encodedChunks, encodedIndices, encodedEpochs [][]byte) error {
+	total := len(encodedKeys)
+	for start := 0; ; start += batchSize {
+		stop := min(start+batchSize, total)
+		last := stop == total
+		if err := s.db.Update(func(tx *bolt.Tx) error {
+			bkt := tx.Bucket(slasherChunksBucket)
+			for i := start; i < stop; i++ {
+				if err := bkt.Put(encodedKeys[i], encodedChunks[i]); err != nil {
+					return err
+				}
 			}
+			if !last {
+				return nil
+			}
+			epochsBkt := tx.Bucket(attestedEpochsByValidator)
+			for i := range encodedIndices {
+				if err := epochsBkt.Put(encodedIndices[i], encodedEpochs[i]); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+			return errors.Wrap(err, "failed to save slasher chunks")
 		}
-		return nil
-	})
+		if last {
+			return nil
+		}
+	}
 }
 
 // CheckDoubleBlockProposals takes in a list of proposals and for each,
@@ -326,13 +499,10 @@ func (s *Store) CheckDoubleBlockProposals(
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(proposalRecordsBucket)
 		for _, proposal := range proposals {
-			key, err := keyForValidatorProposal(
+			key := keyForValidatorProposal(
 				proposal.SignedBeaconBlockHeader.Header.Slot,
 				proposal.SignedBeaconBlockHeader.Header.ProposerIndex,
 			)
-			if err != nil {
-				return err
-			}
 			encExistingProposalWrapper := bkt.Get(key)
 			if len(encExistingProposalWrapper) < signingRootSize {
 				continue
@@ -362,11 +532,8 @@ func (s *Store) BlockProposalForValidator(
 	_, span := trace.StartSpan(ctx, "BeaconDB.BlockProposalForValidator")
 	defer span.End()
 	var record *slashertypes.SignedBlockHeaderWrapper
-	key, err := keyForValidatorProposal(slot, validatorIdx)
-	if err != nil {
-		return nil, err
-	}
-	err = s.db.View(func(tx *bolt.Tx) error {
+	key := keyForValidatorProposal(slot, validatorIdx)
+	err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(proposalRecordsBucket)
 		encProposal := bkt.Get(key)
 		if encProposal == nil {
@@ -392,13 +559,10 @@ func (s *Store) SaveBlockProposals(
 	encodedKeys := make([][]byte, len(proposals))
 	encodedProposals := make([][]byte, len(proposals))
 	for i, proposal := range proposals {
-		key, err := keyForValidatorProposal(
+		key := keyForValidatorProposal(
 			proposal.SignedBeaconBlockHeader.Header.Slot,
 			proposal.SignedBeaconBlockHeader.Header.ProposerIndex,
 		)
-		if err != nil {
-			return err
-		}
 		enc, err := encodeProposalRecord(proposal)
 		if err != nil {
 			return err
@@ -444,7 +608,7 @@ func (s *Store) HighestAttestations(
 			c := signingRootsBkt.Cursor()
 			for k, v := c.Last(); k != nil; k, v = c.Prev() {
 				if suffixForAttestationRecordsKey(k, encodedIndices[i]) {
-					encodedAttRecord := attRecordsBkt.Get(v)
+					encodedAttRecord := attRecordsBkt.Get(attestationRecordKey(k[:8], v))
 					if encodedAttRecord == nil {
 						continue
 					}
@@ -472,14 +636,22 @@ func suffixForAttestationRecordsKey(key, encodedValidatorIndex []byte) bool {
 	return bytes.Equal(encIdx, encodedValidatorIndex)
 }
 
+// attestationRecordKey is the disk key of an attestation record: the target
+// epoch (8 bytes, big-endian) followed by the attestation data root. The epoch
+// prefix lets pruning remove every record of an epoch, including records that
+// no validator index points at any more because the validator voted again.
+func attestationRecordKey(encodedTargetEpoch, dataRoot []byte) []byte {
+	key := make([]byte, 0, len(encodedTargetEpoch)+len(dataRoot))
+	key = append(key, encodedTargetEpoch...)
+	return append(key, dataRoot...)
+}
+
 // Disk key for a validator proposal, including a slot+validatorIndex as a byte slice.
-func keyForValidatorProposal(slot primitives.Slot, proposerIndex primitives.ValidatorIndex) ([]byte, error) {
-	encSlot, err := slot.MarshalSSZ()
-	if err != nil {
-		return nil, err
-	}
+func keyForValidatorProposal(slot primitives.Slot, proposerIndex primitives.ValidatorIndex) []byte {
+	encSlot := make([]byte, 8)
+	binary.BigEndian.PutUint64(encSlot, uint64(slot))
 	encValidatorIdx := encodeValidatorIndex(proposerIndex)
-	return append(encSlot, encValidatorIdx...), nil
+	return append(encSlot, encValidatorIdx...)
 }
 
 func encodeSlasherChunk(chunk []uint16) ([]byte, error) {
@@ -514,7 +686,7 @@ func decodeSlasherChunk(enc []byte) ([]uint16, error) {
 
 // Decode attestation record from bytes.
 func encodeAttestationRecord(att *slashertypes.IndexedAttestationWrapper) ([]byte, error) {
-	if att == nil || att.IndexedAttestation == nil {
+	if att == nil || att.IndexedAttestation == nil || att.IndexedAttestation.Data == nil {
 		return []byte{}, errors.New("nil proposal record")
 	}
 	encodedAtt, err := att.IndexedAttestation.MarshalSSZ()
@@ -578,10 +750,10 @@ func decodeProposalRecord(encoded []byte) (*slashertypes.SignedBlockHeaderWrappe
 	}, nil
 }
 
-// Encodes an epoch into little-endian bytes.
+// Encodes an epoch into big-endian bytes.
 func encodeTargetEpoch(epoch primitives.Epoch) []byte {
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, uint64(epoch))
+	binary.BigEndian.PutUint64(buf, uint64(epoch))
 	return buf
 }
 

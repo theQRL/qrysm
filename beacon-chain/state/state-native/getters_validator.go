@@ -5,6 +5,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/features"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
 	consensus_types "github.com/theQRL/qrysm/consensus-types"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
@@ -52,7 +53,7 @@ func (b *BeaconState) validatorsReferences() []*qrysmpb.Validator {
 		return nil
 	}
 
-	res := make([]*qrysmpb.Validator, len(b.validators))
+	res := make([]*qrysmpb.Validator, len(b.validators), len(b.validators)+int(params.BeaconConfig().MaxDeposits))
 	for i := range res {
 		validator := b.validators[i]
 		if validator == nil {
@@ -133,11 +134,14 @@ func (b *BeaconState) ValidatorAtIndexReadOnly(idx primitives.ValidatorIndex) (s
 
 // ValidatorIndexByPubkey returns a given validator by its 2592-byte public key.
 func (b *BeaconState) ValidatorIndexByPubkey(key [field_params.MLDSA87PubkeyLength]byte) (primitives.ValidatorIndex, bool) {
-	if b == nil || b.valMapHandler == nil || b.valMapHandler.IsNil() {
+	if b == nil {
 		return 0, false
 	}
 	b.lock.RLock()
 	defer b.lock.RUnlock()
+	if b.valMapHandler == nil || b.valMapHandler.IsNil() {
+		return 0, false
+	}
 
 	var numOfVals int
 	if features.Get().EnableExperimentalState {
@@ -301,10 +305,6 @@ func (b *BeaconState) BalancesLength() int {
 
 // Slashings of validators on the beacon chain.
 func (b *BeaconState) Slashings() []uint64 {
-	if b.slashings == nil {
-		return nil
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 

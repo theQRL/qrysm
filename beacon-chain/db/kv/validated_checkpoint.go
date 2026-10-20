@@ -3,6 +3,8 @@ package kv
 import (
 	"context"
 
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
@@ -17,9 +19,13 @@ func (s *Store) LastValidatedCheckpoint(ctx context.Context) (*qrysmpb.Checkpoin
 		bkt := tx.Bucket(checkpointBucket)
 		enc := bkt.Get(lastValidatedCheckpointKey)
 		if enc == nil {
-			var finErr error
-			checkpoint, finErr = s.FinalizedCheckpoint(ctx)
-			return finErr
+			// Finality does not imply execution validity. Without an explicit
+			// validation marker, only genesis is known to be valid.
+			checkpoint = &qrysmpb.Checkpoint{Root: bytesutil.SafeCopyBytes(params.BeaconConfig().ZeroHash[:])}
+			if r := tx.Bucket(blocksBucket).Get(genesisBlockRootKey); r != nil {
+				checkpoint.Root = bytesutil.SafeCopyBytes(r)
+			}
+			return nil
 		}
 		checkpoint = &qrysmpb.Checkpoint{}
 		return decode(ctx, enc, checkpoint)

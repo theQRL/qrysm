@@ -28,6 +28,12 @@ func FillEncodedByteSlice(sliceLength int, value byte) string {
 	return hexutil.Encode(FillByteSlice(sliceLength, value))
 }
 
+// FillEncodedAddress returns a Q-prefixed execution address, which is how
+// the beacon node renders fee recipients and withdrawal addresses in JSON.
+func FillEncodedAddress(sliceLength int, value byte) string {
+	return hexutil.EncodeQ(FillByteSlice(sliceLength, value))
+}
+
 func FillEncodedByteArraySlice(sliceLength int, value string) []string {
 	encodedBytes := make([]string, sliceLength)
 	for index := range encodedBytes {

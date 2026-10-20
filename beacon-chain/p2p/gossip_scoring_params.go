@@ -2,7 +2,9 @@ package p2p
 
 import (
 	"context"
+	"fmt"
 	"math"
+	"net"
 	"reflect"
 	"strings"
 	"time"
@@ -66,7 +68,7 @@ var (
 	tenEpochs          = 10 * oneEpochDuration()
 )
 
-func peerScoringParams() (*pubsub.PeerScoreParams, *pubsub.PeerScoreThresholds) {
+func peerScoringParams(colocationWhitelist []*net.IPNet) (*pubsub.PeerScoreParams, *pubsub.PeerScoreThresholds) {
 	thresholds := &pubsub.PeerScoreThresholds{
 		GossipThreshold:             -4000,
 		PublishThreshold:            -8000,
@@ -83,7 +85,7 @@ func peerScoringParams() (*pubsub.PeerScoreParams, *pubsub.PeerScoreThresholds) 
 		AppSpecificWeight:           1,
 		IPColocationFactorWeight:    -35.11,
 		IPColocationFactorThreshold: 10,
-		IPColocationFactorWhitelist: nil,
+		IPColocationFactorWhitelist: colocationWhitelist,
 		BehaviourPenaltyWeight:      -15.92,
 		BehaviourPenaltyThreshold:   6,
 		BehaviourPenaltyDecay:       scoreDecay(tenEpochs),
@@ -95,18 +97,26 @@ func peerScoringParams() (*pubsub.PeerScoreParams, *pubsub.PeerScoreThresholds) 
 }
 
 func (s *Service) topicScoreParams(topic string) (*pubsub.TopicScoreParams, error) {
-	activeValidators, err := s.retrieveActiveValidators()
-	if err != nil {
-		return nil, err
-	}
 	switch {
 	case strings.Contains(topic, GossipBlockMessage):
 		return defaultBlockTopicParams(), nil
 	case strings.Contains(topic, GossipAggregateAndProofMessage):
+		activeValidators, err := s.retrieveActiveValidators()
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute active validator count for topic %s: %w", GossipAggregateAndProofMessage, err)
+		}
 		return defaultAggregateTopicParams(activeValidators), nil
 	case strings.Contains(topic, GossipAttestationMessage):
+		activeValidators, err := s.retrieveActiveValidators()
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute active validator count for topic %s: %w", GossipAttestationMessage, err)
+		}
 		return defaultAggregateSubnetTopicParams(activeValidators), nil
 	case strings.Contains(topic, GossipSyncCommitteeMessage):
+		activeValidators, err := s.retrieveActiveValidators()
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute active validator count for topic %s: %w", GossipSyncCommitteeMessage, err)
+		}
 		return defaultSyncSubnetTopicParams(activeValidators), nil
 	case strings.Contains(topic, GossipContributionAndProofMessage):
 		return defaultSyncContributionTopicParams(), nil
@@ -122,6 +132,8 @@ func (s *Service) topicScoreParams(topic string) (*pubsub.TopicScoreParams, erro
 }
 
 func (s *Service) retrieveActiveValidators() (uint64, error) {
+	s.activeValidatorCountLock.Lock()
+	defer s.activeValidatorCountLock.Unlock()
 	if s.activeValidatorCount != 0 {
 		return s.activeValidatorCount, nil
 	}

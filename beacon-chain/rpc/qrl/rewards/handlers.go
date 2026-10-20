@@ -58,7 +58,7 @@ func (s *Server) BlockRewards(w http.ResponseWriter, r *http.Request) {
 		http2.HandleError(w, "Could not get proposer's balance: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	st, err = coreblocks.ProcessAttesterSlashings(r.Context(), st, blk.Block().Body().AttesterSlashings(), validators.SlashValidator)
+	st, err = coreblocks.ProcessAttesterSlashingsNoVerify(r.Context(), st, blk.Block().Body().AttesterSlashings(), validators.SlashValidator)
 	if err != nil {
 		http2.HandleError(w, "Could not get attester slashing rewards: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -68,7 +68,7 @@ func (s *Server) BlockRewards(w http.ResponseWriter, r *http.Request) {
 		http2.HandleError(w, "Could not get proposer's balance: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	st, err = coreblocks.ProcessProposerSlashings(r.Context(), st, blk.Block().Body().ProposerSlashings(), validators.SlashValidator)
+	st, err = coreblocks.ProcessProposerSlashingsNoVerify(r.Context(), st, blk.Block().Body().ProposerSlashings(), validators.SlashValidator)
 	if err != nil {
 		http2.HandleError(w, "Could not get proposer slashing rewards"+err.Error(), http.StatusInternalServerError)
 		return
@@ -84,20 +84,20 @@ func (s *Server) BlockRewards(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var syncCommitteeReward uint64
-	_, syncCommitteeReward, err = altair.ProcessSyncAggregate(r.Context(), st, sa)
+	_, syncCommitteeReward, err = altair.ProcessSyncAggregateNoVerifySig(r.Context(), st, sa)
 	if err != nil {
 		http2.HandleError(w, "Could not get sync aggregate rewards: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	optimistic, err := s.OptimisticModeFetcher.IsOptimistic(r.Context())
-	if err != nil {
-		http2.HandleError(w, "Could not get optimistic mode info: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
 	blkRoot, err := blk.Block().HashTreeRoot()
 	if err != nil {
 		http2.HandleError(w, "Could not get block root: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	optimistic, err := s.OptimisticModeFetcher.IsOptimisticForRoot(r.Context(), blkRoot)
+	if err != nil {
+		http2.HandleError(w, "Could not get optimistic mode info: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -137,15 +137,34 @@ func (s *Server) AttestationRewards(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The state served here is replayed to the last slot of the epoch, so its
+	// latest block header may carry a zero state root and hash to a root that
+	// was never stored (a skipped slot, or the header of the block whose post
+	// state this is). Resolve the block root through fork choice from the head
+	// instead, which always yields a root that exists in the DB. (upstream #17112)
+	headRoot, err := s.HeadFetcher.HeadRoot(r.Context())
+	if err != nil {
+		http2.HandleError(w, "Could not get head root: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ancestor, err := s.ForkchoiceFetcher.Ancestor(r.Context(), headRoot, st.Slot())
+	if err != nil {
+		http2.HandleError(w, "Could not get block root: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	blkRoot := bytesutil2.ToBytes32(ancestor)
+
 	optimistic, err := s.OptimisticModeFetcher.IsOptimistic(r.Context())
 	if err != nil {
 		http2.HandleError(w, "Could not get optimistic mode info: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	blkRoot, err := st.LatestBlockHeader().HashTreeRoot()
-	if err != nil {
-		http2.HandleError(w, "Could not get block root: "+err.Error(), http.StatusInternalServerError)
-		return
+	if optimistic {
+		optimistic, err = s.OptimisticModeFetcher.IsOptimisticForRoot(r.Context(), blkRoot)
+		if err != nil {
+			http2.HandleError(w, "Could not get optimistic mode info: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	resp := &AttestationRewardsResponse{
@@ -195,7 +214,7 @@ func (s *Server) SyncCommitteeRewards(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	_, proposerReward, err := altair.ProcessSyncAggregate(r.Context(), st, sa)
+	_, proposerReward, err := altair.ProcessSyncAggregateNoVerifySig(r.Context(), st, sa)
 	if err != nil {
 		http2.HandleError(w, "Could not get sync aggregate rewards: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -215,14 +234,14 @@ func (s *Server) SyncCommitteeRewards(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	optimistic, err := s.OptimisticModeFetcher.IsOptimistic(r.Context())
-	if err != nil {
-		http2.HandleError(w, "Could not get optimistic mode info: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
 	blkRoot, err := blk.Block().HashTreeRoot()
 	if err != nil {
 		http2.HandleError(w, "Could not get block root: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	optimistic, err := s.OptimisticModeFetcher.IsOptimisticForRoot(r.Context(), blkRoot)
+	if err != nil {
+		http2.HandleError(w, "Could not get optimistic mode info: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -249,20 +268,27 @@ func (s *Server) attRewardsState(w http.ResponseWriter, r *http.Request) (state.
 		return nil, false
 	}
 	currentEpoch := uint64(slots.ToEpoch(s.TimeFetcher.CurrentSlot()))
-	if requestedEpoch+1 >= currentEpoch {
+	if currentEpoch < 2 || requestedEpoch > currentEpoch-2 {
 		http2.HandleError(w,
 			"Attestation rewards are available after two epoch transitions to ensure all attestations have a chance of inclusion",
 			http.StatusNotFound)
 		return nil, false
 	}
-	nextEpochEnd, err := slots.EpochEnd(primitives.Epoch(requestedEpoch + 1))
+	// Defense-in-depth against overflow if the gate above is ever loosened.
+	// (upstream PR #15970)
+	nextEpoch, err := primitives.Epoch(requestedEpoch).SafeAdd(1)
+	if err != nil {
+		http2.HandleError(w, "Could not increment epoch: "+err.Error(), http.StatusNotFound)
+		return nil, false
+	}
+	nextEpochEnd, err := slots.EpochEnd(nextEpoch)
 	if err != nil {
 		http2.HandleError(w, "Could not get next epoch's ending slot: "+err.Error(), http.StatusInternalServerError)
 		return nil, false
 	}
 	st, err := s.Stater.StateBySlot(r.Context(), nextEpochEnd)
 	if err != nil {
-		http2.HandleError(w, "Could not get state for epoch's starting slot: "+err.Error(), http.StatusInternalServerError)
+		shared.WriteStateFetchError(w, err)
 		return nil, false
 	}
 	return st, true

@@ -10,6 +10,7 @@ import (
 	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	http2 "github.com/theQRL/qrysm/network/http"
@@ -29,7 +30,7 @@ func (s *Server) ExpectedWithdrawals(w http.ResponseWriter, r *http.Request) {
 	}
 	st, err := s.Stater.State(r.Context(), []byte(stateId))
 	if err != nil {
-		http2.WriteError(w, handleWrapError(err, "could not retrieve state", http.StatusNotFound))
+		shared.WriteStateFetchError(w, err)
 		return
 	}
 	queryParam := r.URL.Query().Get("proposal_slot")

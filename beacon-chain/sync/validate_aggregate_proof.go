@@ -117,7 +117,9 @@ func (s *Service) validateAggregateAndProof(ctx context.Context, pid peer.ID, ms
 		return validationRes, err
 	}
 
-	s.setAggregatorIndexEpochSeen(m.Message.Aggregate.Data.Target.Epoch, m.Message.AggregatorIndex)
+	if first := s.setAggregatorIndexEpochSeen(m.Message.Aggregate.Data.Target.Epoch, m.Message.AggregatorIndex); !first {
+		return pubsub.ValidationIgnore, nil
+	}
 
 	msg.ValidatorData = m
 
@@ -152,11 +154,14 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *qrysmpb.Sig
 		return pubsub.ValidationIgnore, err
 	}
 
-	// Verify validator index is within the beacon committee.
-	if err := validateIndexInCommittee(ctx, bs, signed.Message.Aggregate, signed.Message.AggregatorIndex); err != nil {
+	// Verify validator index is within the beacon committee and that the
+	// aggregate satisfies the spec REJECT preconditions (committee index in
+	// range, bitfield length matches committee size, at least one attesting bit).
+	result, err := s.validateIndexInCommittee(ctx, bs, signed.Message.Aggregate, signed.Message.AggregatorIndex)
+	if result != pubsub.ValidationAccept {
 		wrappedErr := errors.Wrapf(err, "Could not validate index in committee")
 		tracing.AnnotateError(span, wrappedErr)
-		return pubsub.ValidationReject, wrappedErr
+		return result, wrappedErr
 	}
 
 	// Verify selection proof reflects to the right validator.
@@ -168,24 +173,26 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *qrysmpb.Sig
 		return pubsub.ValidationReject, wrappedErr
 	}
 
-	// Verify selection signature, aggregator signature and attestation signatures are valid.
-	// We use batch verify here to save compute.
+	// Authenticate the aggregator before constructing or verifying the larger
+	// attester signature set.
 	aggregatorSigSet, err := aggSigSet(bs, signed)
 	if err != nil {
 		wrappedErr := errors.Wrapf(err, "Could not get aggregator sig set %d", signed.Message.AggregatorIndex)
 		tracing.AnnotateError(span, wrappedErr)
 		return pubsub.ValidationIgnore, wrappedErr
 	}
+	result, err = s.validateSignatures(ctx, "aggregator proofs", selectionSigSet.Join(aggregatorSigSet))
+	if result != pubsub.ValidationAccept {
+		return result, err
+	}
+
 	attSigSet, err := blocks.AttestationSignatureBatch(ctx, bs, []*qrysmpb.Attestation{signed.Message.Aggregate})
 	if err != nil {
 		wrappedErr := errors.Wrapf(err, "Could not verify attestation signatures %d", signed.Message.AggregatorIndex)
 		tracing.AnnotateError(span, wrappedErr)
 		return pubsub.ValidationIgnore, wrappedErr
 	}
-	set := ml_dsa_87.NewSet()
-	set.Join(selectionSigSet).Join(aggregatorSigSet).Join(attSigSet)
-
-	return s.validateWithBatchVerifier(ctx, "aggregate", set)
+	return s.validateSignatures(ctx, "aggregate", attSigSet)
 }
 
 func (s *Service) validateBlockInAttestation(ctx context.Context, satt *qrysmpb.SignedAggregateAttestationAndProof) bool {
@@ -204,34 +211,95 @@ func (s *Service) validateBlockInAttestation(ctx context.Context, satt *qrysmpb.
 func (s *Service) hasSeenAggregatorIndexEpoch(epoch primitives.Epoch, aggregatorIndex primitives.ValidatorIndex) bool {
 	s.seenAggregatedAttestationLock.RLock()
 	defer s.seenAggregatedAttestationLock.RUnlock()
-	b := append(bytesutil.Bytes32(uint64(epoch)), bytesutil.Bytes32(uint64(aggregatorIndex))...)
-	_, seen := s.seenAggregatedAttestationCache.Get(string(b))
+	if s.seenAggregatedAttestationByEpoch == nil {
+		return false
+	}
+	byValidator, ok := s.seenAggregatedAttestationByEpoch[epoch]
+	if !ok {
+		return false
+	}
+	_, seen := byValidator[aggregatorIndex]
 	return seen
 }
 
 // Set aggregate's aggregator index target epoch as seen.
-func (s *Service) setAggregatorIndexEpochSeen(epoch primitives.Epoch, aggregatorIndex primitives.ValidatorIndex) {
+// Returns true if this is the first time seeing this aggregator index and epoch.
+func (s *Service) setAggregatorIndexEpochSeen(epoch primitives.Epoch, aggregatorIndex primitives.ValidatorIndex) bool {
 	s.seenAggregatedAttestationLock.Lock()
 	defer s.seenAggregatedAttestationLock.Unlock()
-	b := append(bytesutil.Bytes32(uint64(epoch)), bytesutil.Bytes32(uint64(aggregatorIndex))...)
-	s.seenAggregatedAttestationCache.Add(string(b), true)
+	if s.seenAggregatedAttestationByEpoch == nil {
+		s.seenAggregatedAttestationByEpoch = make(map[primitives.Epoch]map[primitives.ValidatorIndex]struct{})
+		s.seenAggregatedAttestationHasMaxEpoch = false
+	}
+	byValidator, ok := s.seenAggregatedAttestationByEpoch[epoch]
+	if !ok {
+		byValidator = make(map[primitives.ValidatorIndex]struct{})
+		s.seenAggregatedAttestationByEpoch[epoch] = byValidator
+	}
+	if _, seen := byValidator[aggregatorIndex]; seen {
+		return false
+	}
+	byValidator[aggregatorIndex] = struct{}{}
+
+	if !s.seenAggregatedAttestationHasMaxEpoch || epoch > s.seenAggregatedAttestationMaxEpoch {
+		s.seenAggregatedAttestationMaxEpoch = epoch
+		s.seenAggregatedAttestationHasMaxEpoch = true
+	}
+	s.pruneSeenAggregatedAttestationEpochsLocked()
+	return true
 }
 
-// This validates the aggregator's index in state is within the beacon committee.
-func validateIndexInCommittee(ctx context.Context, bs state.ReadOnlyBeaconState, a *qrysmpb.Attestation, validatorIndex primitives.ValidatorIndex) error {
+// pruneSeenAggregatedAttestationEpochsLocked retains only the latest two epochs
+// (max seen epoch and max-1) so dedup history follows protocol timing rather
+// than cache pressure. Caller must hold seenAggregatedAttestationLock for write.
+func (s *Service) pruneSeenAggregatedAttestationEpochsLocked() {
+	if !s.seenAggregatedAttestationHasMaxEpoch {
+		return
+	}
+	maxSeenEpoch := s.seenAggregatedAttestationMaxEpoch
+	if maxSeenEpoch < 2 {
+		return
+	}
+	minRetainedEpoch := maxSeenEpoch - 1
+	for epoch := range s.seenAggregatedAttestationByEpoch {
+		if epoch < minRetainedEpoch {
+			delete(s.seenAggregatedAttestationByEpoch, epoch)
+		}
+	}
+}
+
+// validateIndexInCommittee validates the bitfield is correct and the
+// aggregator's index is within the beacon committee. Implements the
+// following consensus-spec REJECT conditions:
+//   - committee index < get_committee_count_per_slot
+//   - len(aggregation_bits) == len(beacon_committee)
+//   - aggregate has at least one attesting bit
+//   - aggregator's validator index is within the committee
+//
+// Internal lookup errors return ValidationIgnore so the peer isn't downscored
+// for our own state-access failures.
+func (s *Service) validateIndexInCommittee(ctx context.Context, bs state.ReadOnlyBeaconState, a *qrysmpb.Attestation, validatorIndex primitives.ValidatorIndex) (pubsub.ValidationResult, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateIndexInCommittee")
 	defer span.End()
 
-	committee, err := helpers.BeaconCommitteeFromState(ctx, bs, a.Data.Slot, a.Data.CommitteeIndex)
-	if err != nil {
-		return err
+	if _, result, err := s.validateCommitteeIndex(ctx, a, bs); result != pubsub.ValidationAccept {
+		return result, err
+	}
+
+	committee, result, err := s.validateBitLength(ctx, a, bs)
+	if result != pubsub.ValidationAccept {
+		return result, err
+	}
+
+	if a.AggregationBits.Count() == 0 {
+		return pubsub.ValidationReject, errors.New("no attesting indices")
 	}
 
 	if withinCommittee := slices.Contains(committee, validatorIndex); !withinCommittee {
-		return fmt.Errorf("validator index %d is not within the committee: %v",
+		return pubsub.ValidationReject, fmt.Errorf("validator index %d is not within the committee: %v",
 			validatorIndex, committee)
 	}
-	return nil
+	return pubsub.ValidationAccept, nil
 }
 
 // This validates selection proof by validating it's from the correct validator index of the slot.
@@ -250,7 +318,11 @@ func validateSelectionIndex(
 	if err != nil {
 		return nil, err
 	}
-	aggregator, err := helpers.IsAggregator(uint64(len(committee)), proof)
+	seed, err := helpers.AggregatorSelectionSeed(bs, slots.ToEpoch(data.Slot))
+	if err != nil {
+		return nil, err
+	}
+	aggregator, err := helpers.IsAggregator(uint64(len(committee)), seed[:], data.Slot, data.CommitteeIndex, validatorIndex)
 	if err != nil {
 		return nil, err
 	}

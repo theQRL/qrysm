@@ -13,6 +13,7 @@ go_library(
         "//cache/lru",
         "//config/params",
         "//crypto/rand",
+        "//io/file",
         "@com_github_hashicorp_golang_lru//:golang-lru",
         "@com_github_sirupsen_logrus//:logrus",
     ],

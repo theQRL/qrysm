@@ -25,9 +25,17 @@ type mockRT struct {
 }
 
 func (rt *mockRT) RoundTrip(_ *http.Request) (*http.Response, error) {
+	statusCode := rt.statusCode
+	if statusCode == 0 {
+		statusCode = http.StatusOK
+	}
+	status := rt.status
+	if status == "" {
+		status = http.StatusText(statusCode)
+	}
 	return &http.Response{
-		Status:     http.StatusText(http.StatusOK),
-		StatusCode: http.StatusOK,
+		Status:     status,
+		StatusCode: statusCode,
 		Body:       io.NopCloser(strings.NewReader(rt.body)),
 	}, nil
 }
@@ -203,6 +211,31 @@ func TestBadInput(t *testing.T) {
 	_, err := bnScraper.Scrape()
 	require.NoError(t, err)
 	require.LogsContain(t, hook, "Failed to get qrysm_version")
+}
+
+// TestScrapePromReturnsFetchMetricFamiliesError is the regression test for a
+// failed metrics fetch being reported as a successful scrape with empty
+// stats: FetchMetricFamilies closes the metric channel before returning its
+// error, and scrapeProm returned nil as soon as it saw the close. (upstream #17118)
+func TestScrapePromReturnsFetchMetricFamiliesError(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		statusCode int
+		status     string
+		want       string
+	}{
+		{name: "server error", statusCode: http.StatusInternalServerError, status: "500 Internal Server Error", want: "500 Internal Server Error"},
+		{name: "unauthorized", statusCode: http.StatusUnauthorized, status: "401 Unauthorized", want: "401 Unauthorized"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := scrapeProm("http://localhost/metrics", &mockRT{
+				body:       "upstream failure",
+				status:     tc.status,
+				statusCode: tc.statusCode,
+			})
+			require.ErrorContains(t, tc.want, err)
+		})
+	}
 }
 
 var prometheusTestBody = `

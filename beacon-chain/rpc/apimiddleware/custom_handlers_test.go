@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -100,7 +101,7 @@ func TestWriteSSZResponseHeaderAndBody(t *testing.T) {
 		response := &http.Response{
 			Header: http.Header{
 				"Foo": []string{"foo"},
-				"Grpc-Metadata-" + grpc.HttpCodeMetadataKey: []string{"204"},
+				"Grpc-Metadata-" + grpc.HttpCodeMetadataKey: []string{"200"},
 			},
 		}
 
@@ -129,20 +130,20 @@ func TestWriteSSZResponseHeaderAndBody(t *testing.T) {
 		require.Equal(t, true, ok, "header not found")
 		require.Equal(t, 1, len(v), "wrong number of header values")
 		assert.Equal(t, "version", v[0])
-		assert.Equal(t, 204, writer.Code)
+		assert.Equal(t, 200, writer.Code)
 	})
 
 	t.Run("no_grpc_status_code_header", func(t *testing.T) {
 		response := &http.Response{
 			Header:     http.Header{},
-			StatusCode: 204,
+			StatusCode: 200,
 		}
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
 
 		errJson := writeSSZResponseHeaderAndBody(response, writer, responseSsz, version, fileName)
 		require.Equal(t, true, errJson == nil)
-		assert.Equal(t, 204, writer.Code)
+		assert.Equal(t, 200, writer.Code)
 	})
 
 	t.Run("invalid_status_code", func(t *testing.T) {
@@ -358,4 +359,71 @@ func TestWriteEvent(t *testing.T) {
 	require.Equal(t, true, errJson == nil)
 	written := w.Body.String()
 	assert.Equal(t, "event: test_event\ndata: {\"block\":\"0x666f6f\",\"state\":\"0x666f6f\",\"epoch\":\"1\",\"execution_optimistic\":false}\n\n", written)
+}
+
+// TestHandleEvents_UpstreamErrorIsRelayedImmediately is a regression test for
+// the events proxy retrying a non-200 grpc-gateway answer (e.g. 400 for an
+// unknown topic) with exponential backoff for up to 15 minutes while the
+// client hung, and then answering twice. The gateway's status and message
+// must be relayed at once, in a single response.
+func TestHandleEvents_UpstreamErrorIsRelayedImmediately(t *testing.T) {
+	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/internal/qrl/v1/events", r.URL.Path)
+		assert.Equal(t, "foo", r.URL.Query().Get("topics"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, err := w.Write([]byte(`{"code":3,"message":"Invalid topic foo"}`))
+		require.NoError(t, err)
+	}))
+	defer gateway.Close()
+	m := &apimiddleware.ApiProxyMiddleware{GatewayAddress: strings.TrimPrefix(gateway.URL, "http://")}
+
+	req := httptest.NewRequest(http.MethodGet, "http://foo.example/qrl/v1/events?topics=foo", nil)
+	w := httptest.NewRecorder()
+	w.Body = &bytes.Buffer{}
+
+	start := time.Now()
+	handled := handleEvents(m, apimiddleware.Endpoint{}, w, req)
+	require.Equal(t, true, handled)
+	require.Equal(t, true, time.Since(start) < 5*time.Second, "events proxy retried the failed upstream connection")
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	e := &apimiddleware.DefaultErrorJson{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), e))
+	assert.Equal(t, http.StatusBadRequest, e.Code)
+	assert.Equal(t, "Invalid topic foo", e.Message)
+}
+
+// TestHandleEvents_LargeEventIsProxied checks that an event bigger than the
+// sse library's 64 KiB default buffer (any aggregate attestation or sync
+// contribution event with ML-DSA-87 signatures) is proxied instead of
+// tripping bufio.ErrTooLong, and that the proxy returns once the upstream
+// stream ends.
+func TestHandleEvents_LargeEventIsProxied(t *testing.T) {
+	padding := strings.Repeat("a", 256*1024)
+	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, err := fmt.Fprintf(w, "event: head\ndata: {\"slot\":\"1\",\"block\":\"Zm9v\",\"state\":\"Zm9v\",\"padding\":\"%s\"}\n\n", padding)
+		require.NoError(t, err)
+		w.(http.Flusher).Flush()
+		// Returning ends the upstream stream.
+	}))
+	defer gateway.Close()
+	m := &apimiddleware.ApiProxyMiddleware{GatewayAddress: strings.TrimPrefix(gateway.URL, "http://")}
+
+	req := httptest.NewRequest(http.MethodGet, "http://foo.example/qrl/v1/events?topics=head", nil)
+	w := httptest.NewRecorder()
+	w.Body = &bytes.Buffer{}
+
+	done := make(chan bool, 1)
+	go func() { done <- handleEvents(m, apimiddleware.Endpoint{}, w, req) }()
+	select {
+	case handled := <-done:
+		require.Equal(t, true, handled)
+	case <-time.After(10 * time.Second):
+		t.Fatal("events proxy did not return after the upstream stream ended")
+	}
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, true, strings.Contains(w.Body.String(), "event: head\n"), "large event was not proxied: %.200s", w.Body.String())
+	assert.Equal(t, true, strings.Contains(w.Body.String(), `"slot":"1"`))
 }

@@ -135,6 +135,14 @@ func main() {
 			return err
 		}
 
+		// Apply verbosity before installing formatters/hooks so non-text formats and the
+		// journald hook honour --verbosity instead of falling back to logrus' default Info.
+		level, err := logrus.ParseLevel(ctx.String(cmd.VerbosityFlag.Name))
+		if err != nil {
+			return err
+		}
+		logrus.SetLevel(level)
+
 		format := ctx.String(cmd.LogFormat.Name)
 		switch format {
 		case "text":
@@ -154,7 +162,7 @@ func main() {
 		case "json":
 			logrus.SetFormatter(&logrus.JSONFormatter{})
 		case "journald":
-			if err := journald.Enable(); err != nil {
+			if err := journald.Enable(level); err != nil {
 				return err
 			}
 		default:

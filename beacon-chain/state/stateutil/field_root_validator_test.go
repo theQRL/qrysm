@@ -26,7 +26,7 @@ func TestValidatorConstants(t *testing.T) {
 		}
 		numOfValFields++
 	}
-	assert.Equal(t, validatorFieldRoots, numOfValFields)
+	assert.Equal(t, ValidatorFieldCount, numOfValFields)
 	assert.Equal(t, uint64(validatorFieldRoots), mathutil.PowerOf2(validatorTreeDepth))
 
 	_, err := ValidatorRegistryRoot([]*qrysmpb.Validator{v})

@@ -2,7 +2,7 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "fieldparams",
-    srcs = select({
+    srcs = ["block_operations.go"] + select({
         "//config:mainnet": ["mainnet.go"],
         "//config:minimal": ["minimal.go"],
     }),
@@ -17,19 +17,26 @@ go_library(
 go_test(
     name = "fieldparams_test",
     srcs = [
+        "block_operations_test.go",
         "common_test.go",
         "mainnet_test.go",
     ],
     deps = [
         ":fieldparams",
         "//config/params",
+        "//container/trie",
+        "//proto/engine/v1",
+        "//proto/qrysm/v1alpha1",
         "//testing/require",
+        "//testing/util",
+        "@com_github_theqrl_go_bitfield//:go-bitfield",
     ],
 )
 
 go_test(
     name = "go_minimal_test",
     srcs = [
+        "block_operations_test.go",
         "common_test.go",
         "minimal_test.go",
     ],
@@ -38,6 +45,11 @@ go_test(
     deps = [
         ":fieldparams",
         "//config/params",
+        "//container/trie",
+        "//proto/engine/v1",
+        "//proto/qrysm/v1alpha1",
         "//testing/require",
+        "//testing/util",
+        "@com_github_theqrl_go_bitfield//:go-bitfield",
     ],
 )

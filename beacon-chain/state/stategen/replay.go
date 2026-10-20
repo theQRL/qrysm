@@ -20,52 +20,39 @@ import (
 	"go.opencensus.io/trace"
 )
 
-// ReplayBlocks replays the input blocks on the input state until the target slot is reached.
-//
-// WARNING Blocks passed to the function must be in decreasing slots order.
-func (_ *State) replayBlocks(
+// blockRootGetter retrieves one block by its root. Replaying roots rather than
+// retaining decoded blocks keeps the replay's block memory bounded by one block.
+type blockRootGetter interface {
+	Block(ctx context.Context, blockRoot [32]byte) (interfaces.ReadOnlySignedBeaconBlock, error)
+}
+
+// replayBlockRoots replays canonical block roots in ascending slot order. A
+// block is fetched immediately before its transition and then released before
+// the next root is fetched.
+func (s *State) replayBlockRoots(
 	ctx context.Context,
-	state state.BeaconState,
-	signed []interfaces.ReadOnlySignedBeaconBlock,
+	st state.BeaconState,
+	roots [][32]byte,
 	targetSlot primitives.Slot,
 ) (state.BeaconState, error) {
-	ctx, span := trace.StartSpan(ctx, "stateGen.replayBlocks")
+	ctx, span := trace.StartSpan(ctx, "stateGen.replayBlockRoots")
 	defer span.End()
-	var err error
 
 	start := time.Now()
+	diff := primitives.Slot(0)
+	if targetSlot >= st.Slot() {
+		diff = targetSlot - st.Slot()
+	}
 	rLog := log.WithFields(logrus.Fields{
-		"startSlot": state.Slot(),
+		"startSlot": st.Slot(),
 		"endSlot":   targetSlot,
-		"diff":      targetSlot - state.Slot(),
+		"diff":      diff,
 	})
 	rLog.Debug("Replaying state")
-	// The input block list is sorted in decreasing slots order.
-	if len(signed) > 0 {
-		for i := len(signed) - 1; i >= 0; i-- {
-			if ctx.Err() != nil {
-				return nil, ctx.Err()
-			}
-			if state.Slot() >= targetSlot {
-				break
-			}
-			// A node shouldn't process the block if the block slot is lower than the state slot.
-			if state.Slot() >= signed[i].Block().Slot() {
-				continue
-			}
-			state, err = executeStateTransitionStateGen(ctx, state, signed[i])
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
 
-	// If there are skip slots at the end.
-	if targetSlot > state.Slot() {
-		state, err = ReplayProcessSlots(ctx, state, targetSlot)
-		if err != nil {
-			return nil, err
-		}
+	st, err := replayBlockRootsWithGetter(ctx, st, roots, targetSlot, s.beaconDB)
+	if err != nil {
+		return nil, err
 	}
 
 	duration := time.Since(start)
@@ -74,69 +61,85 @@ func (_ *State) replayBlocks(
 	}).Debug("Replayed state")
 
 	replayBlocksSummary.Observe(float64(duration.Milliseconds()))
-
-	return state, nil
+	return st, nil
 }
 
-// loadBlocks loads the blocks between start slot and end slot by recursively fetching from end block root.
-// The Blocks are returned in slot-descending order.
-func (s *State) loadBlocks(ctx context.Context, startSlot, endSlot primitives.Slot, endBlockRoot [32]byte) ([]interfaces.ReadOnlySignedBeaconBlock, error) {
-	// Nothing to load for invalid range.
-	if startSlot > endSlot {
-		return nil, fmt.Errorf("start slot %d > end slot %d", startSlot, endSlot)
+func replayBlockRootsWithGetter(
+	ctx context.Context,
+	st state.BeaconState,
+	roots [][32]byte,
+	targetSlot primitives.Slot,
+	getter blockRootGetter,
+) (state.BeaconState, error) {
+	if st.Slot() > targetSlot {
+		return nil, errors.Wrapf(
+			ErrReplayTargetSlotExceeded,
+			"state slot %d is greater than replay target slot %d",
+			st.Slot(),
+			targetSlot,
+		)
 	}
-	filter := filters.NewFilter().SetStartSlot(startSlot).SetEndSlot(endSlot)
-	blocks, blockRoots, err := s.beaconDB.Blocks(ctx, filter)
+	var err error
+	for _, root := range roots {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		st, err = replayBlockRoot(ctx, st, root, targetSlot, getter)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// If there are skip slots at the end.
+	if targetSlot > st.Slot() {
+		st, err = ReplayProcessSlots(ctx, st, targetSlot)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return st, nil
+}
+
+func replayBlockRoot(
+	ctx context.Context,
+	st state.BeaconState,
+	root [32]byte,
+	targetSlot primitives.Slot,
+	getter blockRootGetter,
+) (state.BeaconState, error) {
+	signed, err := getter.Block(ctx, root)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "could not retrieve block at root %#x", root)
 	}
-	// The retrieved blocks and block roots have to be in the same length given same filter.
-	if len(blocks) != len(blockRoots) {
-		return nil, errors.New("length of blocks and roots don't match")
+	if err := blocks.BeaconBlockIsNil(signed); err != nil {
+		return nil, errors.Wrapf(err, "could not retrieve block at root %#x", root)
 	}
-	// Return early if there's no block given the input.
-	length := len(blocks)
-	if length == 0 {
-		return nil, nil
+	if signed.Block().Slot() > targetSlot {
+		return st, nil
 	}
-
-	// The last retrieved block root has to match input end block root.
-	// Covers the edge case if there's multiple blocks on the same end slot,
-	// the end root may not be the last index in `blockRoots`.
-	for length >= 3 && blocks[length-1].Block().Slot() == blocks[length-2].Block().Slot() && blockRoots[length-1] != endBlockRoot {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		length--
-		if blockRoots[length-2] == endBlockRoot {
-			length--
-			break
-		}
+	// A cached ancestor state can be at a later slot than its block root, and a
+	// checkpoint state can be a block's post-state advanced through empty
+	// slots. A block is skipped only when the state has already applied a block
+	// at that slot (its latest block header says so): a state at the block's
+	// slot whose header is older is the block's pre-state.
+	if st.Slot() > signed.Block().Slot() {
+		return st, nil
 	}
-
-	if blockRoots[length-1] != endBlockRoot {
-		return nil, errors.New("end block roots don't match")
+	if st.Slot() == signed.Block().Slot() && st.LatestBlockHeader() != nil && st.LatestBlockHeader().Slot == signed.Block().Slot() {
+		return st, nil
 	}
-
-	filteredBlocks := []interfaces.ReadOnlySignedBeaconBlock{blocks[length-1]}
-	// Starting from second to last index because the last block is already in the filtered block list.
-	for i := length - 2; i >= 0; i-- {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		b := filteredBlocks[len(filteredBlocks)-1]
-		if b.Block().ParentRoot() != blockRoots[i] {
-			continue
-		}
-		filteredBlocks = append(filteredBlocks, blocks[i])
-	}
-
-	return filteredBlocks, nil
+	return executeStateTransitionStateGen(ctx, st, signed)
 }
 
-// executeStateTransitionStateGen applies state transition on input historical state and block for state gen usages.
-// There's no signature verification involved given state gen only works with stored block and state in DB.
-// If the objects are already in stored in DB, one can omit redundant signature checks and ssz hashing calculations.
+func reverseBlockRoots(roots [][32]byte) {
+	for left, right := 0, len(roots)-1; left < right; left, right = left+1, right-1 {
+		roots[left], roots[right] = roots[right], roots[left]
+	}
+}
+
+// executeStateTransitionStateGen replays a previously verified block. It skips proposer,
+// attestation and sync committee signature verification, as well as RANDAO reveal verification.
+// Other block operations retain their checks.
 //
 // WARNING: This method should not be used on an unverified new block.
 func executeStateTransitionStateGen(
@@ -161,10 +164,8 @@ func executeStateTransitionStateGen(
 		return nil, errors.Wrap(err, "could not process slot")
 	}
 
-	// Execute per block transition.
-	// Given this is for state gen, a node only cares about the post state without proposer
-	// and randao signature verifications.
-	state, err = transition.ProcessBlockForStateRoot(ctx, state, signed)
+	// Replay stored blocks without repeating sync committee signature verification.
+	state, err = transition.ProcessBlockForReplay(ctx, state, signed)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not process block")
 	}
@@ -193,6 +194,12 @@ func ReplayProcessSlots(ctx context.Context, state state.BeaconState, slot primi
 
 	var err error
 	for state.Slot() < slot {
+		// Slot and epoch transitions never look at the context; a replay for a
+		// request that went away would otherwise run to the target slot.
+		if err := ctx.Err(); err != nil {
+			tracing.AnnotateError(span, err)
+			return nil, err
+		}
 		state, err = transition.ProcessSlot(ctx, state)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not process slot")

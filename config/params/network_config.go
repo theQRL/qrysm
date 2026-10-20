@@ -11,7 +11,7 @@ import (
 type NetworkConfig struct {
 	GossipMaxSize                   uint64          `yaml:"GOSSIP_MAX_SIZE"`                    // GossipMaxSize is the maximum allowed size of uncompressed gossip messages.
 	MaxChunkSize                    uint64          `yaml:"MAX_CHUNK_SIZE"`                     // MaxChunkSize is the maximum allowed size of uncompressed req/resp chunked responses.
-	AttestationSubnetCount          uint64          `yaml:"ATTESTATION_SUBNET_COUNT"`           // AttestationSubnetCount is the number of attestation subnets used in the gossipsub protocol.
+	AttestationSubnetCount          uint64          `yaml:"ATTESTATION_SUBNET_COUNT"`           // AttestationSubnetCount is the number of attestation subnets used in the gossipsub protocol. The attnets bitvector in QNRs and MetaData stays 64 bits wide regardless (see p2p.attnetsBitvectorBits), so this can be raised up to 64 without changing the wire format.
 	AttestationPropagationSlotRange primitives.Slot `yaml:"ATTESTATION_PROPAGATION_SLOT_RANGE"` // AttestationPropagationSlotRange is the maximum number of slots during which an attestation can be propagated.
 	MaxRequestBlocks                uint64          `yaml:"MAX_REQUEST_BLOCKS"`                 // MaxRequestBlocks is the maximum number of blocks in a single request.
 	TtfbTimeout                     time.Duration   `yaml:"TTFB_TIMEOUT"`                       // TtfbTimeout is the maximum time to wait for first byte of request response (time-to-first-byte).
@@ -24,11 +24,10 @@ type NetworkConfig struct {
 	ConsensusKey               string // ConsensusKey is the QNR key of the QRL consensus object in an qnr.
 	AttSubnetKey               string // AttSubnetKey is the QNR key of the subnet bitfield in the qnr.
 	SyncCommsSubnetKey         string // SyncCommsSubnetKey is the QNR key of the sync committee subnet bitfield in the qnr.
-	MinimumPeersInSubnetSearch uint64 // PeersInSubnetSearch is the required amount of peers that we need to be able to lookup in a subnet search.
+	MinimumPeersInSubnetSearch uint64 // Deprecated: unused. Nothing in qrysm reads this value. Upstream prysm used it as the enode.ReadNodes batch size in FindPeersWithSubnet, but that search was rewritten to bound itself by batch size and context (upstream PR #14669); the per-subnet peer target is now the --minimum-peers-per-subnet flag.
 
 	// Chain Network Config
-	ContractDeploymentBlock uint64   // ContractDeploymentBlock is the execution block in which the deposit contract is deployed.
-	BootstrapNodes          []string // BootstrapNodes are the addresses of the bootnodes.
+	BootstrapNodes []string // BootstrapNodes are the addresses of the bootnodes.
 }
 
 var networkConfig = mainnetNetworkConfig

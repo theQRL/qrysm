@@ -27,6 +27,8 @@ type PoolInserter interface {
 // This pool is used by proposers to insert data into new blocks.
 type PoolManager interface {
 	PoolInserter
+	RecoverAttesterSlashing(ctx context.Context, state state.ReadOnlyBeaconState, slashing *qrysmpb.AttesterSlashing) error
+	RecoverProposerSlashing(ctx context.Context, state state.ReadOnlyBeaconState, slashing *qrysmpb.ProposerSlashing) error
 	PendingAttesterSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*qrysmpb.AttesterSlashing
 	PendingProposerSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*qrysmpb.ProposerSlashing
 	MarkIncludedAttesterSlashing(as *qrysmpb.AttesterSlashing)

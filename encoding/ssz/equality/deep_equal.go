@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -220,28 +219,12 @@ func deepValueBaseTypeEqual(v1, v2 reflect.Value) bool {
 	switch v1.Kind() {
 	case reflect.String:
 		return v1.String() == v2.String()
-	case reflect.Uint64:
-		switch v1.Type().Name() {
-		case "Epoch":
-			return v1.Interface().(primitives.Epoch) == v2.Interface().(primitives.Epoch)
-		case "Slot":
-			return v1.Interface().(primitives.Slot) == v2.Interface().(primitives.Slot)
-		case "ValidatorIndex":
-			return v1.Interface().(primitives.ValidatorIndex) == v2.Interface().(primitives.ValidatorIndex)
-		case "CommitteeIndex":
-			return v1.Interface().(primitives.CommitteeIndex) == v2.Interface().(primitives.CommitteeIndex)
-		}
-		return v1.Interface().(uint64) == v2.Interface().(uint64)
-	case reflect.Uint32:
-		return v1.Interface().(uint32) == v2.Interface().(uint32)
+	case reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+		return v1.Uint() == v2.Uint()
 	case reflect.Int32:
-		return v1.Interface().(int32) == v2.Interface().(int32)
-	case reflect.Uint16:
-		return v1.Interface().(uint16) == v2.Interface().(uint16)
-	case reflect.Uint8:
-		return v1.Interface().(uint8) == v2.Interface().(uint8)
+		return v1.Int() == v2.Int()
 	case reflect.Bool:
-		return v1.Interface().(bool) == v2.Interface().(bool)
+		return v1.Bool() == v2.Bool()
 	default:
 		return false
 	}

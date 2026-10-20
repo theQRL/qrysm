@@ -10,8 +10,8 @@ import (
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	pbrpc "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
@@ -140,9 +140,12 @@ func (s *Service) pubsubOptions() []pubsub.Option {
 		}),
 		pubsub.WithSubscriptionFilter(s),
 		pubsub.WithPeerOutboundQueueSize(pubsubQueueSize),
-		pubsub.WithMaxMessageSize(int(params.BeaconNetworkConfig().GossipMaxSize)),
+		// gossipsub WithMaxMessageSize inspects compressed wire bytes; pass the
+		// worst-case snappy-encoded bound for a payload of GossipMaxSize so we
+		// don't drop legitimate (incompressible) messages at the wire layer.
+		pubsub.WithMaxMessageSize(encoder.MaxGossipCompressedSize),
 		pubsub.WithValidateQueueSize(pubsubQueueSize),
-		pubsub.WithPeerScore(peerScoringParams()),
+		pubsub.WithPeerScore(peerScoringParams(s.cfg.IPColocationWhitelist)),
 		pubsub.WithPeerScoreInspect(s.peerInspector, time.Minute),
 		pubsub.WithGossipSubParams(pubsubGossipParam()),
 		pubsub.WithRawTracer(gossipTracer{host: s.host}),
@@ -155,6 +158,7 @@ func pubsubGossipParam() pubsub.GossipSubParams {
 	gParams := pubsub.DefaultGossipSubParams()
 	gParams.Dlo = gossipSubDlo
 	gParams.D = gossipSubD
+	gParams.Dhi = gossipSubDhi
 	gParams.HeartbeatInterval = gossipSubHeartbeatInterval
 	gParams.HistoryLength = gossipSubMcacheLen
 	gParams.HistoryGossip = gossipSubMcacheGossip

@@ -115,8 +115,19 @@ func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives
 	}
 }
 
-// Signs input slot with domain selection proof. This is used to create the signature for aggregator selection.
+// signSlotWithSelectionProof returns the validator's selection proof for the
+// slot: the slot signed under the selection proof domain and submitted with the
+// aggregate for authentication. Eligibility comes from the duty seed. The
+// proof is signed once per (pubkey, slot) and reused to avoid redundant work.
 func (v *validator) signSlotWithSelectionProof(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, slot primitives.Slot) (signature []byte, err error) {
+	return v.selectionProof(selectionProofKey{pubKey: pubKey, slot: slot}, func() ([]byte, error) {
+		return v.newSlotSelectionProof(ctx, pubKey, slot)
+	})
+}
+
+// newSlotSelectionProof signs the slot under the selection proof domain. Callers
+// should use signSlotWithSelectionProof, which caches the result per slot.
+func (v *validator) newSlotSelectionProof(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, slot primitives.Slot) (signature []byte, err error) {
 	domain, err := v.domainData(ctx, slots.ToEpoch(slot), params.BeaconConfig().DomainSelectionProof[:])
 	if err != nil {
 		return nil, err

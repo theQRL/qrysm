@@ -71,22 +71,29 @@ func (s *Store) SaveFinalizedCheckpoint(ctx context.Context, checkpoint *qrysmpb
 	}
 	hasStateSummary := s.HasStateSummary(ctx, bytesutil.ToBytes32(checkpoint.Root))
 	err = s.db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(checkpointBucket)
-		hasStateInDB := tx.Bucket(stateBucket).Get(checkpoint.Root) != nil
-		if !(hasStateInDB || hasStateSummary) {
-			log.Warnf("Recovering state summary for finalized root: %#x", bytesutil.Trunc(checkpoint.Root))
-			if err := recoverStateSummary(ctx, tx, checkpoint.Root); err != nil {
-				return errors.Wrapf(errMissingStateForCheckpoint, "could not save finalized checkpoint, finalized root: %#x", bytesutil.Trunc(checkpoint.Root))
-			}
-		}
-		if err := bucket.Put(finalizedCheckpointKey, enc); err != nil {
-			return err
-		}
-
-		return s.updateFinalizedBlockRoots(ctx, tx, checkpoint)
+		return s.saveFinalizedCheckpointTx(ctx, tx, checkpoint, enc, hasStateSummary)
 	})
 	tracing.AnnotateError(span, err)
 	return err
+}
+
+// saveFinalizedCheckpointTx is SaveFinalizedCheckpoint within an open write
+// transaction. enc is the encoded checkpoint and hasStateSummary the cached
+// state summary lookup, neither of which can be produced inside the transaction.
+func (s *Store) saveFinalizedCheckpointTx(ctx context.Context, tx *bolt.Tx, checkpoint *qrysmpb.Checkpoint, enc []byte, hasStateSummary bool) error {
+	bucket := tx.Bucket(checkpointBucket)
+	hasStateInDB := tx.Bucket(stateBucket).Get(checkpoint.Root) != nil
+	if !(hasStateInDB || hasStateSummary) {
+		log.Warnf("Recovering state summary for finalized root: %#x", bytesutil.Trunc(checkpoint.Root))
+		if err := recoverStateSummary(ctx, tx, checkpoint.Root); err != nil {
+			return errors.Wrapf(errMissingStateForCheckpoint, "could not save finalized checkpoint, finalized root: %#x", bytesutil.Trunc(checkpoint.Root))
+		}
+	}
+	if err := bucket.Put(finalizedCheckpointKey, enc); err != nil {
+		return err
+	}
+
+	return s.updateFinalizedBlockRoots(ctx, tx, checkpoint)
 }
 
 func (s *Store) saveCheckpoint(ctx context.Context, key []byte, checkpoint *qrysmpb.Checkpoint) error {
@@ -100,18 +107,25 @@ func (s *Store) saveCheckpoint(ctx context.Context, key []byte, checkpoint *qrys
 	}
 	hasStateSummary := s.HasStateSummary(ctx, bytesutil.ToBytes32(checkpoint.Root))
 	err = s.db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(checkpointBucket)
-		hasStateInDB := tx.Bucket(stateBucket).Get(checkpoint.Root) != nil
-		if !(hasStateInDB || hasStateSummary) {
-			log.WithField("root", fmt.Sprintf("%#x", bytesutil.Trunc(checkpoint.Root))).Warn("Recovering state summary")
-			if err := recoverStateSummary(ctx, tx, checkpoint.Root); err != nil {
-				return errMissingStateForCheckpoint
-			}
-		}
-		return bucket.Put(key, enc)
+		return saveCheckpointTx(ctx, tx, key, checkpoint, enc, hasStateSummary)
 	})
 	tracing.AnnotateError(span, err)
 	return err
+}
+
+// saveCheckpointTx is saveCheckpoint within an open write transaction. enc is
+// the encoded checkpoint and hasStateSummary the cached state summary lookup,
+// neither of which can be produced inside the transaction.
+func saveCheckpointTx(ctx context.Context, tx *bolt.Tx, key []byte, checkpoint *qrysmpb.Checkpoint, enc []byte, hasStateSummary bool) error {
+	bucket := tx.Bucket(checkpointBucket)
+	hasStateInDB := tx.Bucket(stateBucket).Get(checkpoint.Root) != nil
+	if !(hasStateInDB || hasStateSummary) {
+		log.WithField("root", fmt.Sprintf("%#x", bytesutil.Trunc(checkpoint.Root))).Warn("Recovering state summary")
+		if err := recoverStateSummary(ctx, tx, checkpoint.Root); err != nil {
+			return errMissingStateForCheckpoint
+		}
+	}
+	return bucket.Put(key, enc)
 }
 
 // Recovers and saves state summary for a given root if the root has a block in the DB.
@@ -132,6 +146,6 @@ func recoverStateSummary(ctx context.Context, tx *bolt.Tx, root []byte) error {
 	if err != nil {
 		return err
 	}
-	summaryBucket := tx.Bucket(stateBucket)
+	summaryBucket := tx.Bucket(stateSummaryBucket)
 	return summaryBucket.Put(root, summaryEnc)
 }

@@ -1,6 +1,8 @@
 package validator
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/async/event"
 	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
@@ -13,6 +15,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Bound each stream's backlog so a client that stops reading cannot retain an
+// unlimited number of blocks or stall the feeds used by block processing.
+const blockStreamBufferSize = 16
+
 // StreamBlocksAltair to clients every single time a block is received by the beacon node.
 func (vs *Server) StreamBlocksAltair(req *qrysmpb.StreamBlocksRequest, stream qrysmpb.BeaconNodeValidator_StreamBlocksAltairServer) error {
 	blocksChannel := make(chan *feed.Event, 1)
@@ -24,23 +30,57 @@ func (vs *Server) StreamBlocksAltair(req *qrysmpb.StreamBlocksRequest, stream qr
 	}
 	defer blockSub.Unsubscribe()
 
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+	outbox := make(chan *feed.Event, blockStreamBufferSize)
+	sendErr := make(chan error, 1)
+	// Keep draining the feed while transport flow control blocks Send. Do not
+	// wait for this goroutine on return: gRPC releases a blocked Send when the
+	// handler returns and closes the stream.
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case blockEvent := <-outbox:
+				if ctx.Err() != nil {
+					return
+				}
+				var err error
+				if req.VerifiedOnly {
+					err = sendVerifiedBlocks(stream, blockEvent)
+				} else {
+					err = vs.sendBlocks(stream, blockEvent)
+				}
+				if err != nil {
+					sendErr <- err
+					return
+				}
+			}
+		}
+	}()
+
 	for {
 		select {
 		case blockEvent := <-blocksChannel:
-			if req.VerifiedOnly {
-				if err := sendVerifiedBlocks(stream, blockEvent); err != nil {
-					return err
-				}
-			} else {
-				if err := vs.sendBlocks(stream, blockEvent); err != nil {
-					return err
-				}
+			if (req.VerifiedOnly && blockEvent.Type != statefeed.BlockProcessed) ||
+				(!req.VerifiedOnly && blockEvent.Type != blockfeed.ReceivedBlock) {
+				continue
 			}
+			select {
+			case outbox <- blockEvent:
+			case <-ctx.Done():
+				return status.Error(codes.Canceled, "Context canceled")
+			default:
+				return status.Error(codes.ResourceExhausted, "Block stream client is not keeping up")
+			}
+		case err := <-sendErr:
+			return err
 		case <-blockSub.Err():
 			return status.Error(codes.Aborted, "Subscriber closed, exiting goroutine")
 		case <-vs.Ctx.Done():
 			return status.Error(codes.Canceled, "Context canceled")
-		case <-stream.Context().Done():
+		case <-ctx.Done():
 			return status.Error(codes.Canceled, "Context canceled")
 		}
 	}

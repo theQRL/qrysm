@@ -20,28 +20,25 @@ import (
 )
 
 func TestAttestation_IsAggregator(t *testing.T) {
-	t.Run("aggregator", func(t *testing.T) {
-		beaconState, privKeys := util.DeterministicGenesisStateZond(t, 100)
-		committee, err := helpers.BeaconCommitteeFromState(context.Background(), beaconState, 0, 0)
+	params.SetupTestConfigCleanup(t)
+	cfg := params.MinimalSpecConfig().Copy()
+	cfg.TargetAggregatorsPerCommittee = 1
+	params.OverrideBeaconConfig(cfg)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 256)
+	committee, err := helpers.BeaconCommitteeFromState(context.Background(), beaconState, 0, 0)
+	require.NoError(t, err)
+	seed, err := helpers.AggregatorSelectionSeed(beaconState, 0)
+	require.NoError(t, err)
+	foundUnselected := false
+	for _, index := range committee {
+		selected, err := helpers.IsAggregator(uint64(len(committee)), seed[:], 0, 0, index)
 		require.NoError(t, err)
-		sig := privKeys[0].Sign([]byte{'A'})
-		agg, err := helpers.IsAggregator(uint64(len(committee)), sig.Marshal())
-		require.NoError(t, err)
-		assert.Equal(t, true, agg, "Wanted aggregator true")
-	})
-
-	t.Run("not aggregator", func(t *testing.T) {
-		params.SetupTestConfigCleanup(t)
-		params.OverrideBeaconConfig(params.MinimalSpecConfig())
-		beaconState, privKeys := util.DeterministicGenesisStateZond(t, 2048)
-
-		committee, err := helpers.BeaconCommitteeFromState(context.Background(), beaconState, 0, 0)
-		require.NoError(t, err)
-		sig := privKeys[0].Sign([]byte{'B'})
-		agg, err := helpers.IsAggregator(uint64(len(committee)), sig.Marshal())
-		require.NoError(t, err)
-		assert.Equal(t, false, agg, "Wanted aggregator false")
-	})
+		foundUnselected = foundUnselected || !selected
+	}
+	require.Equal(t, true, foundUnselected)
+	selected, err := helpers.IsAggregator(1, seed[:], 0, 0, committee[0])
+	require.NoError(t, err)
+	require.Equal(t, true, selected, "a committee no larger than the target selects all members")
 }
 
 func TestAttestation_ComputeSubnetForAttestation(t *testing.T) {
@@ -54,9 +51,9 @@ func TestAttestation_ComputeSubnetForAttestation(t *testing.T) {
 		k := make([]byte, field_params.MLDSA87PubkeyLength)
 		copy(k, strconv.Itoa(i))
 		validators[i] = &qrysmpb.Validator{
-			PublicKey:             k,
-			WithdrawalCredentials: make([]byte, 32),
-			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
+			PublicKey:           k,
+			WithdrawalRecipient: make([]byte, 64),
+			ExitEpoch:           params.BeaconConfig().FarFutureEpoch,
 		}
 	}
 
@@ -82,13 +79,18 @@ func TestAttestation_ComputeSubnetForAttestation(t *testing.T) {
 	valCount, err := helpers.ActiveValidatorCount(context.Background(), state, slots.ToEpoch(att.Data.Slot))
 	require.NoError(t, err)
 	sub := helpers.ComputeSubnetForAttestation(valCount, att)
-	assert.Equal(t, uint64(6), sub, "Did not get correct subnet for attestation")
+	// (2 slots since epoch start * 1 committee per slot + committee index 4) mod 4 subnets.
+	assert.Equal(t, uint64(2), sub, "Did not get correct subnet for attestation")
 }
 
 func Test_ValidateAttestationTime(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
 	cfg := params.BeaconConfig().Copy()
 	params.OverrideBeaconConfig(cfg)
-	params.SetupTestConfigCleanup(t)
+	propagationRange := params.BeaconNetworkConfig().AttestationPropagationSlotRange
+	// Keep the current slot beyond the propagation window to avoid unsigned
+	// underflow when testing attestations at and just outside its lower bound.
+	currentSlot := propagationRange + 100
 
 	if params.BeaconNetworkConfig().MaximumGossipClockDisparity < 200*time.Millisecond {
 		t.Fatal("This test expects the maximum clock disparity to be at least 200ms")
@@ -139,25 +141,32 @@ func Test_ValidateAttestationTime(t *testing.T) {
 		{
 			name: "attestation.slot < current_slot-ATTESTATION_PROPAGATION_SLOT_RANGE",
 			args: args{
-				attSlot:     100 - params.BeaconNetworkConfig().AttestationPropagationSlotRange - 1,
-				genesisTime: qrysmTime.Now().Add(-100 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second),
+				attSlot:     currentSlot - propagationRange - 1,
+				genesisTime: qrysmTime.Now().Add(-time.Duration(currentSlot) * time.Duration(cfg.SecondsPerSlot) * time.Second),
 			},
 			wantedErr: "not within attestation propagation range",
 		},
 		{
 			name: "attestation.slot = current_slot-ATTESTATION_PROPAGATION_SLOT_RANGE",
 			args: args{
-				attSlot:     100 - params.BeaconNetworkConfig().AttestationPropagationSlotRange,
-				genesisTime: qrysmTime.Now().Add(-100 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second),
+				attSlot:     currentSlot - propagationRange,
+				genesisTime: qrysmTime.Now().Add(-time.Duration(currentSlot) * time.Duration(cfg.SecondsPerSlot) * time.Second),
 			},
 		},
 		{
 			name: "attestation.slot = current_slot-ATTESTATION_PROPAGATION_SLOT_RANGE, received 200ms late",
 			args: args{
-				attSlot: 100 - params.BeaconNetworkConfig().AttestationPropagationSlotRange,
+				attSlot: currentSlot - propagationRange,
 				genesisTime: qrysmTime.Now().Add(
-					-100 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second,
+					-time.Duration(currentSlot) * time.Duration(cfg.SecondsPerSlot) * time.Second,
 				).Add(200 * time.Millisecond),
+			},
+		},
+		{
+			name: "attestation.slot == genesis, before propagation window has elapsed",
+			args: args{
+				attSlot:     0,
+				genesisTime: qrysmTime.Now().Add(-15 * time.Duration(cfg.SecondsPerSlot) * time.Second),
 			},
 		},
 		{
@@ -177,6 +186,40 @@ func Test_ValidateAttestationTime(t *testing.T) {
 				assert.ErrorContains(t, tt.wantedErr, err)
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateAttestationTime_MainnetPropagationWindow(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	cfg := params.MainnetConfig().Copy()
+	params.OverrideBeaconConfig(cfg)
+	slotDuration := time.Duration(cfg.SecondsPerSlot) * time.Second
+	currentSlot := 2 * cfg.SlotsPerEpoch
+
+	// Both aggregated and unaggregated gossip use this timing check. Votes must
+	// remain eligible through the full block-inclusion window, not just 32 slots.
+	for _, tt := range []struct {
+		name        string
+		age         primitives.Slot
+		wantTooLate bool
+	}{
+		{name: "32 slots old", age: 32},
+		{name: "33 slots old", age: 33},
+		{name: "one slot before inclusion limit", age: cfg.SlotsPerEpoch - 1},
+		{name: "at inclusion limit", age: cfg.SlotsPerEpoch},
+		{name: "one slot beyond inclusion limit", age: cfg.SlotsPerEpoch + 1, wantTooLate: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			// Receive in the middle of the current slot, away from clock boundaries.
+			genesisTime := qrysmTime.Now().Add(-time.Duration(currentSlot)*slotDuration - slotDuration/2)
+			err := helpers.ValidateAttestationTime(currentSlot-tt.age, genesisTime,
+				params.BeaconNetworkConfig().MaximumGossipClockDisparity)
+			if tt.wantTooLate {
+				require.ErrorIs(t, err, helpers.ErrTooLate)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}

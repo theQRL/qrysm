@@ -41,17 +41,19 @@ func Test_BaseReward(t *testing.T) {
 			errString: "",
 		},
 		{
-			name:      "active balance is 40000qrl * target committee size",
+			// Base reward scales with 1/sqrt(total active balance), so these two
+			// cases pin explicit validator counts rather than committee parameters.
+			name:      "active balance is 40000qrl * 128 validators",
 			valIdx:    0,
-			st:        genState(params.BeaconConfig().TargetCommitteeSize),
+			st:        genState(128),
 			want:      1144840000,
 			errString: "",
 		},
 		{
-			name:      "active balance is 40000qrl * max validator per  committee size",
+			name:      "active balance is 40000qrl * MaxValidatorsPerCommittee * SlotsPerEpoch validators",
 			valIdx:    0,
-			st:        genState(params.BeaconConfig().MaxValidatorsPerCommittee),
-			want:      286200000,
+			st:        genState(testValidatorSetSize),
+			want:      202360000,
 			errString: "",
 		},
 	}

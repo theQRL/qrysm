@@ -1,6 +1,7 @@
 package historycmd
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"path/filepath"
@@ -174,5 +175,69 @@ func TestImportExportSlashingProtectionCli_EmptyData(t *testing.T) {
 		require.Equal(t, len(wanted.SignedAttestations), len(item.SignedAttestations))
 		require.DeepEqual(t, make([]*format.SignedBlock, 0), item.SignedBlocks)
 		require.DeepEqual(t, make([]*format.SignedAttestation, 0), item.SignedAttestations)
+	}
+}
+
+func TestImportExportSlashingProtectionCli_RoundTripNestedValidatorDB(t *testing.T) {
+	numValidators := 10
+	outputPath := filepath.Join(t.TempDir(), "slashing-exports")
+	require.NoError(t, file.MkdirAll(outputPath))
+	protectionFileName := "slashing_history_import.json"
+
+	pubKeys, err := mocks.CreateRandomPubKeys(numValidators)
+	require.NoError(t, err)
+	attestingHistory, proposalHistory := mocks.MockAttestingAndProposalHistories(pubKeys)
+	require.NoError(t, err)
+	mockJSON, err := mocks.MockSlashingProtectionJSON(pubKeys, attestingHistory, proposalHistory)
+	require.NoError(t, err)
+
+	encoded, err := json.Marshal(mockJSON)
+	require.NoError(t, err)
+
+	protectionFilePath := filepath.Join(outputPath, protectionFileName)
+	require.NoError(t, file.WriteFile(protectionFilePath, encoded))
+
+	searchPath := filepath.Join(t.TempDir(), "wallet")
+	nestedDBPath := filepath.Join(searchPath, "direct")
+	require.NoError(t, file.MkdirAll(nestedDBPath))
+
+	validatorDB, err := kv.NewKVStore(context.Background(), nestedDBPath, &kv.Config{PubKeys: pubKeys})
+	require.NoError(t, err)
+	require.NoError(t, validatorDB.Close())
+
+	cliCtx := setupCliCtx(t, searchPath, protectionFilePath, outputPath)
+
+	err = importSlashingProtectionJSON(cliCtx)
+	require.NoError(t, err)
+
+	err = exportSlashingProtectionJSON(cliCtx)
+	require.NoError(t, err)
+
+	enc, err := file.ReadFileAsBytes(filepath.Join(outputPath, jsonExportFileName))
+	require.NoError(t, err)
+
+	receivedJSON := &format.EIPSlashingProtectionFormat{}
+	require.NoError(t, json.Unmarshal(enc, receivedJSON))
+	require.DeepEqual(t, mockJSON.Metadata, receivedJSON.Metadata)
+
+	wantedHistoryByPublicKey := make(map[string]*format.ProtectionData)
+	for _, item := range mockJSON.Data {
+		wantedHistoryByPublicKey[item.Pubkey] = item
+	}
+
+	for _, item := range receivedJSON.Data {
+		wanted, ok := wantedHistoryByPublicKey[item.Pubkey]
+		require.Equal(t, true, ok)
+		wantedAttsByRoot := make(map[string]*format.SignedAttestation)
+		for _, att := range wanted.SignedAttestations {
+			wantedAttsByRoot[att.SigningRoot] = att
+		}
+		for _, att := range item.SignedAttestations {
+			wantedAtt, ok := wantedAttsByRoot[att.SigningRoot]
+			require.Equal(t, true, ok)
+			require.DeepEqual(t, wantedAtt, att)
+		}
+		require.Equal(t, len(wanted.SignedBlocks), len(item.SignedBlocks))
+		require.DeepEqual(t, wanted.SignedBlocks, item.SignedBlocks)
 	}
 }

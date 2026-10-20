@@ -53,6 +53,7 @@ go_test(
         "//beacon-chain/core/feed/state",
         "//beacon-chain/db/testing",
         "//beacon-chain/forkchoice/doubly-linked-tree",
+        "//beacon-chain/state",
         "//beacon-chain/state/stategen",
         "//config/params",
         "//consensus-types/blocks",

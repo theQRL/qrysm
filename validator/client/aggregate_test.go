@@ -58,7 +58,7 @@ func TestSubmitAggregateAndProof_SignFails(t *testing.T) {
 		AggregateAndProof: &qrysmpb.AggregateAttestationAndProof{
 			AggregatorIndex: 0,
 			Aggregate: util.HydrateAttestation(&qrysmpb.Attestation{
-				AggregationBits: make([]byte, 1),
+				AggregationBits: bitfield.NewBitlist(1),
 			}),
 			SelectionProof: make([]byte, 4627),
 		},
@@ -97,7 +97,7 @@ func TestSubmitAggregateAndProof_Ok(t *testing.T) {
 		AggregateAndProof: &qrysmpb.AggregateAttestationAndProof{
 			AggregatorIndex: 0,
 			Aggregate: util.HydrateAttestation(&qrysmpb.Attestation{
-				AggregationBits: make([]byte, 1),
+				AggregationBits: bitfield.NewBitlist(1),
 			}),
 			SelectionProof: make([]byte, 4627),
 		},
@@ -123,7 +123,10 @@ func TestWaitForSlotTwoThird_WaitCorrectly(t *testing.T) {
 
 	validator, _, _, finish := setup(t)
 	defer finish()
-	currentTime := time.Now()
+	// Prysm preserves subsecond precision in its genesis time. Qrysm stores genesis
+	// time in whole Unix seconds, so truncate the reference time to avoid a
+	// one-second mismatch between the expected and actual slot boundaries.
+	currentTime := time.Now().Truncate(time.Second)
 	numOfSlots := primitives.Slot(4)
 	validator.genesisTime = uint64(currentTime.Unix()) - uint64(numOfSlots.Mul(params.BeaconConfig().SecondsPerSlot))
 	oneThird := slots.DivideSlotBy(3 /* one third of slot duration */)

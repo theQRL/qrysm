@@ -1,9 +1,11 @@
 package blockchain
 
 import (
+	stderrors "errors"
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/beacon-chain/verification"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
@@ -27,6 +29,20 @@ func TestInvalidBlockRoot(t *testing.T) {
 
 	newErr := errors.Wrap(err, "wrap me")
 	require.Equal(t, [32]byte{'a'}, InvalidBlockRoot(newErr))
+}
+
+func TestInvalidBlock_UnwrapsToVerificationErrInvalid(t *testing.T) {
+	// Bare invalidBlock should be detected as a verification failure so peer
+	// scoring code can downscore the providing peer.
+	err := invalidBlock{error: errors.New("bad block")}
+	require.Equal(t, true, stderrors.Is(err, verification.ErrInvalid))
+
+	// Wrapping with pkg/errors must preserve the verification.ErrInvalid join.
+	wrapped := errors.Wrap(err, "outer context")
+	require.Equal(t, true, stderrors.Is(wrapped, verification.ErrInvalid))
+
+	// Errors not related to invalid blocks must not satisfy ErrInvalid.
+	require.Equal(t, false, stderrors.Is(ErrUndefinedExecutionEngineError, verification.ErrInvalid))
 }
 
 func TestInvalidRoots(t *testing.T) {

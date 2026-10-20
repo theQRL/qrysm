@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
@@ -124,17 +125,21 @@ func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot p
 
 	v.waitToSlotTwoThirds(ctx, slot)
 
+	coveredSubnets := make(map[uint64]bool)
 	for i, comIdx := range indexRes.Indices {
-		isAggregator, err := altair.IsSyncCommitteeAggregator(selectionProofs[i])
+		subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
+		subnet := uint64(comIdx) / subCommitteeSize
+		isAggregator, err := altair.IsSyncCommitteeAggregator(duty.AggregatorSelectionSeed, slot, subnet, duty.ValidatorIndex)
 		if err != nil {
-			log.WithError(err).Error("Could check in aggregator")
+			log.WithError(err).Error("Could not check sync committee aggregator eligibility")
 			return
 		}
 		if !isAggregator {
 			continue
 		}
-		subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
-		subnet := uint64(comIdx) / subCommitteeSize
+		if coveredSubnets[subnet] {
+			continue
+		}
 		contribution, err := v.validatorClient.GetSyncCommitteeContribution(ctx, &qrysmpb.SyncCommitteeContributionRequest{
 			Slot:      slot,
 			PublicKey: pubKey[:],
@@ -147,7 +152,7 @@ func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot p
 		if contribution.AggregationBits.Count() == 0 {
 			log.WithFields(logrus.Fields{
 				"slot":   slot,
-				"pubkey": pubKey,
+				"pubkey": hexutil.Encode(pubKey[:]),
 				"subnet": subnet,
 			}).Warn("Sync contribution for validator has no bits set.")
 			continue
@@ -171,6 +176,8 @@ func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot p
 			log.WithError(err).Error("Could not submit signed contribution and proof")
 			return
 		}
+
+		coveredSubnets[subnet] = true
 
 		contributionSlot := contributionAndProof.Contribution.Slot
 		slotTime := time.Unix(int64(v.genesisTime+uint64(contributionSlot)*params.BeaconConfig().SecondsPerSlot), 0)
@@ -204,8 +211,21 @@ func (v *validator) selectionProofs(ctx context.Context, slot primitives.Slot, p
 	return selectionProofs, nil
 }
 
-// Signs input slot with domain sync committee selection proof. This is used to create the signature for sync committee selection.
+// signSyncSelectionData returns the validator's sync committee selection proof
+// for the slot and subcommittee index: the SyncAggregatorSelectionData signed
+// under the sync committee selection proof domain to authenticate the
+// contribution. Eligibility comes from the duty seed. The proof is signed once
+// per (pubkey, slot, index) and reused to avoid redundant work.
 func (v *validator) signSyncSelectionData(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, index uint64, slot primitives.Slot) (signature []byte, err error) {
+	return v.selectionProof(selectionProofKey{pubKey: pubKey, slot: slot, sync: true, subnet: index}, func() ([]byte, error) {
+		return v.newSyncSelectionProof(ctx, pubKey, index, slot)
+	})
+}
+
+// newSyncSelectionProof signs the SyncAggregatorSelectionData under the sync
+// committee selection proof domain. Callers should use signSyncSelectionData,
+// which caches the result per slot and subcommittee.
+func (v *validator) newSyncSelectionProof(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, index uint64, slot primitives.Slot) (signature []byte, err error) {
 	domain, err := v.domainData(ctx, slots.ToEpoch(slot), params.BeaconConfig().DomainSyncCommitteeSelectionProof[:])
 	if err != nil {
 		return nil, err

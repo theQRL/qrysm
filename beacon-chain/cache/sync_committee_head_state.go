@@ -15,14 +15,19 @@ type SyncCommitteeHeadStateCache struct {
 	lock  sync.RWMutex
 }
 
+type syncCommitteeHeadStateKey struct {
+	headRoot [32]byte
+	slot     primitives.Slot
+}
+
 // NewSyncCommitteeHeadState initializes a LRU cache for `SyncCommitteeHeadState` with size of 1.
 func NewSyncCommitteeHeadState() *SyncCommitteeHeadStateCache {
 	c := lruwrpr.New(1) // only need size of 1 to avoid redundant state copies, hashing, and slot processing.
 	return &SyncCommitteeHeadStateCache{cache: c}
 }
 
-// Put `slot` as key and `state` as value onto the cache.
-func (c *SyncCommitteeHeadStateCache) Put(slot primitives.Slot, st state.BeaconState) error {
+// Put caches the state advanced to slot on the branch identified by headRoot.
+func (c *SyncCommitteeHeadStateCache) Put(headRoot [32]byte, slot primitives.Slot, st state.BeaconState) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	// Make sure that the provided state is non nil
@@ -31,15 +36,15 @@ func (c *SyncCommitteeHeadStateCache) Put(slot primitives.Slot, st state.BeaconS
 		return ErrNilValueProvided
 	}
 
-	c.cache.Add(slot, st)
+	c.cache.Add(syncCommitteeHeadStateKey{headRoot: headRoot, slot: slot}, st)
 	return nil
 }
 
-// Get `state` using `slot` as key. Return nil if nothing is found.
-func (c *SyncCommitteeHeadStateCache) Get(slot primitives.Slot) (state.BeaconState, error) {
+// Get returns the state for the requested head and slot, or ErrNotFound.
+func (c *SyncCommitteeHeadStateCache) Get(headRoot [32]byte, slot primitives.Slot) (state.BeaconState, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	val, exists := c.cache.Get(slot)
+	val, exists := c.cache.Get(syncCommitteeHeadStateKey{headRoot: headRoot, slot: slot})
 	if !exists {
 		return nil, ErrNotFound
 	}

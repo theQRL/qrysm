@@ -26,7 +26,10 @@ var _ prometheus.Collector = &ExecutionChainCollector{}
 
 // Update satisfies the BeaconNodeStatsUpdater
 func (pc *ExecutionChainCollector) Update(update clientstats.BeaconNodeStats) {
-	pc.updateChan <- update
+	select {
+	case pc.updateChan <- update:
+	case <-pc.ctx.Done():
+	}
 }
 
 // Describe is invoked by the prometheus collection loop.

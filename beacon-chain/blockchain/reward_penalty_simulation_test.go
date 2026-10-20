@@ -300,7 +300,7 @@ func TestReceiveBlock_Simulation_MissedDuties(t *testing.T) {
 	targetBalance := headState.Balances()[targetIdx]
 	otherBalance := headState.Balances()[1]
 
-	require.Equal(t, uint64(39996066588426), targetBalance, "Target validator balance mismatch")
+	require.Equal(t, uint64(39996065470458), targetBalance, "Target validator balance mismatch")
 	require.Equal(t, uint64(40000484814226), otherBalance, "Other validator balance mismatch")
 }
 
@@ -475,8 +475,8 @@ func TestReceiveBlock_Simulation_MissedDuties_WithLeak(t *testing.T) {
 	targetBalance := headState.Balances()[targetIdx]
 	otherBalance := headState.Balances()[1]
 
-	require.Equal(t, uint64(39990857626551), targetBalance, "Target validator balance mismatch")
-	require.Equal(t, uint64(39999536080860), otherBalance, "Other validator balance mismatch")
+	require.Equal(t, uint64(39990857626572), targetBalance, "Target validator balance mismatch")
+	require.Equal(t, uint64(39996350888073), otherBalance, "Other validator balance mismatch")
 }
 
 func TestReceiveBlock_Simulation_ProposerSlashing(t *testing.T) {
@@ -602,7 +602,7 @@ func TestReceiveBlock_Simulation_ProposerSlashing(t *testing.T) {
 
 	require.Equal(t, true, targetVal.Slashed, "Target validator should be slashed")
 	require.Equal(t, uint64(38749000000000), targetVal.EffectiveBalance, "Target effective balance mismatch")
-	require.Equal(t, uint64(38749713240973), headState.Balances()[targetIdx], "Target validator balance mismatch")
+	require.Equal(t, uint64(38749714358941), headState.Balances()[targetIdx], "Target validator balance mismatch")
 }
 
 func TestReceiveBlock_Simulation_AttesterSlashing(t *testing.T) {

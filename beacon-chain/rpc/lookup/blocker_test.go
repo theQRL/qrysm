@@ -51,11 +51,12 @@ func TestGetBlock(t *testing.T) {
 	fetcher := &BeaconDbBlocker{
 		BeaconDB: beaconDB,
 		ChainInfoFetcher: &mock.ChainService{
-			DB:                  beaconDB,
-			Block:               wsb,
-			Root:                headBlock.BlockRoot,
-			FinalizedCheckPoint: &qrysmpb.Checkpoint{Root: blkContainers[64].BlockRoot},
-			CanonicalRoots:      canonicalRoots,
+			DB:                         beaconDB,
+			Block:                      wsb,
+			Root:                       headBlock.BlockRoot,
+			FinalizedCheckPoint:        &qrysmpb.Checkpoint{Root: blkContainers[64].BlockRoot},
+			CurrentJustifiedCheckPoint: &qrysmpb.Checkpoint{Root: blkContainers[80].BlockRoot},
+			CanonicalRoots:             canonicalRoots,
 		},
 	}
 
@@ -97,6 +98,11 @@ func TestGetBlock(t *testing.T) {
 			name:    "finalized",
 			blockID: []byte("finalized"),
 			want:    blkContainers[64].Block.(*qrysmpb.BeaconBlockContainer_ZondBlock).ZondBlock,
+		},
+		{
+			name:    "justified",
+			blockID: []byte("justified"),
+			want:    blkContainers[80].Block.(*qrysmpb.BeaconBlockContainer_ZondBlock).ZondBlock,
 		},
 		{
 			name:    "genesis",
@@ -157,6 +163,41 @@ func TestGetBlock(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, true, proto.Equal(wantedPb, resultPb), "Wanted: %v, received: %v", tt.want, result)
+		})
+	}
+}
+
+func TestGetBlock_NilCheckpoints(t *testing.T) {
+	ctx := context.Background()
+	beaconDB := dbtesting.SetupDB(t)
+
+	tests := []struct {
+		name    string
+		blockID []byte
+		fetcher *mock.ChainService
+		errMsg  string
+	}{
+		{
+			name:    "nil finalized checkpoint",
+			blockID: []byte("finalized"),
+			fetcher: &mock.ChainService{},
+			errMsg:  "received nil finalized checkpoint",
+		},
+		{
+			name:    "nil justified checkpoint",
+			blockID: []byte("justified"),
+			fetcher: &mock.ChainService{},
+			errMsg:  "received nil justified checkpoint",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconDbBlocker{
+				BeaconDB:         beaconDB,
+				ChainInfoFetcher: tt.fetcher,
+			}
+			_, err := b.Block(ctx, tt.blockID)
+			require.ErrorContains(t, tt.errMsg, err)
 		})
 	}
 }

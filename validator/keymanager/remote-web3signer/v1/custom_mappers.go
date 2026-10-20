@@ -248,7 +248,7 @@ func MapDeposit(deposit *qrysmpb.Deposit) (*Deposit, error) {
 		Proof: proof,
 		Data: &DepositData{
 			PublicKey:             deposit.Data.PublicKey,
-			WithdrawalCredentials: deposit.Data.WithdrawalCredentials,
+			WithdrawalRecipient: deposit.Data.WithdrawalRecipient,
 			Amount:                fmt.Sprint(deposit.Data.Amount),
 			Signature:             deposit.Data.Signature,
 		},

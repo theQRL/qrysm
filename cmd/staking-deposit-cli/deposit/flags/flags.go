@@ -32,7 +32,7 @@ var (
 	DepositContractAddressFlag = &cli.StringFlag{
 		Name:  "deposit-contract",
 		Usage: "Address of the deposit contract",
-		Value: "Q4242424242424242424242424242424242424242", // TODO (cyyber): Replace this with params
+		Value: "Q42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242", // TODO (cyyber): Replace this with params
 	}
 	// SkipDepositConfirmationFlag skips the y/n confirmation prompt for sending a deposit to the deposit contract.
 	SkipDepositConfirmationFlag = &cli.BoolFlag{

@@ -1,6 +1,8 @@
 package execution
 
 import (
+	"errors"
+
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/cache"
 	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
@@ -88,6 +90,9 @@ func WithStateGen(gen *stategen.State) Option {
 // WithExecutionHeaderRequestLimit to set the upper limit of execution header requests.
 func WithExecutionHeaderRequestLimit(limit uint64) Option {
 	return func(s *Service) error {
+		if limit == 0 {
+			return errors.New("execution header request limit must be greater than zero")
+		}
 		s.cfg.executionHeaderReqLimit = limit
 		return nil
 	}

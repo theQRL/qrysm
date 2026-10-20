@@ -220,8 +220,8 @@ func (r *RPCClient) CallContext(ctx context.Context, obj any, methodName string,
 	return nil
 }
 
-// BatchCall --
-func (r *RPCClient) BatchCall(b []rpc.BatchElem) error {
+// BatchCallContext --
+func (r *RPCClient) BatchCallContext(ctx context.Context, b []rpc.BatchElem) error {
 	if r.Backend == nil {
 		return nil
 	}
@@ -231,7 +231,7 @@ func (r *RPCClient) BatchCall(b []rpc.BatchElem) error {
 		if err != nil {
 			return err
 		}
-		h, err := r.Backend.HeaderByNumber(context.Background(), num)
+		h, err := r.Backend.HeaderByNumber(ctx, num)
 		if err != nil {
 			return err
 		}

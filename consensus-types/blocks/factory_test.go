@@ -165,7 +165,7 @@ func TestBuildSignedBeaconBlockFromExecutionPayload(t *testing.T) {
 		blockHash := bytesutil.Bytes32(1)
 		payload := &enginev1.ExecutionPayloadZond{
 			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, 20),
+			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:     make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
 			LogsBloom:     make([]byte, 256),
@@ -194,7 +194,7 @@ func TestBuildSignedBeaconBlockFromExecutionPayload(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		payload := &enginev1.ExecutionPayloadZond{
 			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, 20),
+			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:     make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
 			LogsBloom:     make([]byte, 256),
@@ -221,4 +221,60 @@ func TestBuildSignedBeaconBlockFromExecutionPayload(t *testing.T) {
 		require.NoError(t, err)
 		require.DeepEqual(t, payload, got.Proto())
 	})
+}
+
+func TestBuildSignedBeaconBlockFromEmptyExecutionPayload(t *testing.T) {
+	for _, field := range []string{"matching", "default header", "block hash", "transactions root", "withdrawals root"} {
+		t.Run(field, func(t *testing.T) {
+			payload := &enginev1.ExecutionPayloadZond{
+				ParentHash:    make([]byte, fieldparams.RootLength),
+				FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
+				StateRoot:     make([]byte, fieldparams.RootLength),
+				ReceiptsRoot:  make([]byte, fieldparams.RootLength),
+				LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
+				PrevRandao:    make([]byte, fieldparams.RootLength),
+				BaseFeePerGas: make([]byte, fieldparams.RootLength),
+				BlockHash:     make([]byte, fieldparams.RootLength),
+			}
+			wrapped, err := WrappedExecutionPayloadZond(payload, 0)
+			require.NoError(t, err)
+			header, err := PayloadToHeaderZond(wrapped)
+			require.NoError(t, err)
+			switch field {
+			case "default header":
+				header.TransactionsRoot = make([]byte, fieldparams.RootLength)
+				header.WithdrawalsRoot = make([]byte, fieldparams.RootLength)
+			case "block hash":
+				header.BlockHash[0] = 1
+			case "transactions root":
+				header.TransactionsRoot[0] ^= 1
+			case "withdrawals root":
+				header.WithdrawalsRoot[0] ^= 1
+			}
+			blinded, err := NewSignedBeaconBlock(&qrysmpb.SignedBlindedBeaconBlockZond{
+				Block: &qrysmpb.BlindedBeaconBlockZond{Body: &qrysmpb.BlindedBeaconBlockBodyZond{
+					ExecutionPayloadHeader: header,
+				}},
+			})
+			require.NoError(t, err)
+			built, err := BuildSignedBeaconBlockFromExecutionPayload(blinded, payload)
+			if field != "matching" && field != "default header" {
+				require.ErrorContains(t, "roots do not match", err)
+				require.Equal(t, true, built == nil)
+				// Rejection must leave the payload usable for a matching retry.
+				matching, err := PayloadToHeaderZond(wrapped)
+				require.NoError(t, err)
+				wrappedHeader, err := WrappedExecutionPayloadHeaderZond(matching, 0)
+				require.NoError(t, err)
+				require.NoError(t, blinded.SetExecution(wrappedHeader))
+				built, err = BuildSignedBeaconBlockFromExecutionPayload(blinded, payload)
+				require.NoError(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			got, err := built.Block().Body().Execution()
+			require.NoError(t, err)
+			require.DeepEqual(t, payload, got.Proto())
+		})
+	}
 }

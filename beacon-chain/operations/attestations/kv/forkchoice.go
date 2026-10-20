@@ -7,7 +7,7 @@ import (
 
 // SaveForkchoiceAttestation saves an forkchoice attestation in cache.
 func (c *AttCaches) SaveForkchoiceAttestation(att *qrysmpb.Attestation) error {
-	if att == nil {
+	if att == nil || att.Data == nil {
 		return nil
 	}
 	r, err := hashFn(att)
@@ -49,7 +49,7 @@ func (c *AttCaches) ForkchoiceAttestations() []*qrysmpb.Attestation {
 
 // DeleteForkchoiceAttestation deletes a forkchoice attestation in cache.
 func (c *AttCaches) DeleteForkchoiceAttestation(att *qrysmpb.Attestation) error {
-	if att == nil {
+	if att == nil || att.Data == nil {
 		return nil
 	}
 	r, err := hashFn(att)

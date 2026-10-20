@@ -55,7 +55,7 @@ func (tc *testCase) UnmarshalYAML(value *yaml.Node) error {
 
 type depositData struct {
 	Pubkey                []byte `yaml:"pubkey"`
-	WithdrawalCredentials []byte `yaml:"withdrawal_credentials"`
+	WithdrawalRecipient []byte `yaml:"withdrawal_recipient"`
 	Amount                uint64 `yaml:"amount"`
 	Signature             []byte `yaml:"signature"`
 }
@@ -63,7 +63,7 @@ type depositData struct {
 func (dd *depositData) UnmarshalYAML(value *yaml.Node) error {
 	raw := struct {
 		Pubkey                string `yaml:"pubkey"`
-		WithdrawalCredentials string `yaml:"withdrawal_credentials"`
+		WithdrawalRecipient string `yaml:"withdrawal_recipient"`
 		Amount                string `yaml:"amount"`
 		Signature             string `yaml:"signature"`
 	}{}
@@ -75,7 +75,7 @@ func (dd *depositData) UnmarshalYAML(value *yaml.Node) error {
 	if err != nil {
 		return err
 	}
-	dd.WithdrawalCredentials, err = hexStringToBytes(raw.WithdrawalCredentials)
+	dd.WithdrawalRecipient, err = hexStringToBytes(raw.WithdrawalRecipient)
 	if err != nil {
 		return err
 	}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -18,7 +17,9 @@ import (
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
+	"github.com/theQRL/qrysm/network/forks"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -89,7 +90,7 @@ func (s *Service) validateSyncCommitteeMessage(
 	if result, err := validationPipeline(
 		ctx,
 		ignoreEmptyCommittee(committeeIndices),
-		s.rejectIncorrectSyncCommittee(committeeIndices, *msg.Topic),
+		s.rejectIncorrectSyncCommittee(committeeIndices, m.Slot, *msg.Topic),
 		s.ignoreHasSeenSyncMsg(ctx, m, committeeIndices),
 		s.rejectInvalidSyncCommitteeSignature(m),
 	); result != pubsub.ValidationAccept {
@@ -173,13 +174,14 @@ func (s *Service) setSeenSyncMessageIndexSlot(m *qrysmpb.SyncCommitteeMessage, s
 // message and broadcasts it into subnet 2, we need to make sure that whatever committee index and
 // resultant subnet that the validator has is valid for this particular topic.
 func (s *Service) rejectIncorrectSyncCommittee(
-	committeeIndices []primitives.CommitteeIndex, topic string,
+	committeeIndices []primitives.CommitteeIndex, slot primitives.Slot, topic string,
 ) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		_, span := trace.StartSpan(ctx, "sync.rejectIncorrectSyncCommittee")
 		defer span.End()
 		isValid := false
-		digest, err := s.currentForkDigest()
+		genRoot := s.cfg.clock.GenesisValidatorsRoot()
+		digest, err := forks.ForkDigestFromEpoch(slots.ToEpoch(slot), genRoot[:])
 		if err != nil {
 			tracing.AnnotateError(span, err)
 			return pubsub.ValidationIgnore, err
@@ -188,9 +190,12 @@ func (s *Service) rejectIncorrectSyncCommittee(
 		format := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SyncCommitteeMessage]()]
 		// Validate that the validator is in the correct committee.
 		subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
+		// Match the topic exactly, including the encoding suffix, so a subnet
+		// that merely shares a numeric prefix with the topic cannot pass.
+		suffix := s.cfg.p2p.Encoding().ProtocolSuffix()
 		for _, idx := range committeeIndices {
 			subnet := uint64(idx) / subCommitteeSize
-			if strings.HasPrefix(topic, fmt.Sprintf(format, digest, subnet)) {
+			if topic == fmt.Sprintf(format, digest, subnet)+suffix {
 				isValid = true
 				break
 			}
@@ -260,16 +265,14 @@ func (s *Service) rejectInvalidSyncCommitteeSignature(m *qrysmpb.SyncCommitteeMe
 			return pubsub.ValidationIgnore, err
 		}
 
-		// Batch verify message signature before unmarshalling
-		// the signature to a G2 point if batch verification is
-		// enabled.
+		// Verify through the bounded gossip worker pool.
 		set := &ml_dsa_87.SignatureBatch{
 			Messages:     [][32]byte{sigRoot},
 			PublicKeys:   [][]ml_dsa_87.PublicKey{{pKey}},
 			Signatures:   [][][]byte{{m.Signature}},
 			Descriptions: []string{signing.SyncCommitteeSignature},
 		}
-		return s.validateWithBatchVerifier(ctx, "sync committee message", set)
+		return s.validateSignatures(ctx, "sync committee message", set)
 	}
 }
 

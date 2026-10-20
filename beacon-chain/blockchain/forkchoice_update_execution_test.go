@@ -110,6 +110,10 @@ func TestService_forkchoiceUpdateWithExecution_exceptionalCases(t *testing.T) {
 		block: wsb,
 		state: st,
 	}
+	// An unchanged head skips FCU only after the engine accepted the same
+	// head and checkpoint hashes.
+	accepted := service.executionForkchoiceState(r1)
+	service.lastForkchoiceUpdate = &accepted
 	service.cfg.ProposerSlotIndexCache.SetProposerAndPayloadIDs(2, 1, [8]byte{1}, [32]byte{2})
 	_, err = service.forkchoiceUpdateWithExecution(ctx, r1, service.CurrentSlot())
 	require.NoError(t, err)
@@ -128,6 +132,7 @@ func TestService_forkchoiceUpdateWithExecution_exceptionalCases(t *testing.T) {
 		block: wsb,
 		state: st,
 	}
+	accepted = service.executionForkchoiceState(r1)
 	service.cfg.ProposerSlotIndexCache.SetProposerAndPayloadIDs(2, 1, [8]byte{1}, [32]byte{2})
 	_, err = service.forkchoiceUpdateWithExecution(ctx, r1, service.CurrentSlot()+1)
 	require.NoError(t, err)
@@ -172,7 +177,8 @@ func TestService_forkchoiceUpdateWithExecution_SameHeadRootNewProposer(t *testin
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
 
-	service.cfg.ExecutionEngineCaller = &mockExecution.EngineClient{}
+	engine := &checkpointRecordingEngine{EngineClient: &mockExecution.EngineClient{}}
+	service.cfg.ExecutionEngineCaller = engine
 	require.NoError(t, beaconDB.SaveState(ctx, st, bellatrixBlkRoot))
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, bellatrixBlkRoot))
 	sb, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockZond(&qrysmpb.SignedBeaconBlockZond{}))
@@ -181,13 +187,16 @@ func TestService_forkchoiceUpdateWithExecution_SameHeadRootNewProposer(t *testin
 	r, err := sb.Block().HashTreeRoot()
 	require.NoError(t, err)
 
-	// Set head to be the same but proposing next slot
+	// Set the accepted head and checkpoints to be the same but propose next slot.
 	service.head.root = r
 	service.head.block = sb
 	service.head.state = st
+	accepted := service.executionForkchoiceState(r)
+	service.lastForkchoiceUpdate = &accepted
 	service.cfg.ProposerSlotIndexCache.SetProposerAndPayloadIDs(service.CurrentSlot()+1, 0, [8]byte{}, [32]byte{} /* root */)
 	_, err = service.forkchoiceUpdateWithExecution(ctx, r, service.CurrentSlot()+1)
 	require.NoError(t, err)
+	require.Equal(t, 0, len(engine.checkpoints))
 
 }
 
@@ -197,6 +206,7 @@ func TestShouldOverrideFCU(t *testing.T) {
 	ctx, fcs := tr.ctx, tr.fcs
 
 	service.SetGenesisTime(time.Now().Add(-time.Duration(2*params.BeaconConfig().SecondsPerSlot) * time.Second))
+	fcs.SetGenesisTime(uint64(time.Now().Unix()) - 2*params.BeaconConfig().SecondsPerSlot)
 	headRoot := [32]byte{'b'}
 	parentRoot := [32]byte{'a'}
 	ojc := &qrysmpb.Checkpoint{}
@@ -217,11 +227,11 @@ func TestShouldOverrideFCU(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, headRoot, head)
 
-	fcs.SetGenesisTime(uint64(time.Now().Unix()) - 125)
+	fcs.SetGenesisTime(uint64(time.Now().Unix()) - 141)
 	require.Equal(t, true, service.shouldOverrideFCU(parentRoot, 3))
-	require.LogsDoNotContain(t, hook, "10 seconds")
+	require.LogsDoNotContain(t, hook, "50 seconds")
 	fcs.SetGenesisTime(uint64(time.Now().Unix()) - 120)
-	service.SetGenesisTime(time.Now().Add(-time.Duration(2*params.BeaconConfig().SecondsPerSlot+10) * time.Second))
+	service.SetGenesisTime(time.Now().Add(-170 * time.Second))
 	require.Equal(t, false, service.shouldOverrideFCU(parentRoot, 3))
-	require.LogsContain(t, hook, "10 seconds")
+	require.LogsContain(t, hook, "50 seconds")
 }

@@ -45,6 +45,11 @@ func (c *beaconApiValidatorClient) getValidatorsStatusResponse(ctx context.Conte
 	[]*qrysmpb.ValidatorStatusResponse,
 	error,
 ) {
+	// if no parameters are provided we should just return an empty response
+	if len(inPubKeys) == 0 && len(inIndexes) == 0 {
+		return [][]byte{}, []primitives.ValidatorIndex{}, []*qrysmpb.ValidatorStatusResponse{}, nil
+	}
+
 	// Represents the target set of keys
 	stringTargetPubKeysToPubKeys := make(map[string][]byte, len(inPubKeys))
 	stringTargetPubKeys := make([]string, len(inPubKeys))

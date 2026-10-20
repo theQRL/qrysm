@@ -485,6 +485,7 @@ func containsId(ids []uint64, wanted uint64) (int, bool) {
 // This is not a problem here because the order of values in a MultiValueItem and object IDs doesn't matter.
 func deleteElemFromSlice[T any](s []T, i int) []T {
 	s[i] = s[len(s)-1] // Copy last element to index i.
-	s = s[:len(s)-1]   // Truncate slice.
-	return s
+	var zero T
+	s[len(s)-1] = zero // Release references held by the discarded tail.
+	return s[:len(s)-1]
 }

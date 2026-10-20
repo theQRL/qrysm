@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/pkg/errors"
 	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
@@ -22,7 +23,7 @@ func ProofFromMerkleLayers(layers [][][]byte, startingLeafIndex int) [][]byte {
 	for i := 0; i < len(layers)-1; i++ {
 		neighborIdx := currentIndex ^ 1
 		neighbor := layers[i][neighborIdx]
-		proof = append(proof, neighbor)
+		proof = append(proof, slices.Clone(neighbor))
 		currentIndex = currentIndex / 2
 	}
 	return proof

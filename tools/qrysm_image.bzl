@@ -8,10 +8,12 @@ def qrysm_image_upload(
         entrypoint,
         symlinks,
         repository,
-        tags):
+        tags,
+        package_dir = None):
     pkg_tar(
         name = "binary_tar",
-        srcs = [binary],
+        srcs = binary if type(binary) == "list" else [binary],
+        package_dir = package_dir,
         symlinks = symlinks,
         tags = tags,
         extension = "tar.gz",

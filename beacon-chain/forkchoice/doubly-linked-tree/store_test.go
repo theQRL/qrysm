@@ -111,6 +111,78 @@ func TestStore_Head_BestDescendant(t *testing.T) {
 	require.Equal(t, h, indexToHash(4))
 }
 
+func TestForkChoice_Head_NoViableTips(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		branches [][]primitives.Epoch
+	}{
+		{name: "checkpoint alone"},
+		{name: "stale leaf", branches: [][]primitives.Epoch{{2}}},
+		{name: "viable parent with stale leaf", branches: [][]primitives.Epoch{{3, 2}}},
+		{name: "multiple stale branches", branches: [][]primitives.Epoch{{3, 2}, {3, 2}}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			f := setup(0, 0)
+			f.justifiedBalances = []uint64{100, 10}
+			epochSlots := params.BeaconConfig().SlotsPerEpoch
+			driftGenesisTime(f, 4*epochSlots, 1)
+			checkpoint := indexToHash(1)
+			serial := uint64(1)
+			// The epochs are voting sources already pulled up from epoch 3.
+			// A slashing can make a child's source older than its parent's.
+			insert := func(slot primitives.Slot, root, parent [32]byte, source primitives.Epoch) {
+				t.Helper()
+				_, block, err := prepareForkchoiceState(ctx, slot, root, parent, root, source, 0)
+				require.NoError(t, err)
+				_, err = f.store.insert(ctx, block, source, 0)
+				require.NoError(t, err)
+			}
+			insert(3*epochSlots, checkpoint, params.BeaconConfig().ZeroHash, 2)
+			require.NoError(t, f.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{Epoch: 3, Root: checkpoint}))
+			require.NoError(t, f.SetOptimisticToValid(ctx, checkpoint))
+			before := checkpoint
+			var descendants [][32]byte
+			for index, branch := range tt.branches {
+				parent := checkpoint
+				for depth, source := range branch {
+					serial++
+					root := indexToHash(serial)
+					insert(3*epochSlots+primitives.Slot(depth+1), root, parent, source)
+					descendants = append(descendants, root)
+					parent = root
+				}
+				f.ProcessAttestation(ctx, []uint64{uint64(index)}, parent, 4)
+				if index == 0 {
+					before = parent
+				}
+			}
+			// Source epoch 2 remains eligible through epoch 4.
+			head, err := f.Head(ctx)
+			require.NoError(t, err)
+			require.Equal(t, before, head)
+
+			driftGenesisTime(f, 5*epochSlots, 1)
+			require.NoError(t, f.NewSlot(ctx, 5*epochSlots))
+			// All tips are stale, including the checkpoint's own source.
+			// get_head still returns the justified checkpoint when filtering
+			// leaves no children to follow.
+			head, err = f.Head(ctx)
+			require.NoError(t, err)
+			require.Equal(t, checkpoint, head)
+			require.Equal(t, checkpoint, f.CachedHeadRoot())
+			require.Equal(t, true, f.IsCanonical(checkpoint))
+			for _, root := range descendants {
+				require.Equal(t, true, f.HasNode(root))
+				require.Equal(t, false, f.IsCanonical(root))
+			}
+			optimistic, err := f.IsOptimistic(checkpoint)
+			require.NoError(t, err)
+			require.Equal(t, false, optimistic)
+		})
+	}
+}
+
 func TestStore_UpdateBestDescendant_ContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	f := setup(0, 0)
@@ -122,6 +194,8 @@ func TestStore_UpdateBestDescendant_ContextCancelled(t *testing.T) {
 	require.NoError(t, err)
 	err = f.InsertNode(ctx, state, blkRoot)
 	require.ErrorContains(t, "context canceled", err)
+	require.Equal(t, false, f.HasNode(indexToHash(2)))
+	require.Equal(t, 2, f.NodeCount())
 }
 
 func TestStore_Insert(t *testing.T) {

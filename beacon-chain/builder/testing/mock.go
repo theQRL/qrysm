@@ -61,7 +61,7 @@ func (s *MockBuilderService) RegistrationByValidatorID(ctx context.Context, id p
 	if s.RegistrationCache != nil {
 		return s.RegistrationCache.RegistrationByIndex(id)
 	}
-	if s.Cfg.BeaconDB != nil {
+	if s.Cfg != nil && s.Cfg.BeaconDB != nil {
 		return s.Cfg.BeaconDB.RegistrationByValidatorID(ctx, id)
 	}
 	return nil, cache.ErrNotFoundRegistration

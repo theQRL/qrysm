@@ -7,23 +7,31 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// gossipTopicMappings represent the protocol ID to protobuf message type map for easy
-// lookup.
-var gossipTopicMappings = map[string]proto.Message{
-	BlockSubnetTopicFormat:                    &qrysmpb.SignedBeaconBlockZond{},
-	AttestationSubnetTopicFormat:              &qrysmpb.Attestation{},
-	ExitSubnetTopicFormat:                     &qrysmpb.SignedVoluntaryExit{},
-	ProposerSlashingSubnetTopicFormat:         &qrysmpb.ProposerSlashing{},
-	AttesterSlashingSubnetTopicFormat:         &qrysmpb.AttesterSlashing{},
-	AggregateAndProofSubnetTopicFormat:        &qrysmpb.SignedAggregateAttestationAndProof{},
-	SyncContributionAndProofSubnetTopicFormat: &qrysmpb.SignedContributionAndProof{},
-	SyncCommitteeSubnetTopicFormat:            &qrysmpb.SyncCommitteeMessage{},
+// gossipTopicMappings maps each gossip topic to a factory that constructs a
+// fresh, empty protobuf message of the type associated with the topic.
+//
+// Factories are used instead of singleton values so callers can obtain an
+// independent zero-valued message without paying the cost of proto.Clone — a
+// reflection-heavy deep copy — on every received gossip message.
+var gossipTopicMappings = map[string]func() proto.Message{
+	BlockSubnetTopicFormat:                    func() proto.Message { return &qrysmpb.SignedBeaconBlockZond{} },
+	AttestationSubnetTopicFormat:              func() proto.Message { return &qrysmpb.Attestation{} },
+	ExitSubnetTopicFormat:                     func() proto.Message { return &qrysmpb.SignedVoluntaryExit{} },
+	ProposerSlashingSubnetTopicFormat:         func() proto.Message { return &qrysmpb.ProposerSlashing{} },
+	AttesterSlashingSubnetTopicFormat:         func() proto.Message { return &qrysmpb.AttesterSlashing{} },
+	AggregateAndProofSubnetTopicFormat:        func() proto.Message { return &qrysmpb.SignedAggregateAttestationAndProof{} },
+	SyncContributionAndProofSubnetTopicFormat: func() proto.Message { return &qrysmpb.SignedContributionAndProof{} },
+	SyncCommitteeSubnetTopicFormat:            func() proto.Message { return &qrysmpb.SyncCommitteeMessage{} },
 }
 
-// GossipTopicMappings is a function to return the assigned data type
-// versioned by epoch.
+// GossipTopicMappings returns a freshly-allocated zero-valued protobuf message
+// for the supplied topic, or nil if the topic is unknown.
 func GossipTopicMappings(topic string) proto.Message {
-	return gossipTopicMappings[topic]
+	fn, ok := gossipTopicMappings[topic]
+	if !ok {
+		return nil
+	}
+	return fn()
 }
 
 // AllTopics returns all topics stored in our
@@ -41,7 +49,7 @@ func AllTopics() []string {
 var GossipTypeMapping = make(map[reflect.Type]string, len(gossipTopicMappings))
 
 func init() {
-	for k, v := range gossipTopicMappings {
-		GossipTypeMapping[reflect.TypeOf(v)] = k
+	for k, fn := range gossipTopicMappings {
+		GossipTypeMapping[reflect.TypeOf(fn())] = k
 	}
 }

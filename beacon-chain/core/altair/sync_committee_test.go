@@ -28,10 +28,10 @@ func TestSyncCommitteeIndices_CanGet(t *testing.T) {
 			}
 		}
 		st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
-			Validators:  validators,
 			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		})
 		require.NoError(t, err)
+		require.NoError(t, st.SetValidators(validators))
 		return st
 	}
 
@@ -64,10 +64,19 @@ func TestSyncCommitteeIndices_CanGet(t *testing.T) {
 		{
 			name: "less than optimal validator count, epoch 100",
 			args: args{
-				state: getState(t, params.BeaconConfig().MaxValidatorsPerCommittee),
+				state: getState(t, testValidatorSetSize),
 				epoch: 100,
 			},
 			wantErr: false,
+		},
+		{
+			name: "no active validators, epoch 100",
+			args: args{
+				state: getState(t, 0), // Regression test for divide by zero. prysmaticlabs/prysm#13051.
+				epoch: 100,
+			},
+			wantErr:   true,
+			errString: "no active validator indices",
 		},
 	}
 	for _, tt := range tests {
@@ -102,7 +111,7 @@ func TestSyncCommitteeIndices_DifferentPeriods(t *testing.T) {
 		return st
 	}
 
-	st := getState(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	st := getState(t, testValidatorSetSize)
 	got1, err := altair.NextSyncCommitteeIndices(context.Background(), st)
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(params.BeaconConfig().SlotsPerEpoch))
@@ -168,7 +177,7 @@ func TestSyncCommittee_CanGet(t *testing.T) {
 		{
 			name: "less than optimal validator count, epoch 100",
 			args: args{
-				state: getState(t, params.BeaconConfig().MaxValidatorsPerCommittee),
+				state: getState(t, testValidatorSetSize),
 				epoch: 100,
 			},
 			wantErr: false,
@@ -242,7 +251,7 @@ func TestValidateNilSyncContribution(t *testing.T) {
 
 func TestSyncSubCommitteePubkeys_CanGet(t *testing.T) {
 	helpers.ClearCache()
-	st := getState(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	st := getState(t, testValidatorSetSize)
 	com, err := altair.NextSyncCommittee(context.Background(), st)
 	require.NoError(t, err)
 	sub, err := altair.SyncSubCommitteePubkeys(com, 0)

@@ -30,24 +30,28 @@ func (c *beaconApiValidatorClient) submitAggregateSelectionProof(ctx context.Con
 		return nil, errors.Wrap(err, "failed to get validator index")
 	}
 
-	attesterDuties, err := c.dutiesProvider.GetAttesterDuties(ctx, slots.ToEpoch(in.Slot), []primitives.ValidatorIndex{validatorIndexResponse.Index})
+	attesterDutiesResp, err := c.dutiesProvider.GetAttesterDuties(ctx, slots.ToEpoch(in.Slot), []primitives.ValidatorIndex{validatorIndexResponse.Index})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get attester duties")
 	}
 
-	if len(attesterDuties) == 0 {
+	if len(attesterDutiesResp.Data) == 0 {
 		return nil, errors.Errorf("no attester duty for the given slot %d", in.Slot)
 	}
 
 	// First attester duty is required since we requested attester duties for one validator index.
-	attesterDuty := attesterDuties[0]
+	attesterDuty := attesterDutiesResp.Data[0]
 
 	committeeLen, err := strconv.ParseUint(attesterDuty.CommitteeLength, 10, 64)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse committee length")
 	}
 
-	isAggregator, err := helpers.IsAggregator(committeeLen, in.SlotSignature)
+	selectionSeed, err := hexutil.Decode(attesterDutiesResp.AggregatorSelectionSeed)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode aggregator selection seed")
+	}
+	isAggregator, err := helpers.IsAggregator(committeeLen, selectionSeed, in.Slot, in.CommitteeIndex, validatorIndexResponse.Index)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get aggregator status")
 	}

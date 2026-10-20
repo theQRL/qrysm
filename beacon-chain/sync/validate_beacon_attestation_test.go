@@ -14,6 +14,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
@@ -102,7 +103,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 					Source: &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				},
 			},
-			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest),
+			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest) + p.Encoding().ProtocolSuffix(),
 			validAttestationSignature: true,
 			want:                      true,
 		},
@@ -140,7 +141,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 					Source: &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				},
 			},
-			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest),
+			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest) + p.Encoding().ProtocolSuffix(),
 			validAttestationSignature: true,
 			want:                      false,
 		},
@@ -156,7 +157,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 					Source:          &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				},
 			},
-			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest),
+			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest) + p.Encoding().ProtocolSuffix(),
 			validAttestationSignature: true,
 			want:                      false,
 		},
@@ -172,7 +173,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 					Source:          &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				},
 			},
-			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest),
+			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest) + p.Encoding().ProtocolSuffix(),
 			validAttestationSignature: true,
 			want:                      false,
 		},
@@ -188,7 +189,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 					Source:          &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				},
 			},
-			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_2", digest),
+			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_2", digest) + p.Encoding().ProtocolSuffix(),
 			validAttestationSignature: true,
 			want:                      false,
 		},
@@ -204,7 +205,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 					Source:          &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				},
 			},
-			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_2", digest),
+			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_2", digest) + p.Encoding().ProtocolSuffix(),
 			validAttestationSignature: true,
 			want:                      false,
 		},
@@ -220,7 +221,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 					Source:          &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				},
 			},
-			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest),
+			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest) + p.Encoding().ProtocolSuffix(),
 			validAttestationSignature: true,
 			want:                      false,
 		},
@@ -236,7 +237,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 					Source:          &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				},
 			},
-			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest),
+			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest) + p.Encoding().ProtocolSuffix(),
 			validAttestationSignature: true,
 			want:                      false,
 		},
@@ -252,7 +253,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 					Source:          &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				},
 			},
-			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest),
+			topic:                     fmt.Sprintf("/consensus/%x/beacon_attestation_1", digest) + p.Encoding().ProtocolSuffix(),
 			validAttestationSignature: false,
 			want:                      false,
 		},
@@ -262,7 +263,10 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			helpers.ClearCache()
 			chain.ValidAttestation = tt.validAttestationSignature
-			if tt.validAttestationSignature {
+			// A committee index at or past the per-slot count has no committee to
+			// sign with; the validator rejects it on the index before signatures.
+			signable := uint64(tt.msg.Data.CommitteeIndex) < helpers.SlotCommitteeCount(uint64(savedState.NumValidators()))
+			if tt.validAttestationSignature && signable {
 				com, err := helpers.BeaconCommitteeFromState(context.Background(), savedState, tt.msg.Data.Slot, tt.msg.Data.CommitteeIndex)
 				require.NoError(t, err)
 				domain, err := signing.Domain(savedState.Fork(), tt.msg.Data.Target.Epoch, params.BeaconConfig().DomainBeaconAttester, savedState.GenesisValidatorsRoot())
@@ -271,7 +275,9 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 				require.NoError(t, err)
 				for i := 0; ; i++ {
 					if tt.msg.AggregationBits.BitAt(uint64(i)) {
-						tt.msg.Signatures = [][]byte{keys[com[i]].Sign(attRoot[:]).Marshal()}
+						lsig1, err := keys[com[i]].Sign(attRoot[:])
+						require.NoError(t, err)
+						tt.msg.Signatures = [][]byte{lsig1.Marshal()}
 						break
 					}
 				}
@@ -306,6 +312,47 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 	}
 }
 
+// Test_validateUnaggregatedAttTopic_CommitteeIndexBoundary pins the off-by-one
+// fix: an attestation with CommitteeIndex == SlotCommitteeCount must be
+// rejected. Valid indices are [0, count); without the fix the boundary case
+// silently passes the count check.
+func Test_validateUnaggregatedAttTopic_CommitteeIndexBoundary(t *testing.T) {
+	ctx := context.Background()
+
+	// 256 validators on mainnet config gives SlotCommitteeCount = 1, so
+	// CommitteeIndex == 1 is the boundary value.
+	validators := uint64(256)
+	bs, _ := util.DeterministicGenesisStateZond(t, validators)
+	require.NoError(t, bs.SetSlot(1))
+
+	chain := &mockChain.ChainService{
+		Genesis:        time.Now().Add(time.Duration(-1*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second),
+		ValidatorsRoot: [32]byte{'A'},
+	}
+	s := &Service{cfg: &config{
+		chain: chain,
+		clock: startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
+	}}
+
+	digest, err := s.currentForkDigest()
+	require.NoError(t, err)
+
+	att := &qrysmpb.Attestation{
+		Data: &qrysmpb.AttestationData{
+			Slot:           1,
+			CommitteeIndex: 1,
+		},
+	}
+	// Subnet for slot=1, count=1, committeeIndex=1: (1*1 + 1) % 4 = 2.
+	// We pick the matching topic so the count check is what rejects the
+	// attestation, not the subnet check.
+	topic := fmt.Sprintf("/consensus/%x/beacon_attestation_2", digest)
+
+	result, err := s.validateUnaggregatedAttTopic(ctx, att, bs, topic)
+	require.Equal(t, pubsub.ValidationReject, result)
+	require.ErrorContains(t, "committee index 1 >= 1", err)
+}
+
 func TestService_setSeenCommitteeIndicesSlot(t *testing.T) {
 	s := NewService(context.Background(), WithP2P(p2ptest.NewTestP2P(t)))
 	s.initCaches()
@@ -327,4 +374,63 @@ func TestService_setSeenCommitteeIndicesSlot(t *testing.T) {
 	require.Equal(t, false, s.hasSeenCommitteeIndicesSlot(1, 0, b1))
 	require.Equal(t, false, s.hasSeenCommitteeIndicesSlot(0, 2, b1))
 	require.Equal(t, true, s.hasSeenCommitteeIndicesSlot(1, 2, b1))
+}
+
+// Regression test for the qrysm port of upstream PR #16872: the attestation
+// subnet topic must match exactly. A prefix match would let e.g. subnet 1 pass
+// for the beacon_attestation_10..19 topics, defeating subnet separation.
+func TestService_validateUnaggregatedAttTopic_SubnetMatch(t *testing.T) {
+	ctx := context.Background()
+	p := p2ptest.NewTestP2P(t)
+
+	st, _ := util.DeterministicGenesisStateZond(t, 64)
+	require.NoError(t, st.SetSlot(1))
+
+	chain := &mockChain.ChainService{
+		Genesis:        time.Now().Add(time.Duration(-1*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second),
+		ValidatorsRoot: [32]byte{'A'},
+	}
+	s := &Service{cfg: &config{
+		p2p:   p,
+		chain: chain,
+		clock: startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
+	}}
+
+	att := &qrysmpb.Attestation{
+		AggregationBits: bitfield.Bitlist{0b101},
+		Data: &qrysmpb.AttestationData{
+			Slot:           1,
+			CommitteeIndex: 0,
+			Target:         &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+			Source:         &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		},
+	}
+
+	valCount, err := helpers.ActiveValidatorCount(ctx, st, 0)
+	require.NoError(t, err)
+	subnet := helpers.ComputeSubnetForAttestation(valCount, att)
+	digest, err := s.currentForkDigest()
+	require.NoError(t, err)
+	base := fmt.Sprintf(p2p.AttestationSubnetTopicFormat, digest, subnet)
+	suffix := p.Encoding().ProtocolSuffix()
+
+	tests := []struct {
+		name  string
+		topic string
+		want  pubsub.ValidationResult
+	}{
+		{"correct subnet", base + suffix, pubsub.ValidationAccept},
+		// base ends in the subnet digits; appending another digit must not still match.
+		{"subnet that shares a prefix", base + "0" + suffix, pubsub.ValidationReject},
+		{"different subnet", fmt.Sprintf(p2p.AttestationSubnetTopicFormat, digest, subnet+1) + suffix, pubsub.ValidationReject},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := s.validateUnaggregatedAttTopic(ctx, att, st, tt.topic)
+			require.Equal(t, tt.want, res)
+			if tt.want == pubsub.ValidationAccept {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

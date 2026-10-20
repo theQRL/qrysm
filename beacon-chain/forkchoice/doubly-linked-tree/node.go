@@ -11,13 +11,11 @@ import (
 	"github.com/theQRL/qrysm/time/slots"
 )
 
-// orphanLateBlockFirstThreshold is the number of seconds after which we
-// consider a block to be late, and thus a candidate to being reorged.
-const orphanLateBlockFirstThreshold = 4
-
-// ProcessAttestationsThreshold  is the number of seconds after which we
-// process attestations for the current slot
-const ProcessAttestationsThreshold = 10
+// ProcessAttestationsThreshold returns the number of seconds after which we
+// process attestations for the current slot. It is derived from the slot
+// duration as SecondsPerSlot * 5 / 6, matching the upstream Ethereum value of
+// 10 for a 12-second slot and yielding 50 for qrysm's 60-second slot.
+const ProcessAttestationsThreshold = 50
 
 // applyWeightChanges recomputes the weight of the node passed as an argument and all of its descendants,
 // using the current balance stored in each node.
@@ -41,7 +39,8 @@ func (n *Node) applyWeightChanges(ctx context.Context) error {
 }
 
 // updateBestDescendant updates the best descendant of this node and its
-// children.
+// children. Only branches leading to a viable tip survive filter_block_tree.
+// If none survive, head selection falls back to the justified checkpoint.
 func (n *Node) updateBestDescendant(ctx context.Context, justifiedEpoch, finalizedEpoch, currentEpoch primitives.Epoch) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
@@ -50,10 +49,6 @@ func (n *Node) updateBestDescendant(ctx context.Context, justifiedEpoch, finaliz
 		n.bestDescendant = nil
 		return nil
 	}
-
-	var bestChild *Node
-	bestWeight := uint64(0)
-	hasViableDescendant := false
 	for _, child := range n.children {
 		if child == nil {
 			return errors.Wrap(ErrNilNode, "could not update best descendant")
@@ -61,56 +56,58 @@ func (n *Node) updateBestDescendant(ctx context.Context, justifiedEpoch, finaliz
 		if err := child.updateBestDescendant(ctx, justifiedEpoch, finalizedEpoch, currentEpoch); err != nil {
 			return err
 		}
-		childLeadsToViableHead := child.leadsToViableHead(justifiedEpoch, currentEpoch)
-		if childLeadsToViableHead && !hasViableDescendant {
-			// The child leads to a viable head, but the current
-			// parent's best child doesn't.
-			bestWeight = child.weight
-			bestChild = child
-			hasViableDescendant = true
-		} else if childLeadsToViableHead {
-			// If both are viable, compare their weights.
-			if child.weight == bestWeight {
-				// Tie-breaker of equal weights by root.
-				if bytes.Compare(child.root[:], bestChild.root[:]) > 0 {
-					bestChild = child
-				}
-			} else if child.weight > bestWeight {
-				bestChild = child
-				bestWeight = child.weight
-			}
-		}
 	}
-	if hasViableDescendant {
-		if bestChild.bestDescendant == nil {
-			n.bestDescendant = bestChild
-		} else {
-			n.bestDescendant = bestChild.bestDescendant
-		}
-	} else {
+	bestChild := n.bestChild(justifiedEpoch, currentEpoch)
+	switch {
+	case bestChild == nil:
 		n.bestDescendant = nil
+	case bestChild.bestDescendant == nil:
+		n.bestDescendant = bestChild
+	default:
+		n.bestDescendant = bestChild.bestDescendant
 	}
 	return nil
 }
 
-// viableForHead returns true if the node is viable to head.
-// Any node with different finalized or justified epoch than
-// the ones in fork choice store should not be viable to head.
-func (n *Node) viableForHead(justifiedEpoch, currentEpoch primitives.Epoch) bool {
-	justified := justifiedEpoch == n.justifiedEpoch || justifiedEpoch == 0
-	if !justified && justifiedEpoch+1 == currentEpoch {
-		if n.unrealizedJustifiedEpoch+1 >= currentEpoch && n.justifiedEpoch+2 >= currentEpoch {
-			justified = true
+// bestChild returns the heaviest child leading to a viable tip, breaking ties
+// by the larger root, or nil when no child does.
+func (n *Node) bestChild(justifiedEpoch, currentEpoch primitives.Epoch) *Node {
+	var best *Node
+	for _, child := range n.children {
+		if !child.leadsToViableTip(justifiedEpoch, currentEpoch) {
+			continue
+		}
+		if best == nil || child.weight > best.weight || (child.weight == best.weight && bytes.Compare(child.root[:], best.root[:]) > 0) {
+			best = child
 		}
 	}
-	return justified
+	return best
 }
 
-func (n *Node) leadsToViableHead(justifiedEpoch, currentEpoch primitives.Epoch) bool {
-	if n.bestDescendant == nil {
-		return n.viableForHead(justifiedEpoch, currentEpoch)
+// viableForHead checks the node's voting source against the justified and
+// current epochs.
+func (n *Node) viableForHead(justifiedEpoch, currentEpoch primitives.Epoch) bool {
+	if justifiedEpoch == 0 {
+		return true
 	}
-	return n.bestDescendant.viableForHead(justifiedEpoch, currentEpoch)
+	votingSource := n.justifiedEpoch
+	// A block can arrive before the epoch tick has realized older nodes'
+	// checkpoints. Select their pulled-up voting source directly.
+	if slots.ToEpoch(n.slot) < currentEpoch {
+		votingSource = n.unrealizedJustifiedEpoch
+	}
+	return votingSource == justifiedEpoch || votingSource+2 >= currentEpoch
+}
+
+// leadsToViableTip reports whether the node is in the spec's filtered block
+// tree: a leaf that is viable for head, or a block whose best descendant is
+// such a leaf. A block with children is admitted only through a viable tip.
+func (n *Node) leadsToViableTip(justifiedEpoch, currentEpoch primitives.Epoch) bool {
+	tip := n.bestDescendant
+	if tip == nil {
+		tip = n
+	}
+	return len(tip.children) == 0 && tip.viableForHead(justifiedEpoch, currentEpoch)
 }
 
 // setNodeAndParentValidated sets the current node and all the ancestors as validated (i.e. non-optimistic).
@@ -122,22 +119,34 @@ func (n *Node) setNodeAndParentValidated(ctx context.Context) error {
 	if !n.optimistic {
 		return nil
 	}
-	n.optimistic = false
 
-	if n.parent == nil {
-		return nil
+	// Validate ancestors first so cancellation cannot leave a validated child
+	// that prevents a later retry from reaching its optimistic parent.
+	if n.parent != nil {
+		if err := n.parent.setNodeAndParentValidated(ctx); err != nil {
+			return err
+		}
 	}
-	return n.parent.setNodeAndParentValidated(ctx)
+	n.optimistic = false
+	return nil
 }
 
 // arrivedEarly returns whether this node was inserted before the first
 // threshold to orphan a block.
 // Note that genesisTime has seconds granularity, therefore we use a strict
-// inequality < here. For example a block that arrives 3.9999 seconds into the
-// slot will have secs = 3 below.
+// inequality < here. For example a block that arrives at exactly the voting
+// window boundary will still be considered early.
 func (n *Node) arrivedEarly(genesisTime uint64) (bool, error) {
+	// The tree root node (genesis or the finalized checkpoint on
+	// checkpoint-sync) carries an insertion timestamp sourced from time.Now()
+	// at process startup, not actual network arrival time. It can never be a
+	// reorg target anyway, so treat it as always having arrived early.
+	if n.parent == nil {
+		return true, nil
+	}
 	secs, err := slots.SecondsSinceSlotStart(n.slot, genesisTime, n.timestamp)
-	return secs < orphanLateBlockFirstThreshold, err
+	votingWindow := params.BeaconConfig().SecondsPerSlot / params.BeaconConfig().IntervalsPerSlot
+	return secs < votingWindow, err
 }
 
 // arrivedAfterOrphanCheck returns whether this block was inserted after the
@@ -146,6 +155,10 @@ func (n *Node) arrivedEarly(genesisTime uint64) (bool, error) {
 // inequality >= here. For example a block that arrives 10.00001 seconds into the
 // slot will have secs = 10 below.
 func (n *Node) arrivedAfterOrphanCheck(genesisTime uint64) (bool, error) {
+	// See arrivedEarly: the tree root's timestamp is not meaningful here.
+	if n.parent == nil {
+		return false, nil
+	}
 	secs, err := slots.SecondsSinceSlotStart(n.slot, genesisTime, n.timestamp)
 	return secs >= ProcessAttestationsThreshold, err
 }

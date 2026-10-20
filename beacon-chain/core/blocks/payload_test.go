@@ -268,6 +268,17 @@ func Test_ValidatePayload(t *testing.T) {
 			}(),
 			err: blocks.ErrInvalidPayloadTimeStamp,
 		},
+		{
+			name: "incorrect parent hash",
+			payload: func() *enginev1.ExecutionPayloadZond {
+				h := emptyPayloadZond()
+				h.ParentHash = bytesutil.PadTo([]byte{'b'}, fieldparams.RootLength)
+				h.PrevRandao = random
+				h.Timestamp = uint64(ts.Unix())
+				return h
+			}(),
+			err: blocks.ErrInvalidPayloadBlockHash,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -317,6 +328,17 @@ func Test_ProcessPayload(t *testing.T) {
 				return h
 			}(),
 			err: blocks.ErrInvalidPayloadTimeStamp,
+		},
+		{
+			name: "incorrect parent hash",
+			payload: func() *enginev1.ExecutionPayloadZond {
+				h := emptyPayloadZond()
+				h.ParentHash = bytesutil.PadTo([]byte{'b'}, fieldparams.RootLength)
+				h.PrevRandao = random
+				h.Timestamp = uint64(ts.Unix())
+				return h
+			}(),
+			err: blocks.ErrInvalidPayloadBlockHash,
 		},
 	}
 	for _, tt := range tests {
@@ -411,6 +433,21 @@ func Test_ProcessPayloadHeader(t *testing.T) {
 			}(),
 			err: blocks.ErrInvalidPayloadTimeStamp,
 		},
+		{
+			name: "incorrect parent hash",
+			header: func() interfaces.ExecutionData {
+				h, err := emptyPayloadHeaderZond()
+				require.NoError(t, err)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
+				require.Equal(t, true, ok)
+				p.ParentHash = bytesutil.PadTo([]byte{'b'}, fieldparams.RootLength)
+				p.PrevRandao = random
+				p.Timestamp = uint64(ts.Unix())
+				p.WithdrawalsRoot = wdRoot
+				return h
+			}(),
+			err: blocks.ErrInvalidPayloadBlockHash,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -475,6 +512,20 @@ func Test_ValidatePayloadHeader(t *testing.T) {
 				return h
 			}(),
 			err: blocks.ErrInvalidPayloadTimeStamp,
+		},
+		{
+			name: "incorrect parent hash",
+			header: func() interfaces.ExecutionData {
+				h, err := emptyPayloadHeaderZond()
+				require.NoError(t, err)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
+				require.Equal(t, true, ok)
+				p.ParentHash = bytesutil.PadTo([]byte{'b'}, fieldparams.RootLength)
+				p.PrevRandao = random
+				p.Timestamp = uint64(ts.Unix())
+				return h
+			}(),
+			err: blocks.ErrInvalidPayloadBlockHash,
 		},
 	}
 	for _, tt := range tests {

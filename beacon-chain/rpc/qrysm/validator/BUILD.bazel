@@ -25,6 +25,7 @@ go_library(
         "//proto/qrysm/v1alpha1",
         "//time/slots",
         "@com_github_gorilla_mux//:mux",
+        "@com_github_pkg_errors//:errors",
         "@io_opencensus_go//trace",
     ],
 )

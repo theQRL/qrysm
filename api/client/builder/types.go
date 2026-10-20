@@ -164,7 +164,15 @@ type ExecHeaderResponseZond struct {
 }
 
 // ToProto returns a SignedBuilderBidZond Proto from ExecHeaderResponseZond.
+//
+// The response comes from a relay the node does not control, so every
+// pointer and big.Int it may have left unset is checked here and reported as
+// an error: a panic in this path unwinds through GetBeaconBlock and costs the
+// proposal, whereas an error lets the proposer fall back to the local payload.
 func (ehr *ExecHeaderResponseZond) ToProto() (*qrysmpb.SignedBuilderBidZond, error) {
+	if ehr.Data.Message == nil {
+		return nil, errors.New("builder header response has no message")
+	}
 	bb, err := ehr.Data.Message.ToProto()
 	if err != nil {
 		return nil, err
@@ -177,6 +185,12 @@ func (ehr *ExecHeaderResponseZond) ToProto() (*qrysmpb.SignedBuilderBidZond, err
 
 // ToProto returns a BuilderBidZond Proto.
 func (bb *BuilderBidZond) ToProto() (*qrysmpb.BuilderBidZond, error) {
+	if bb.Header == nil {
+		return nil, errors.New("builder bid has no header")
+	}
+	if bb.Value.Int == nil {
+		return nil, errors.New("builder bid has no value")
+	}
 	header, err := bb.Header.ToProto()
 	if err != nil {
 		return nil, err
@@ -190,6 +204,9 @@ func (bb *BuilderBidZond) ToProto() (*qrysmpb.BuilderBidZond, error) {
 
 // ToProto returns an ExecutionPayloadHeaderZond Proto
 func (h *ExecutionPayloadHeaderZond) ToProto() (*v1.ExecutionPayloadHeaderZond, error) {
+	if h.BaseFeePerGas.Int == nil {
+		return nil, errors.New("execution payload header has no base_fee_per_gas")
+	}
 	return &v1.ExecutionPayloadHeaderZond{
 		ParentHash:       bytesutil.SafeCopyBytes(h.ParentHash),
 		FeeRecipient:     bytesutil.SafeCopyBytes(h.FeeRecipient),
@@ -307,13 +324,22 @@ func (r *ExecPayloadResponseZond) ToProto() (*v1.ExecutionPayloadZond, error) {
 }
 
 // ToProto returns an ExecutionPayloadZond Proto.
+//
+// Like the header response, this is relay-supplied data: unset numeric
+// fields are rejected rather than dereferenced.
 func (p *ExecutionPayloadZond) ToProto() (*v1.ExecutionPayloadZond, error) {
+	if p.BaseFeePerGas.Int == nil {
+		return nil, errors.New("execution payload has no base_fee_per_gas")
+	}
 	txs := make([][]byte, len(p.Transactions))
 	for i := range p.Transactions {
 		txs[i] = bytesutil.SafeCopyBytes(p.Transactions[i])
 	}
 	withdrawals := make([]*v1.Withdrawal, len(p.Withdrawals))
 	for i, w := range p.Withdrawals {
+		if w.Index.Int == nil || w.ValidatorIndex.Int == nil || w.Amount.Int == nil {
+			return nil, errors.Errorf("withdrawal %d is missing index, validator_index or amount", i)
+		}
 		withdrawals[i] = &v1.Withdrawal{
 			Index:          w.Index.Uint64(),
 			ValidatorIndex: types.ValidatorIndex(w.ValidatorIndex.Uint64()),
@@ -514,15 +540,17 @@ type DepositData struct {
 // MarshalJSON returns a JSON byte array representation of DepositData.
 func (d *DepositData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		PublicKey             hexutil.Bytes `json:"pubkey"`
-		WithdrawalCredentials hexutil.Bytes `json:"withdrawal_credentials"`
-		Amount                string        `json:"amount"`
-		Signature             hexutil.Bytes `json:"signature"`
+		PublicKey           hexutil.Bytes `json:"pubkey"`
+		WithdrawalRecipient hexutil.Bytes `json:"withdrawal_recipient"`
+		Amount              string        `json:"amount"`
+		RandaoCommitment    hexutil.Bytes `json:"randao_commitment"`
+		Signature           hexutil.Bytes `json:"signature"`
 	}{
-		PublicKey:             d.PublicKey,
-		WithdrawalCredentials: d.WithdrawalCredentials,
-		Amount:                fmt.Sprintf("%d", d.Amount),
-		Signature:             d.Signature,
+		PublicKey:           d.PublicKey,
+		WithdrawalRecipient: d.WithdrawalRecipient,
+		Amount:              fmt.Sprintf("%d", d.Amount),
+		RandaoCommitment:    d.RandaoCommitment,
+		Signature:           d.Signature,
 	})
 }
 

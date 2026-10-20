@@ -9,11 +9,11 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/container/trie"
-	"github.com/theQRL/qrysm/contracts/deposit"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/interop"
+	"google.golang.org/protobuf/proto"
 )
 
 var lock sync.Mutex
@@ -29,10 +29,14 @@ var t *trie.SparseMerkleTrie
 // if all secret keys for n validators are required then numDeposits
 // should be n+1.
 func DeterministicDepositsAndKeys(numDeposits uint64) ([]*qrysmpb.Deposit, []ml_dsa_87.MLDSA87Key, error) {
-	resetCache()
 	lock.Lock()
 	defer lock.Unlock()
 	var err error
+	if numDeposits < uint64(len(cachedDeposits)) {
+		t = nil
+		privKeys = []ml_dsa_87.MLDSA87Key{}
+		cachedDeposits = []*qrysmpb.Deposit{}
+	}
 
 	// Populate trie cache, if not initialized yet.
 	if t == nil {
@@ -77,7 +81,14 @@ func DeterministicDepositsAndKeys(numDeposits uint64) ([]*qrysmpb.Deposit, []ml_
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create deposit trie")
 	}
-	requestedDeposits := cachedDeposits[:numDeposits]
+	requestedDeposits := make([]*qrysmpb.Deposit, int(numDeposits)) // lint:ignore uintcast -- test code
+	for i := range requestedDeposits {
+		deposit, ok := proto.Clone(cachedDeposits[i]).(*qrysmpb.Deposit)
+		if !ok {
+			return nil, nil, errors.New("proto.Clone did not return a deposit proto")
+		}
+		requestedDeposits[i] = deposit
+	}
 	for i := range requestedDeposits {
 		proof, err := depositTrie.MerkleProof(i)
 		if err != nil {
@@ -86,7 +97,9 @@ func DeterministicDepositsAndKeys(numDeposits uint64) ([]*qrysmpb.Deposit, []ml_
 		requestedDeposits[i].Proof = proof
 	}
 
-	return requestedDeposits, privKeys[0:numDeposits], nil
+	requestedKeys := make([]ml_dsa_87.MLDSA87Key, int(numDeposits)) // lint:ignore uintcast -- test code
+	copy(requestedKeys, privKeys[0:numDeposits])
+	return requestedDeposits, requestedKeys, nil
 }
 
 // DepositsWithBalance generates N amount of deposits with the balances taken from the passed in balances array.
@@ -157,7 +170,7 @@ func DepositsWithBalance(balances []uint64) ([]*qrysmpb.Deposit, *trie.SparseMer
 		deposits[i].Proof = proof
 	}
 
-	return deposits, sparseTrie, nil
+	return deposits, depositTrie, nil
 }
 
 func signedDeposit(
@@ -174,11 +187,13 @@ func signedDeposit(
 	if err != nil {
 		return nil, err
 	}
-	withdrawalCreds := deposit.WithdrawalCredentialsAddress(withdrawalAddr)
+	withdrawalRecipient := withdrawalAddr.Bytes()
+	randaoCommitment := TestRandaoCommitment(secretKey)
 	depositMessage := &qrysmpb.DepositMessage{
-		PublicKey:             publicKey,
-		Amount:                balance,
-		WithdrawalCredentials: withdrawalCreds,
+		PublicKey:           publicKey,
+		Amount:              balance,
+		WithdrawalRecipient: withdrawalRecipient,
+		RandaoCommitment:    randaoCommitment[:],
 	}
 
 	domain, err := signing.ComputeDomain(params.BeaconConfig().DomainDeposit, nil, nil)
@@ -194,11 +209,16 @@ func signedDeposit(
 	if err != nil {
 		return nil, err
 	}
+	signature, err := secretKey.SignDeterministic(sigRoot[:])
+	if err != nil {
+		return nil, err
+	}
 	depositData := &qrysmpb.Deposit_Data{
-		PublicKey:             publicKey,
-		Amount:                balance,
-		WithdrawalCredentials: withdrawalCreds,
-		Signature:             secretKey.Sign(sigRoot[:]).Marshal(),
+		PublicKey:           publicKey,
+		Amount:              balance,
+		WithdrawalRecipient: withdrawalRecipient,
+		RandaoCommitment:    randaoCommitment[:],
+		Signature:           signature.Marshal(),
 	}
 
 	deposit := &qrysmpb.Deposit{
@@ -329,10 +349,12 @@ func DeterministicDepositsAndKeysSameValidator(numDeposits uint64) ([]*qrysmpb.D
 
 		// Create the new deposits and add them to the trie. Always use the first validator to create deposit
 		for i := range numRequired {
+			randaoCommitment := TestRandaoCommitment(secretKeys[1])
 			depositMessage := &qrysmpb.DepositMessage{
-				PublicKey:             publicKeys[1].Marshal(),
-				Amount:                params.BeaconConfig().MaxEffectiveBalance,
-				WithdrawalCredentials: deposit.WithdrawalCredentialsAddress(addr1),
+				PublicKey:           publicKeys[1].Marshal(),
+				Amount:              params.BeaconConfig().MaxEffectiveBalance,
+				WithdrawalRecipient: addr1.Bytes(),
+				RandaoCommitment:    randaoCommitment[:],
 			}
 
 			domain, err := signing.ComputeDomain(params.BeaconConfig().DomainDeposit, nil, nil)
@@ -347,12 +369,17 @@ func DeterministicDepositsAndKeysSameValidator(numDeposits uint64) ([]*qrysmpb.D
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "could not get signing root of deposit data and domain")
 			}
+			signature, err := secretKeys[1].SignDeterministic(sigRoot[:])
+			if err != nil {
+				return nil, nil, err
+			}
 			// Always use the same validator to sign
 			depositData := &qrysmpb.Deposit_Data{
-				PublicKey:             depositMessage.PublicKey,
-				Amount:                depositMessage.Amount,
-				WithdrawalCredentials: depositMessage.WithdrawalCredentials,
-				Signature:             secretKeys[1].Sign(sigRoot[:]).Marshal(),
+				PublicKey:           depositMessage.PublicKey,
+				Amount:              depositMessage.Amount,
+				WithdrawalRecipient: depositMessage.WithdrawalRecipient,
+				RandaoCommitment:    depositMessage.RandaoCommitment,
+				Signature:           signature.Marshal(),
 			}
 			deposit := &qrysmpb.Deposit{
 				Data: depositData,

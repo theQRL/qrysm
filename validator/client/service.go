@@ -21,6 +21,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	beaconApi "github.com/theQRL/qrysm/validator/client/beacon-api"
 	beaconChainClientFactory "github.com/theQRL/qrysm/validator/client/beacon-chain-client-factory"
 	"github.com/theQRL/qrysm/validator/client/iface"
 	nodeClientFactory "github.com/theQRL/qrysm/validator/client/node-client-factory"
@@ -138,7 +139,7 @@ func NewValidatorService(ctx context.Context, cfg *Config) (*ValidatorService, e
 
 	s.ctx = grpcutil.AppendHeaders(ctx, s.grpcHeaders)
 
-	grpcConn, err := grpc.DialContext(ctx, s.endpoint, dialOpts...)
+	grpcConn, err := newGrpcConnectionProvider(s.ctx, s.endpoint, dialOpts)
 	if err != nil {
 		return s, err
 	}
@@ -149,6 +150,7 @@ func NewValidatorService(ctx context.Context, cfg *Config) (*ValidatorService, e
 		grpcConn,
 		cfg.BeaconApiEndpoint,
 		cfg.BeaconApiTimeout,
+		grpcConn.Close,
 	)
 
 	return s, nil
@@ -186,12 +188,20 @@ func (v *ValidatorService) Start() {
 
 	validatorClient := validatorClientFactory.NewValidatorClient(v.conn)
 	beaconClient := beaconChainClientFactory.NewBeaconChainClient(v.conn)
+	nodeClient := nodeClientFactory.NewNodeClient(v.conn)
+	qrysmBeaconClient := beaconChainClientFactory.NewQrysmChainClient(v.conn, nodeClient)
+	dutyDependentRootTimeout := v.conn.GetBeaconApiTimeout()
+	if dutyDependentRootTimeout == 0 || dutyDependentRootTimeout > time.Second {
+		dutyDependentRootTimeout = time.Second
+	}
 
 	valStruct := &validator{
 		db:                             v.db,
 		validatorClient:                validatorClient,
+		dutyDependentRootProvider:      beaconApi.NewDutyDependentRootsProvider(v.conn.GetBeaconApiUrl(), dutyDependentRootTimeout),
 		beaconClient:                   beaconClient,
-		node:                           nodeClientFactory.NewNodeClient(v.conn),
+		qrysmBeaconClient:              qrysmBeaconClient,
+		node:                           nodeClient,
 		graffiti:                       v.graffiti,
 		logValidatorBalances:           v.logValidatorBalances,
 		emitAccountMetrics:             v.emitAccountMetrics,
@@ -215,6 +225,9 @@ func (v *ValidatorService) Start() {
 		proposerSettings:         v.proposerSettings,
 		walletInitializedChannel: make(chan *wallet.Wallet, 1),
 	}
+	if tracker, ok := v.conn.GetGrpcClientConn().(grpcHealthTracker); ok {
+		valStruct.grpcHealthTracker = tracker
+	}
 
 	// To resolve a race condition at startup due to the interface
 	// nature of the abstracted block type. We initialize
@@ -227,7 +240,7 @@ func (v *ValidatorService) Start() {
 	close(tempChan)
 
 	v.validator = valStruct
-	go run(v.ctx, v.validator)
+	go runWithRecovery(v.ctx, v.validator, v.waitForRunnerRecovery)
 }
 
 // Stop the validator service.
@@ -235,7 +248,7 @@ func (v *ValidatorService) Stop() error {
 	v.cancel()
 	log.Info("Stopping service")
 	if v.conn != nil {
-		return v.conn.GetGrpcClientConn().Close()
+		return v.conn.Close()
 	}
 	return nil
 }
@@ -246,6 +259,30 @@ func (v *ValidatorService) Status() error {
 		return errors.New("no connection to beacon RPC")
 	}
 	return nil
+}
+
+func (v *ValidatorService) waitForRunnerRecovery(ctx context.Context) error {
+	if err := waitForRetry(ctx); err != nil {
+		return err
+	}
+	for {
+		if tracker, ok := v.conn.GetGrpcClientConn().(grpcHealthTracker); ok {
+			if err := tracker.EnsureHealthy(ctx); err == nil {
+				return nil
+			} else {
+				log.WithError(err).Warn("Validator service health check failed, waiting for healthy beacon node...")
+			}
+		} else if syncing, err := v.Syncing(ctx); err == nil && !syncing {
+			return nil
+		} else if err != nil {
+			log.WithError(err).Warn("Validator service health check failed, waiting for healthy beacon node...")
+		} else {
+			log.Warn("Validator service health check failed, waiting for healthy beacon node...")
+		}
+		if err := waitForRetry(ctx); err != nil {
+			return err
+		}
+	}
 }
 
 // InteropKeysConfig returns the useInteropKeys flag.

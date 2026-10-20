@@ -17,6 +17,14 @@ import (
 	"github.com/theQRL/qrysm/testing/require"
 )
 
+// Ports below 1024 need root to bind, which the test sandbox does not have.
+const minUnprivilegedPort = 1024
+
+// randomUnprivilegedPort returns a port the proxy can bind without root.
+func randomUnprivilegedPort(r *rand.Rand) int {
+	return minUnprivilegedPort + r.Intn(50000)
+}
+
 func TestProxy(t *testing.T) {
 	t.Run("fails to proxy if destination is down", func(t *testing.T) {
 		logger := logrus.New()
@@ -24,7 +32,7 @@ func TestProxy(t *testing.T) {
 		ctx := context.Background()
 		r := rand.NewGenerator()
 		proxy, err := New(
-			WithPort(r.Intn(50000)),
+			WithPort(randomUnprivilegedPort(r)),
 			WithDestinationAddress("http://localhost:43239"), // Nothing running at destination server.
 			WithLogger(logger),
 		)
@@ -59,7 +67,7 @@ func TestProxy(t *testing.T) {
 		// Destination address server responds to JSON-RPC requests.
 		r := rand.NewGenerator()
 		proxy, err := New(
-			WithPort(r.Intn(50000)),
+			WithPort(randomUnprivilegedPort(r)),
 			WithDestinationAddress(srv.URL),
 		)
 		require.NoError(t, err)
@@ -98,7 +106,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		// Destination address server responds to JSON-RPC requests.
 		r := rand.NewGenerator()
 		proxy, err := New(
-			WithPort(r.Intn(50000)),
+			WithPort(randomUnprivilegedPort(r)),
 			WithDestinationAddress(srv.URL),
 		)
 		require.NoError(t, err)
@@ -149,7 +157,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		// Destination address server responds to JSON-RPC requests.
 		r := rand.NewGenerator()
 		proxy, err := New(
-			WithPort(r.Intn(50000)),
+			WithPort(randomUnprivilegedPort(r)),
 			WithDestinationAddress(srv.URL),
 		)
 		require.NoError(t, err)
@@ -216,7 +224,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		// Destination address server responds to JSON-RPC requests.
 		r := rand.NewGenerator()
 		proxy, err := New(
-			WithPort(r.Intn(50000)),
+			WithPort(randomUnprivilegedPort(r)),
 			WithDestinationAddress(srv.URL),
 		)
 		require.NoError(t, err)

@@ -322,7 +322,12 @@ func (p *Builder) handleHeaderRequestZond(w http.ResponseWriter) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sig := secKey.Sign(rt[:])
+	sig, err := secKey.Sign(rt[:])
+	if err != nil {
+		p.cfg.logger.WithError(err).Error("Could not sign the builder bid")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	hdrResp := &ExecHeaderResponseZond{
 		Version: "zond",
 		Data: struct {

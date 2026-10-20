@@ -19,3 +19,7 @@ var ErrNotFoundBackfillBlockRoot = kv.ErrNotFoundBackfillBlockRoot
 
 // ErrNotFoundGenesisBlockRoot means no genesis block root was found, indicating the db was not initialized with genesis
 var ErrNotFoundGenesisBlockRoot = kv.ErrNotFoundGenesisBlockRoot
+
+// ErrDeleteJustifiedAndFinalized is returned when a caller attempts to delete the genesis, justified or
+// finalized checkpoint block or state.
+var ErrDeleteJustifiedAndFinalized = kv.ErrDeleteJustifiedAndFinalized

@@ -1,10 +1,12 @@
 package blockchain
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
 	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	dbTest "github.com/theQRL/qrysm/beacon-chain/db/testing"
@@ -17,6 +19,40 @@ import (
 	"github.com/theQRL/qrysm/testing/util"
 	"github.com/theQRL/qrysm/time/slots"
 )
+
+func TestService_HeadAggregatorSelectionSeed(t *testing.T) {
+	st, _ := util.DeterministicGenesisStateZond(t, params.BeaconConfig().SyncCommitteeSize)
+	c := &Service{head: &head{state: st}}
+	ctx := context.Background()
+	// The last slot before a period transition uses the message epoch's seed,
+	// even though its sync membership is drawn from the next period.
+	slot := params.BeaconConfig().SlotsPerEpoch.Mul(uint64(params.BeaconConfig().EpochsPerSyncCommitteePeriod)) - 1
+	require.NoError(t, st.SetSlot(slot))
+	epoch := slots.ToEpoch(slot)
+	expected, err := helpers.AggregatorSelectionSeed(st, epoch)
+	require.NoError(t, err)
+	actual, err := c.HeadAggregatorSelectionSeed(ctx, slot)
+	require.NoError(t, err)
+	require.Equal(t, expected, actual)
+	nextEpochSeed, err := helpers.AggregatorSelectionSeed(st, epoch+1)
+	require.NoError(t, err)
+	require.NotEqual(t, nextEpochSeed, actual)
+
+	// A replacement head at the same slot must replace the seed, even if the
+	// sync committee cache still contains the state from the old branch.
+	t.Cleanup(func() { syncCommitteeHeadStateCache = cache.NewSyncCommitteeHeadState() })
+	require.NoError(t, syncCommitteeHeadStateCache.Put(c.head.root, slot, st))
+	replacement := st.Copy()
+	lookahead := (epoch + params.BeaconConfig().EpochsPerHistoricalVector - params.BeaconConfig().MinSeedLookahead - 1) % params.BeaconConfig().EpochsPerHistoricalVector
+	require.NoError(t, replacement.UpdateRandaoMixesAtIndex(uint64(lookahead), [32]byte{42}))
+	c.head = &head{state: replacement}
+	updated, err := c.HeadAggregatorSelectionSeed(ctx, slot)
+	require.NoError(t, err)
+	require.NotEqual(t, actual, updated)
+	expected, err = helpers.AggregatorSelectionSeed(replacement, epoch)
+	require.NoError(t, err)
+	require.Equal(t, expected, updated)
+}
 
 func TestService_HeadSyncCommitteeIndices(t *testing.T) {
 	transition.SkipSlotCache.Disable()
@@ -162,11 +198,79 @@ func TestSyncCommitteeHeadStateCache_RoundTrip(t *testing.T) {
 	})
 	beaconState, _ := util.DeterministicGenesisStateZond(t, 100)
 	require.NoError(t, beaconState.SetSlot(100))
-	cachedState, err := c.Get(101)
+	root := [32]byte{1}
+	cachedState, err := c.Get(root, 101)
 	require.ErrorContains(t, cache.ErrNotFound.Error(), err)
 	require.Equal(t, nil, cachedState)
-	require.NoError(t, c.Put(101, beaconState))
-	cachedState, err = c.Get(101)
+	require.NoError(t, c.Put(root, 101, beaconState))
+	cachedState, err = c.Get(root, 101)
 	require.NoError(t, err)
 	require.DeepEqual(t, beaconState, cachedState)
+}
+
+// A period with no blocks leaves the same latest header on both sides of the
+// boundary. Advancing the head across it must not change the answers for the
+// last slot of the old period, which gossip validation still asks about.
+func TestService_HeadSyncCommitteeIndices_BlocklessPeriodBoundary(t *testing.T) {
+	ctx := context.Background()
+	cfg := params.BeaconConfig()
+	helpers.ClearCache()
+	t.Cleanup(helpers.ClearCache)
+	syncCommitteeHeadStateCache = cache.NewSyncCommitteeHeadState()
+	t.Cleanup(func() { syncCommitteeHeadStateCache = cache.NewSyncCommitteeHeadState() })
+	transition.SkipSlotCache.Disable()
+	t.Cleanup(transition.SkipSlotCache.Enable)
+
+	st, _ := util.DeterministicGenesisStateZond(t, 2*cfg.SyncCommitteeSize)
+	st, err := transition.ProcessSlots(ctx, st, 1)
+	require.NoError(t, err)
+	root, err := st.LatestBlockHeader().HashTreeRoot()
+	require.NoError(t, err)
+	c := &Service{head: &head{state: st, root: root}}
+	boundary := cfg.SlotsPerEpoch * primitives.Slot(cfg.EpochsPerSyncCommitteePeriod)
+	lastSlot := boundary - 1
+
+	// Membership for the last slot of a period comes from the next committee.
+	committee, err := st.NextSyncCommittee()
+	require.NoError(t, err)
+	wanted := make([][]primitives.CommitteeIndex, st.NumValidators())
+	for i := range wanted {
+		key := st.PubkeyAtIndex(primitives.ValidatorIndex(i))
+		for position, pubkey := range committee.Pubkeys {
+			if bytes.Equal(key[:], pubkey) {
+				wanted[i] = append(wanted[i], primitives.CommitteeIndex(position))
+			}
+		}
+		got, err := c.HeadSyncCommitteeIndices(ctx, primitives.ValidatorIndex(i), lastSlot)
+		require.NoError(t, err)
+		require.Equal(t, true, samePositions(wanted[i], got), "cold lookup for validator %d", i)
+	}
+
+	// A request for the boundary slot advances the head across the period
+	// boundary, which rotates the committees and writes the position cache.
+	_, err = c.HeadSyncCommitteeDomain(ctx, boundary)
+	require.NoError(t, err)
+	advanced, err := syncCommitteeHeadStateCache.Get(root, boundary)
+	require.NoError(t, err)
+	rotatedNext, err := advanced.NextSyncCommittee()
+	require.NoError(t, err)
+	require.DeepNotEqual(t, committee.Pubkeys, rotatedNext.Pubkeys, "rotation must install a different next committee")
+
+	for i := range wanted {
+		got, err := c.HeadSyncCommitteeIndices(ctx, primitives.ValidatorIndex(i), lastSlot)
+		require.NoError(t, err)
+		require.Equal(t, true, samePositions(wanted[i], got), "lookup for validator %d after the head advanced", i)
+	}
+}
+
+func samePositions(a, b []primitives.CommitteeIndex) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

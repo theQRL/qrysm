@@ -24,7 +24,7 @@ import (
 	"github.com/theQRL/qrysm/pkg/goqrvmlab/program"
 )
 
-var bigModExpAddr, _ = common.NewAddressFromString("Q0000000000000000000000000000000000000005")
+var bigModExpAddr, _ = common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005")
 
 type bigModExpCaller struct{}
 

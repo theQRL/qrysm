@@ -240,14 +240,25 @@ func ProcessRewardsAndPenaltiesPrecompute(
 	for i := range numOfVals {
 		vals[i].BeforeEpochTransitionBalance = balances[i]
 
-		// Compute the post balance of the validator after accounting for the
-		// attester and proposer rewards and penalties.
+		// Apply source, target, and head deltas in order. A penalty that floors
+		// the balance at zero must precede rewards for later flags.
 		delta := attDeltas[i]
-		balances[i], err = helpers.IncreaseBalanceWithVal(balances[i], delta.HeadReward+delta.SourceReward+delta.TargetReward)
+		balances[i], err = helpers.IncreaseBalanceWithVal(balances[i], delta.SourceReward)
 		if err != nil {
 			return nil, err
 		}
-		balances[i] = helpers.DecreaseBalanceWithVal(balances[i], delta.SourcePenalty+delta.TargetPenalty)
+		balances[i] = helpers.DecreaseBalanceWithVal(balances[i], delta.SourcePenalty)
+		balances[i], err = helpers.IncreaseBalanceWithVal(balances[i], delta.TargetReward)
+		if err != nil {
+			return nil, err
+		}
+		// TargetPenalty includes inactivity penalties. Head rewards imply timely
+		// target participation, which excludes both target and inactivity penalties.
+		balances[i] = helpers.DecreaseBalanceWithVal(balances[i], delta.TargetPenalty)
+		balances[i], err = helpers.IncreaseBalanceWithVal(balances[i], delta.HeadReward)
+		if err != nil {
+			return nil, err
+		}
 
 		vals[i].AfterEpochTransitionBalance = balances[i]
 	}
@@ -272,7 +283,6 @@ func AttestationsDelta(beaconState state.BeaconState, bal *precompute.Balance, v
 	baseRewardMultiplier := increment * factor / math.CachedSquareRoot(bal.ActiveCurrentEpoch)
 	leak := helpers.IsInInactivityLeak(prevEpoch, finalizedEpoch)
 
-	// Modified in Altair and Bellatrix.
 	bias := cfg.InactivityScoreBias
 	inactivityPenaltyQuotient, err := beaconState.InactivityPenaltyQuotient()
 	if err != nil {
@@ -308,6 +318,13 @@ func attestationDelta(
 	activeIncrement := bal.ActiveCurrentEpoch / increment
 
 	weightDenominator := cfg.WeightDenominator
+	rewardDenominator, err := math.Mul64(activeIncrement, weightDenominator)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not compute attestation reward denominator")
+	}
+	if rewardDenominator == 0 {
+		return nil, errors.New("attestation reward denominator must be non-zero")
+	}
 	srcWeight := cfg.TimelySourceWeight
 	tgtWeight := cfg.TimelyTargetWeight
 	headWeight := cfg.TimelyHeadWeight
@@ -316,7 +333,7 @@ func attestationDelta(
 	if val.IsPrevEpochSourceAttester && !val.IsSlashed {
 		if !inactivityLeak {
 			n := baseReward * srcWeight * (bal.PrevEpochAttested / increment)
-			attDelta.SourceReward += n / (activeIncrement * weightDenominator)
+			attDelta.SourceReward += n / rewardDenominator
 		}
 	} else {
 		attDelta.SourcePenalty += baseReward * srcWeight / weightDenominator
@@ -326,7 +343,7 @@ func attestationDelta(
 	if val.IsPrevEpochTargetAttester && !val.IsSlashed {
 		if !inactivityLeak {
 			n := baseReward * tgtWeight * (bal.PrevEpochTargetAttested / increment)
-			attDelta.TargetReward += n / (activeIncrement * weightDenominator)
+			attDelta.TargetReward += n / rewardDenominator
 		}
 	} else {
 		attDelta.TargetPenalty += baseReward * tgtWeight / weightDenominator
@@ -336,7 +353,7 @@ func attestationDelta(
 	if val.IsPrevEpochHeadAttester && !val.IsSlashed {
 		if !inactivityLeak {
 			n := baseReward * headWeight * (bal.PrevEpochHeadAttested / increment)
-			attDelta.HeadReward += n / (activeIncrement * weightDenominator)
+			attDelta.HeadReward += n / rewardDenominator
 		}
 	}
 

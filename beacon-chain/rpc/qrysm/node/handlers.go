@@ -77,6 +77,16 @@ func (s *Server) AddTrustedPeer(w http.ResponseWriter, r *http.Request) {
 		http2.WriteError(w, errJson)
 		return
 	}
+	// A bare /p2p/<id> multiaddr parses successfully with an empty Addrs slice;
+	// dereferencing Addrs[0] below would panic.
+	if len(info.Addrs) == 0 {
+		errJson := &http2.DefaultErrorJson{
+			Message: "Multiaddress must include a transport address",
+			Code:    http.StatusBadRequest,
+		}
+		http2.WriteError(w, errJson)
+		return
+	}
 
 	// also add new peerdata to peers
 	direction, err := s.PeersFetcher.Peers().Direction(info.ID)

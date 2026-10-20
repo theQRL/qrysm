@@ -9,6 +9,7 @@ import (
 	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -230,4 +231,57 @@ func TestEnableSaveHotStateToDB_AlreadyDisabled(t *testing.T) {
 	require.NoError(t, service.DisableSaveHotStateToDB(ctx))
 	require.LogsDoNotContain(t, hook, "Exiting mode to save hot states in DB")
 	require.Equal(t, false, service.saveHotStateDB.enabled)
+}
+
+func TestDisableSaveHotStateToDB_KeepsProtectedRootForLater(t *testing.T) {
+	ctx := context.Background()
+	beaconDB := testDB.SetupDB(t)
+	service := New(beaconDB, doublylinkedtree.New())
+	base, _ := util.DeterministicGenesisStateZond(t, 8)
+	service.EnableSaveHotStateToDB(ctx)
+	r1, r2, r3 := [32]byte{'1'}, [32]byte{'2'}, [32]byte{'3'}
+	for i, r := range [][32]byte{r1, r2, r3} {
+		st := base.Copy()
+		require.NoError(t, st.SetSlot(primitives.Slot(128*(i+1))))
+		require.NoError(t, service.SaveState(ctx, r, st))
+		require.Equal(t, true, beaconDB.HasState(ctx, r))
+	}
+	// Finality resumes with the justified checkpoint at a block whose hot state was saved.
+	require.NoError(t, beaconDB.SaveJustifiedCheckpoint(ctx, &qrysmpb.Checkpoint{Epoch: 8, Root: r2[:]}))
+	require.NoError(t, service.DisableSaveHotStateToDB(ctx))
+	require.Equal(t, false, beaconDB.HasState(ctx, r1))
+	require.Equal(t, true, beaconDB.HasState(ctx, r2), "the justified checkpoint state must stay")
+	require.Equal(t, false, beaconDB.HasState(ctx, r3), "states after the protected root must still be deleted")
+	require.DeepEqual(t, [][32]byte{r2}, service.saveHotStateDB.blockRootsOfSavedStates)
+	require.Equal(t, false, service.saveHotStateDB.enabled)
+
+	// Once finality has moved past it, a later call removes the remaining state.
+	other := [32]byte{'o'}
+	require.NoError(t, beaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{Slot: 1024, Root: other[:]}))
+	require.NoError(t, beaconDB.SaveJustifiedCheckpoint(ctx, &qrysmpb.Checkpoint{Epoch: 32, Root: other[:]}))
+	require.NoError(t, service.DisableSaveHotStateToDB(ctx))
+	require.Equal(t, false, beaconDB.HasState(ctx, r2))
+	require.Equal(t, 0, len(service.saveHotStateDB.blockRootsOfSavedStates))
+}
+
+// Saving the same hot state twice (a batch saves its boundary states and its
+// last state, which may coincide) must record its root once: the migration
+// removes the root it archived, and a leftover entry would have the hot-state
+// cleanup delete the archived state.
+func TestSaveState_HotStateRootRecordedOnce(t *testing.T) {
+	ctx := context.Background()
+	beaconDB := testDB.SetupDB(t)
+	service := New(beaconDB, doublylinkedtree.New())
+	service.EnableSaveHotStateToDB(ctx)
+	service.saveHotStateDB.duration = 2
+
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 8)
+	require.NoError(t, beaconState.SetSlot(4))
+	r := [32]byte{'r'}
+	require.NoError(t, service.SaveState(ctx, r, beaconState))
+	// The second save of the same root (hot cache cleared in between, as a
+	// cache eviction would do) must not add a second entry.
+	service.hotStateCache.delete(r)
+	require.NoError(t, service.SaveState(ctx, r, beaconState))
+	require.DeepEqual(t, [][32]byte{r}, service.saveHotStateDB.blockRootsOfSavedStates)
 }

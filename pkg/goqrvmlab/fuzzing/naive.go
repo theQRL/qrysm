@@ -10,7 +10,7 @@ import (
 )
 
 func fillNaive(gst *GstMaker, fork string) {
-	addr, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000F1")
+	addr, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000F1")
 	// The accounts which we want to be able to invoke
 	addrs := []common.Address{
 		addr,

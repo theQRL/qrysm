@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
@@ -13,6 +14,7 @@ import (
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
+	"github.com/theQRL/qrysm/validator/client/iface"
 )
 
 var (
@@ -249,8 +251,12 @@ func (v *validator) LogValidatorGainsAndLosses(ctx context.Context, slot primiti
 	req := &qrysmpb.ValidatorPerformanceRequest{
 		PublicKeys: pubKeys,
 	}
-	resp, err := v.beaconClient.GetValidatorPerformance(ctx, req)
+	resp, err := v.qrysmBeaconClient.GetValidatorPerformance(ctx, req)
 	if err != nil {
+		if errors.Is(err, iface.ErrNotSupported) {
+			log.WithError(err).Debug("Skipping validator performance metric for non-qrysm beacon node")
+			return nil
+		}
 		return err
 	}
 

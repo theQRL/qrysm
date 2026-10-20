@@ -2,7 +2,6 @@ package deposit_test
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"testing"
 
 	"github.com/theQRL/go-qrl/common"
@@ -11,6 +10,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/contracts/deposit"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	"github.com/theQRL/qrysm/crypto/randao"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
@@ -24,7 +24,7 @@ func TestDepositInput_GeneratesPb(t *testing.T) {
 	k1, err := ml_dsa_87.SecretKeyFromSeed(seed[:])
 	require.NoError(t, err)
 
-	withdrawalAddr, err := common.NewAddressFromString("Q1234567890123456789012345678901234567890")
+	withdrawalAddr, err := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001234567890123456789012345678901234567890")
 	require.NoError(t, err)
 
 	result, _, err := deposit.DepositInput(k1, withdrawalAddr, 0, nil)
@@ -33,10 +33,14 @@ func TestDepositInput_GeneratesPb(t *testing.T) {
 
 	sig, err := ml_dsa_87.SignatureFromBytes(result.Signature)
 	require.NoError(t, err)
+	// The commitment is the top of the default-length onion derived from the seed.
+	wantCommitment := randao.Commitment(seed[:], randao.DefaultLayers)
+	assert.DeepEqual(t, wantCommitment[:], result.RandaoCommitment)
 	testData := &qrysmpb.DepositMessage{
-		PublicKey:             result.PublicKey,
-		WithdrawalCredentials: result.WithdrawalCredentials,
-		Amount:                result.Amount,
+		PublicKey:           result.PublicKey,
+		WithdrawalRecipient: result.WithdrawalRecipient,
+		Amount:              result.Amount,
+		RandaoCommitment:    result.RandaoCommitment,
 	}
 	sr, err := testData.HashTreeRoot()
 	require.NoError(t, err)
@@ -80,39 +84,4 @@ func TestVerifyDepositSignature_InvalidSig(t *testing.T) {
 	if err == nil {
 		t.Fatal("Deposit Verification succeeds with a invalid signature")
 	}
-}
-
-func TestWithdrawalCredentialsAddress(t *testing.T) {
-	type tc struct {
-		name    string
-		addrHex string
-		wantHex string
-	}
-	tests := []tc{
-		{
-			name:    "zero address",
-			addrHex: "Q0000000000000000000000000000000000000000",
-			wantHex: "0x0000000000000000000000000000000000000000000000000000000000000000",
-		},
-		{
-			name:    "leading zeros preserved",
-			addrHex: "Q000102030405060708090a0b0c0d0e0f10111213",
-			wantHex: "0x000000000000000000000000000102030405060708090a0b0c0d0e0f10111213",
-		},
-		{
-			name:    "all 0xff",
-			addrHex: "Qffffffffffffffffffffffffffffffffffffffff",
-			wantHex: "0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			addr, err := common.NewAddressFromString(tc.addrHex)
-			require.NoError(t, err)
-			got := deposit.WithdrawalCredentialsAddress(addr)
-			gotHex := "0x" + hex.EncodeToString(got)
-			require.Equal(t, tc.wantHex, gotHex)
-		})
-	}
-
 }

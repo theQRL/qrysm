@@ -2,6 +2,7 @@ package state_native
 
 import (
 	"github.com/pkg/errors"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
@@ -9,8 +10,6 @@ import (
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
-
-const ExecutionAddressOffset = 12
 
 // NextWithdrawalIndex returns the index that will be assigned to the next withdrawal.
 func (b *BeaconState) NextWithdrawalIndex() (uint64, error) {
@@ -56,7 +55,7 @@ func (b *BeaconState) ExpectedWithdrawals() ([]*enginev1.Withdrawal, error) {
 			withdrawals = append(withdrawals, &enginev1.Withdrawal{
 				Index:          withdrawalIndex,
 				ValidatorIndex: validatorIndex,
-				Address:        bytesutil.SafeCopyBytes(val.WithdrawalCredentials[ExecutionAddressOffset:]),
+				Address:        bytesutil.SafeCopyBytes(val.WithdrawalRecipient),
 				Amount:         balance,
 			})
 			withdrawalIndex++
@@ -64,7 +63,7 @@ func (b *BeaconState) ExpectedWithdrawals() ([]*enginev1.Withdrawal, error) {
 			withdrawals = append(withdrawals, &enginev1.Withdrawal{
 				Index:          withdrawalIndex,
 				ValidatorIndex: validatorIndex,
-				Address:        bytesutil.SafeCopyBytes(val.WithdrawalCredentials[ExecutionAddressOffset:]),
+				Address:        bytesutil.SafeCopyBytes(val.WithdrawalRecipient),
 				Amount:         balance - params.BeaconConfig().MaxEffectiveBalance,
 			})
 			withdrawalIndex++
@@ -80,14 +79,13 @@ func (b *BeaconState) ExpectedWithdrawals() ([]*enginev1.Withdrawal, error) {
 	return withdrawals, nil
 }
 
-// hasExecutionWithdrawalCredential returns whether the validator has an execution
-// Withdrawal prefix. It assumes that the caller has a lock on the state
-func hasExecutionWithdrawalCredential(val *qrysmpb.Validator) bool {
+// hasExecutionWithdrawalRecipient returns whether the validator has an execution
+// withdrawal address. It assumes that the caller has a lock on the state.
+func hasExecutionWithdrawalRecipient(val *qrysmpb.Validator) bool {
 	if val == nil {
 		return false
 	}
-	cred := val.WithdrawalCredentials
-	return len(cred) > 0 && cred[0] == params.BeaconConfig().ExecutionAddressWithdrawalPrefixByte
+	return len(val.WithdrawalRecipient) == fieldparams.WithdrawalRecipientLength
 }
 
 // isFullyWithdrawableValidator returns whether the validator is able to perform a full
@@ -97,7 +95,7 @@ func isFullyWithdrawableValidator(val *qrysmpb.Validator, epoch primitives.Epoch
 	if val == nil {
 		return false
 	}
-	return hasExecutionWithdrawalCredential(val) && val.WithdrawableEpoch <= epoch
+	return hasExecutionWithdrawalRecipient(val) && val.WithdrawableEpoch <= epoch
 }
 
 // isPartiallyWithdrawable returns whether the validator is able to perform a
@@ -108,5 +106,5 @@ func isPartiallyWithdrawableValidator(val *qrysmpb.Validator, balance uint64) bo
 	}
 	hasMaxBalance := val.EffectiveBalance == params.BeaconConfig().MaxEffectiveBalance
 	hasExcessBalance := balance > params.BeaconConfig().MaxEffectiveBalance
-	return hasExecutionWithdrawalCredential(val) && hasExcessBalance && hasMaxBalance
+	return hasExecutionWithdrawalRecipient(val) && hasExcessBalance && hasMaxBalance
 }

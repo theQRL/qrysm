@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "grpc_beacon_chain_client.go",
         "grpc_node_client.go",
+        "grpc_qrysm_beacon_chain_client.go",
         "grpc_validator_client.go",
     ],
     importpath = "github.com/theQRL/qrysm/validator/client/grpc-api",

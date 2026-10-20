@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgraph-io/ristretto"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
@@ -26,6 +27,7 @@ import (
 	validatorType "github.com/theQRL/qrysm/consensus-types/validator"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	mldsa87mock "github.com/theQRL/qrysm/crypto/ml_dsa_87/common/mock"
+	"github.com/theQRL/qrysm/crypto/randao"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
@@ -35,6 +37,7 @@ import (
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 	validatormock "github.com/theQRL/qrysm/testing/validator-mock"
+	"github.com/theQRL/qrysm/time/slots"
 	"github.com/theQRL/qrysm/validator/client/iface"
 	dbTest "github.com/theQRL/qrysm/validator/db/testing"
 	"github.com/theQRL/qrysm/validator/keymanager"
@@ -52,6 +55,21 @@ func init() {
 var _ iface.Validator = (*validator)(nil)
 
 const cancelledCtx = "context has been canceled"
+
+type stubDutyDependentRootProvider struct {
+	previous []byte
+	current  []byte
+	err      error
+	calls    int
+}
+
+func (p *stubDutyDependentRootProvider) GetDutyDependentRoots(context.Context, primitives.Epoch) ([]byte, []byte, error) {
+	p.calls++
+	if p.err != nil {
+		return nil, nil, p.err
+	}
+	return append([]byte(nil), p.previous...), append([]byte(nil), p.current...), nil
+}
 
 func genMockKeymanager(t *testing.T, numKeys int) *mockKeymanager {
 	pairs := make([]keypair, numKeys)
@@ -89,6 +107,23 @@ type mockKeymanager struct {
 	accountsChangedFeed *event.Feed
 }
 
+type mockLifecycleTicker struct {
+	channel    chan primitives.Slot
+	doneCalled bool
+}
+
+func newMockLifecycleTicker() *mockLifecycleTicker {
+	return &mockLifecycleTicker{channel: make(chan primitives.Slot)}
+}
+
+func (m *mockLifecycleTicker) C() <-chan primitives.Slot {
+	return m.channel
+}
+
+func (m *mockLifecycleTicker) Done() {
+	m.doneCalled = true
+}
+
 var errMockKeyExists = errors.New("key already in mockKeymanager map")
 
 func (m *mockKeymanager) add(pairs ...keypair) error {
@@ -119,7 +154,10 @@ func (m *mockKeymanager) Sign(_ context.Context, req *validatorpb.SignRequest) (
 	if !ok {
 		return nil, errors.New("not found")
 	}
-	sig := privKey.Sign(req.SigningRoot)
+	sig, err := privKey.Sign(req.SigningRoot)
+	if err != nil {
+		return nil, err
+	}
 	return sig, nil
 }
 
@@ -132,6 +170,24 @@ func (m *mockKeymanager) SubscribeAccountChanges(pubKeysChan chan [][field_param
 
 func (m *mockKeymanager) SimulateAccountChanges(newKeys [][field_params.MLDSA87PubkeyLength]byte) {
 	m.accountsChangedFeed.Send(newKeys)
+}
+
+func (m *mockKeymanager) RandaoReveal(
+	_ context.Context,
+	publicKey [field_params.MLDSA87PubkeyLength]byte,
+	commitment [field_params.RandaoCommitmentLength]byte,
+) ([field_params.RandaoRevealLength]byte, error) {
+	m.lock.RLock()
+	key, ok := m.keysMap[publicKey]
+	m.lock.RUnlock()
+	if !ok {
+		return [field_params.RandaoRevealLength]byte{}, errors.New("not found")
+	}
+	o, err := randao.NewOnion(key.Marshal(), 64)
+	if err != nil {
+		return [field_params.RandaoRevealLength]byte{}, err
+	}
+	return o.Reveal(commitment)
 }
 
 func (*mockKeymanager) ExtractKeystores(
@@ -195,7 +251,6 @@ func TestWaitForChainStart_SetsGenesisInfo(t *testing.T) {
 
 	assert.DeepEqual(t, genesisValidatorsRoot[:], savedGenValRoot, "Unexpected saved genesis validators root")
 	assert.Equal(t, genesis, v.genesisTime, "Unexpected chain start time")
-	assert.NotNil(t, v.ticker, "Expected ticker to be set, received nil")
 
 	// Make sure there are no errors running if it is the same data.
 	client.EXPECT().WaitForChainStart(
@@ -235,7 +290,6 @@ func TestWaitForChainStart_SetsGenesisInfo_IncorrectSecondTry(t *testing.T) {
 
 	assert.DeepEqual(t, genesisValidatorsRoot[:], savedGenValRoot, "Unexpected saved genesis validators root")
 	assert.Equal(t, genesis, v.genesisTime, "Unexpected chain start time")
-	assert.NotNil(t, v.ticker, "Expected ticker to be set, received nil")
 
 	genesisValidatorsRoot = bytesutil.ToBytes32([]byte("badvalidators"))
 
@@ -250,6 +304,31 @@ func TestWaitForChainStart_SetsGenesisInfo_IncorrectSecondTry(t *testing.T) {
 	}, nil)
 	err = v.WaitForChainStart(context.Background())
 	require.ErrorContains(t, "does not match root saved", err)
+}
+
+func TestSetTicker_StopsExistingTicker(t *testing.T) {
+	originalNewSlotTicker := newSlotTicker
+	defer func() {
+		newSlotTicker = originalNewSlotTicker
+	}()
+
+	replacementTicker := newMockLifecycleTicker()
+	newSlotTicker = func(time.Time, uint64) slots.Ticker {
+		return replacementTicker
+	}
+
+	oldTicker := newMockLifecycleTicker()
+	v := validator{
+		genesisTime: uint64(time.Unix(1, 0).Unix()),
+		ticker:      oldTicker,
+	}
+
+	v.SetTicker()
+
+	assert.Equal(t, true, oldTicker.doneCalled, "Expected previous ticker to be stopped before replacement")
+	if v.ticker != replacementTicker {
+		t.Fatal("Expected replacement ticker to be installed")
+	}
 }
 
 func TestWaitForChainStart_ContextCanceled(t *testing.T) {
@@ -358,6 +437,54 @@ func TestWaitMultipleActivation_LogsActivationEpochOK(t *testing.T) {
 	require.LogsContain(t, hook, "Validator activated")
 }
 
+func TestWaitForActivation_StopsExistingTicker(t *testing.T) {
+	originalNewSlotTicker := newSlotTicker
+	defer func() {
+		newSlotTicker = originalNewSlotTicker
+	}()
+
+	replacementTicker := newMockLifecycleTicker()
+	newSlotTicker = func(time.Time, uint64) slots.Ticker {
+		return replacementTicker
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	validatorClient := validatormock.NewMockValidatorClient(ctrl)
+	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
+
+	kp := randKeypair(t)
+	oldTicker := newMockLifecycleTicker()
+	v := validator{
+		validatorClient: validatorClient,
+		keyManager:      newMockKeymanager(t, kp),
+		beaconClient:    beaconClient,
+		genesisTime:     1,
+		ticker:          oldTicker,
+	}
+
+	resp := generateMockStatusResponse([][]byte{kp.pub[:]})
+	resp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_ACTIVE
+	clientStream := mock2.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
+	validatorClient.EXPECT().WaitForActivation(
+		gomock.Any(),
+		&qrysmpb.ValidatorActivationRequest{
+			PublicKeys: [][]byte{kp.pub[:]},
+		},
+	).Return(clientStream, nil)
+	clientStream.EXPECT().Recv().Return(
+		resp,
+		nil,
+	)
+	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&qrysmpb.Validators{}, nil)
+
+	require.NoError(t, v.WaitForActivation(context.Background(), nil), "Could not wait for activation")
+	assert.Equal(t, true, oldTicker.doneCalled, "Expected previous ticker to be stopped before replacement")
+	if v.ticker != replacementTicker {
+		t.Fatal("Expected replacement ticker to be installed")
+	}
+}
+
 func TestWaitActivation_NotAllValidatorsActivatedOK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -448,14 +575,20 @@ func TestWaitSync_Syncing(t *testing.T) {
 	require.NoError(t, v.WaitForSync(context.Background()))
 }
 
-func TestUpdateDuties_DoesNothingWhenNotEpochStart_AlreadyExistingAssignments(t *testing.T) {
+func TestUpdateDuties_DoesNothingWhenNotEpochStart_WhenDependentRootsUnchanged(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	client := validatormock.NewMockValidatorClient(ctrl)
 
 	slot := primitives.Slot(1)
+	previousRoot := []byte("previous-root")
+	currentRoot := []byte("current-root")
 	v := validator{
 		validatorClient: client,
+		dutyDependentRootProvider: &stubDutyDependentRootProvider{
+			previous: previousRoot,
+			current:  currentRoot,
+		},
 		duties: &qrysmpb.DutiesResponse{
 			CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 				{
@@ -465,6 +598,8 @@ func TestUpdateDuties_DoesNothingWhenNotEpochStart_AlreadyExistingAssignments(t 
 				},
 			},
 		},
+		previousDutyDependentRoot: previousRoot,
+		currentDutyDependentRoot:  currentRoot,
 	}
 	client.EXPECT().GetDuties(
 		gomock.Any(),
@@ -472,6 +607,131 @@ func TestUpdateDuties_DoesNothingWhenNotEpochStart_AlreadyExistingAssignments(t 
 	).Times(0)
 
 	assert.NoError(t, v.UpdateDuties(context.Background(), slot), "Could not update assignments")
+}
+
+func TestUpdateDuties_RefreshesWhenDependentRootsChange(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	client := validatormock.NewMockValidatorClient(ctrl)
+
+	slot := primitives.Slot(1)
+	expectedRoots := &stubDutyDependentRootProvider{
+		previous: []byte("new-previous-root"),
+		current:  []byte("new-current-root"),
+	}
+	resp := &qrysmpb.DutiesResponse{
+		CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{{AggregatorSelectionSeed: bytes.Repeat([]byte{2}, 32)}},
+		NextEpochDuties:    []*qrysmpb.DutiesResponse_Duty{{AggregatorSelectionSeed: bytes.Repeat([]byte{3}, 32)}},
+	}
+	v := validator{
+		keyManager:                newMockKeymanager(t, randKeypair(t)),
+		validatorClient:           client,
+		dutyDependentRootProvider: expectedRoots,
+		duties: &qrysmpb.DutiesResponse{
+			CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{{CommitteeIndex: 1, AggregatorSelectionSeed: bytes.Repeat([]byte{1}, 32)}},
+		},
+		previousDutyDependentRoot: []byte("old-previous-root"),
+		currentDutyDependentRoot:  []byte("old-current-root"),
+	}
+	client.EXPECT().GetDuties(
+		gomock.Any(),
+		gomock.Any(),
+	).Return(resp, nil)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	client.EXPECT().SubscribeCommitteeSubnets(
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+	).DoAndReturn(func(_ context.Context, _ *qrysmpb.CommitteeSubnetsSubscribeRequest, _ []primitives.ValidatorIndex) (*emptypb.Empty, error) {
+		wg.Done()
+		return nil, nil
+	})
+
+	require.NoError(t, v.UpdateDuties(context.Background(), slot), "Could not update assignments")
+	util.WaitTimeout(&wg, 2*time.Second)
+	assert.DeepEqual(t, expectedRoots.previous, v.previousDutyDependentRoot)
+	assert.DeepEqual(t, expectedRoots.current, v.currentDutyDependentRoot)
+	assert.DeepEqual(t, bytes.Repeat([]byte{2}, 32), v.duties.CurrentEpochDuties[0].AggregatorSelectionSeed)
+	assert.DeepEqual(t, bytes.Repeat([]byte{3}, 32), v.duties.NextEpochDuties[0].AggregatorSelectionSeed)
+}
+
+func TestUpdateDuties_RefreshesWhenDependentRootsNotYetCached(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	client := validatormock.NewMockValidatorClient(ctrl)
+
+	slot := primitives.Slot(1)
+	resp := &qrysmpb.DutiesResponse{
+		CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{},
+		NextEpochDuties:    []*qrysmpb.DutiesResponse_Duty{},
+	}
+	// Duties exist but no dependent roots were recorded for them: the
+	// validator cannot tell whether they are stale and must refresh.
+	v := validator{
+		keyManager:      newMockKeymanager(t, randKeypair(t)),
+		validatorClient: client,
+		duties: &qrysmpb.DutiesResponse{
+			CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{{CommitteeIndex: 1}},
+		},
+	}
+	client.EXPECT().GetDuties(
+		gomock.Any(),
+		gomock.Any(),
+	).Return(resp, nil)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	client.EXPECT().SubscribeCommitteeSubnets(
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+	).DoAndReturn(func(_ context.Context, _ *qrysmpb.CommitteeSubnetsSubscribeRequest, _ []primitives.ValidatorIndex) (*emptypb.Empty, error) {
+		wg.Done()
+		return nil, nil
+	})
+
+	require.NoError(t, v.UpdateDuties(context.Background(), slot), "Could not update assignments")
+	util.WaitTimeout(&wg, 2*time.Second)
+}
+
+// TestUpdateDuties_KeepsCachedDutiesWhenDependentRootProbeFails is the
+// regression test for a failing duty dependent root probe (e.g. the REST
+// endpoint is down while the validator uses gRPC) triggering a full duties
+// refresh - and re-signing of every selection proof - on every slot of the
+// epoch. The cached duties must be kept, the probe not retried until the next
+// epoch, and probing must resume in the next epoch.
+func TestUpdateDuties_KeepsCachedDutiesWhenDependentRootProbeFails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	client := validatormock.NewMockValidatorClient(ctrl)
+
+	provider := &stubDutyDependentRootProvider{err: errors.New("connection refused")}
+	v := validator{
+		validatorClient:           client,
+		dutyDependentRootProvider: provider,
+		duties: &qrysmpb.DutiesResponse{
+			CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{{CommitteeIndex: 1}},
+		},
+		previousDutyDependentRoot: []byte("previous-root"),
+		currentDutyDependentRoot:  []byte("current-root"),
+	}
+	client.EXPECT().GetDuties(gomock.Any(), gomock.Any()).Times(0)
+
+	// First failing probe of the epoch: cached duties are kept.
+	require.NoError(t, v.UpdateDuties(context.Background(), primitives.Slot(1)))
+	assert.Equal(t, 1, provider.calls)
+
+	// Further slots of the same epoch do not probe again.
+	require.NoError(t, v.UpdateDuties(context.Background(), primitives.Slot(2)))
+	require.NoError(t, v.UpdateDuties(context.Background(), primitives.Slot(3)))
+	assert.Equal(t, 1, provider.calls, "probe was retried within the same epoch")
+
+	// The next epoch probes again.
+	nextEpochSlot := params.BeaconConfig().SlotsPerEpoch + 1
+	require.NoError(t, v.UpdateDuties(context.Background(), nextEpochSlot))
+	assert.Equal(t, 2, provider.calls, "probe did not resume in the next epoch")
 }
 
 func TestUpdateDuties_ReturnsError(t *testing.T) {
@@ -647,26 +907,25 @@ func TestRolesAt_OK(t *testing.T) {
 	v.duties = &qrysmpb.DutiesResponse{
 		CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 			{
-				CommitteeIndex:  1,
-				AttesterSlot:    1,
-				PublicKey:       validatorKey.PublicKey().Marshal(),
-				IsSyncCommittee: true,
+				CommitteeIndex:          1,
+				Committee:               []primitives.ValidatorIndex{0},
+				AggregatorSelectionSeed: make([]byte, 32),
+				AttesterSlot:            1,
+				PublicKey:               validatorKey.PublicKey().Marshal(),
+				IsSyncCommittee:         true,
 			},
 		},
 		NextEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 			{
-				CommitteeIndex:  1,
-				AttesterSlot:    1,
-				PublicKey:       validatorKey.PublicKey().Marshal(),
-				IsSyncCommittee: true,
+				CommitteeIndex:          1,
+				Committee:               []primitives.ValidatorIndex{0},
+				AggregatorSelectionSeed: make([]byte, 32),
+				AttesterSlot:            1,
+				PublicKey:               validatorKey.PublicKey().Marshal(),
+				IsSyncCommittee:         true,
 			},
 		},
 	}
-
-	m.validatorClient.EXPECT().DomainData(
-		gomock.Any(), // ctx
-		gomock.Any(), // epoch
-	).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
 
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
@@ -687,18 +946,22 @@ func TestRolesAt_OK(t *testing.T) {
 	v.duties = &qrysmpb.DutiesResponse{
 		CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 			{
-				CommitteeIndex:  1,
-				AttesterSlot:    1,
-				PublicKey:       validatorKey.PublicKey().Marshal(),
-				IsSyncCommittee: false,
+				CommitteeIndex:          1,
+				Committee:               []primitives.ValidatorIndex{0},
+				AggregatorSelectionSeed: make([]byte, 32),
+				AttesterSlot:            1,
+				PublicKey:               validatorKey.PublicKey().Marshal(),
+				IsSyncCommittee:         false,
 			},
 		},
 		NextEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 			{
-				CommitteeIndex:  1,
-				AttesterSlot:    1,
-				PublicKey:       validatorKey.PublicKey().Marshal(),
-				IsSyncCommittee: true,
+				CommitteeIndex:          1,
+				Committee:               []primitives.ValidatorIndex{0},
+				AggregatorSelectionSeed: make([]byte, 32),
+				AttesterSlot:            1,
+				PublicKey:               validatorKey.PublicKey().Marshal(),
+				IsSyncCommittee:         true,
 			},
 		},
 	}
@@ -717,24 +980,21 @@ func TestRolesAt_OK(t *testing.T) {
 }
 
 func TestRolesAt_DoesNotAssignProposer_Slot0(t *testing.T) {
-	v, m, validatorKey, finish := setup(t)
+	v, _, validatorKey, finish := setup(t)
 	defer finish()
 
 	v.duties = &qrysmpb.DutiesResponse{
 		CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 			{
-				CommitteeIndex: 1,
-				AttesterSlot:   0,
-				ProposerSlots:  []primitives.Slot{0},
-				PublicKey:      validatorKey.PublicKey().Marshal(),
+				CommitteeIndex:          1,
+				Committee:               []primitives.ValidatorIndex{0},
+				AggregatorSelectionSeed: make([]byte, 32),
+				AttesterSlot:            0,
+				ProposerSlots:           []primitives.Slot{0},
+				PublicKey:               validatorKey.PublicKey().Marshal(),
 			},
 		},
 	}
-
-	m.validatorClient.EXPECT().DomainData(
-		gomock.Any(), // ctx
-		gomock.Any(), // epoch
-	).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	roleMap, err := v.RolesAt(context.Background(), 0)
 	require.NoError(t, err)
@@ -788,7 +1048,7 @@ func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
 					PositionInActivationQueue: 6,
 				},
 			},
-			log:    "Waiting to be assigned activation epoch\" expectedWaitingTime=2h8m0s index=50 positionInActivationQueue=6",
+			log:    "Waiting to be assigned activation epoch\" expectedWaitingTime=8h32m0s index=50 positionInActivationQueue=6",
 			active: false,
 		},
 		{
@@ -1197,18 +1457,13 @@ func TestIsSyncCommitteeAggregator_OK(t *testing.T) {
 		},
 	).Return(&qrysmpb.SyncSubcommitteeIndexResponse{}, nil /*err*/)
 
-	aggregator, err := v.isSyncCommitteeAggregator(context.Background(), slot, bytesutil.ToBytes2592(pubKey))
+	aggregator, err := v.isSyncCommitteeAggregator(context.Background(), slot, &qrysmpb.DutiesResponse_Duty{PublicKey: pubKey, AggregatorSelectionSeed: make([]byte, 32)})
 	require.NoError(t, err)
 	require.Equal(t, false, aggregator)
 
 	c := params.BeaconConfig().Copy()
 	c.TargetAggregatorsPerSyncSubcommittee = math.MaxUint64
 	params.OverrideBeaconConfig(c)
-
-	m.validatorClient.EXPECT().DomainData(
-		gomock.Any(), // ctx
-		gomock.Any(), // epoch
-	).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
@@ -1218,7 +1473,7 @@ func TestIsSyncCommitteeAggregator_OK(t *testing.T) {
 		},
 	).Return(&qrysmpb.SyncSubcommitteeIndexResponse{Indices: []primitives.CommitteeIndex{0}}, nil /*err*/)
 
-	aggregator, err = v.isSyncCommitteeAggregator(context.Background(), slot, bytesutil.ToBytes2592(pubKey))
+	aggregator, err = v.isSyncCommitteeAggregator(context.Background(), slot, &qrysmpb.DutiesResponse_Duty{PublicKey: pubKey, AggregatorSelectionSeed: make([]byte, 32)})
 	require.NoError(t, err)
 	require.Equal(t, true, aggregator)
 }
@@ -1311,14 +1566,14 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 	db := dbTest.SetupDB(t, [][field_params.MLDSA87PubkeyLength]byte{})
 	client := validatormock.NewMockValidatorClient(ctrl)
 	nodeClient := validatormock.NewMockNodeClient(ctrl)
-	defaultFeeStr := "Q046Fb65722E7b2455043BFEBf6177F1D2e9738D9"
+	defaultFeeStr := "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046Fb65722E7b2455043BFEBf6177F1D2e9738D9"
 	defaultFeeAddr, err := common.NewAddressFromString(defaultFeeStr)
 	require.NoError(t, err)
-	byteValueAddress, err := hexutil.DecodeQ("Q046Fb65722E7b2455043BFEBf6177F1D2e9738D9")
+	byteValueAddress, err := hexutil.DecodeQ("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046Fb65722E7b2455043BFEBf6177F1D2e9738D9")
 	require.NoError(t, err)
-	recipient0, err := common.NewAddressFromString("Q055Fb65722E7b2455043BFEBf6177F1D2e9738D9")
+	recipient0, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000055Fb65722E7b2455043BFEBf6177F1D2e9738D9")
 	require.NoError(t, err)
-	recipient1, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000")
+	recipient1, err := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
 	require.NoError(t, err)
 
 	type ExpectedValidatorRegistration struct {
@@ -1403,7 +1658,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				return &v
 			},
 			feeRecipientMap: map[primitives.ValidatorIndex]string{
-				1: "Q055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
+				1: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
 				2: defaultFeeStr,
 			},
 			mockExpectedRequests: []ExpectedValidatorRegistration{
@@ -1484,7 +1739,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				return &v
 			},
 			feeRecipientMap: map[primitives.ValidatorIndex]string{
-				1: "Q055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
+				1: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
 				2: defaultFeeStr,
 			},
 			mockExpectedRequests: []ExpectedValidatorRegistration{
@@ -1549,7 +1804,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				return &v
 			},
 			feeRecipientMap: map[primitives.ValidatorIndex]string{
-				1: "Q055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
+				1: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
 				2: defaultFeeStr,
 			},
 			logMessages:       []string{"will not be included in builder validator registration"},
@@ -1874,8 +2129,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				require.Equal(t, len(tt.mockExpectedRequests), len(signedRegisterValidatorRequests))
 				require.Equal(t, len(signedRegisterValidatorRequests), len(v.signedValidatorRegistrations))
 			}
-			deadline := time.Now().Add(time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second)
-			if err := v.PushProposerSettings(ctx, km, 0, deadline); tt.err != "" {
+			if err := v.PushProposerSettings(ctx, km, 0); tt.err != "" {
 				assert.ErrorContains(t, tt.err, err)
 			}
 			if len(tt.logMessages) > 0 {
@@ -1925,9 +2179,9 @@ func TestValidator_buildPrepProposerReqs_WithoutDefaultConfig(t *testing.T) {
 	pubkey4 := getPubkeyFromString(t, "0x444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "Q1111111111111111111111111111111111111111")
-	feeRecipient2 := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000")
-	feeRecipient3 := getFeeRecipientFromString(t, "Q3333333333333333333333333333333333333333")
+	feeRecipient1 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111")
+	feeRecipient2 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	feeRecipient3 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003333333333333333333333333333333333333333")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2005,23 +2259,54 @@ func TestValidator_buildPrepProposerReqs_WithoutDefaultConfig(t *testing.T) {
 }
 
 func TestValidator_buildPrepProposerReqs_WithDefaultConfig(t *testing.T) {
-	// pubkey1 => feeRecipient1 (already in `v.validatorIndex`)
-	// pubkey2 => feeRecipient2 (NOT in `v.validatorIndex`, index found by beacon node)
-	// pubkey3 => feeRecipient3 (NOT in `v.validatorIndex`, index NOT found by beacon node)
-	// pubkey4 => Nothing (already in `v.validatorIndex`)
+	// pubkey1 => feeRecipient1 - Status: active  (already in `v.validatorIndex`)
+	// pubkey2 => feeRecipient2 - Status: active  (NOT in `v.validatorIndex`, index found by beacon node)
+	// pubkey3 => feeRecipient3 - Status: active  (NOT in `v.validatorIndex`, index NOT found by beacon node)
+	// pubkey4 => Nothing       - Status: active  (already in `v.validatorIndex`)
+	// pubkey5 => Nothing       - Status: unknown (already in `v.validatorIndex`)
+	// pubkey6 => Nothing       - Status: pending (already in `v.validatorIndex`) - ActivationEpoch: 35 (current slot: 2560 - current epoch: 20)
+	// pubkey7 => Nothing       - Status: pending (already in `v.validatorIndex`) - ActivationEpoch: 20 (current slot: 2560 - current epoch: 20)
+	// pubkey8 => feeRecipient8 - Status: exiting (already in `v.validatorIndex`)
 
 	// Public keys
 	pubkey1 := getPubkeyFromString(t, "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
 	pubkey2 := getPubkeyFromString(t, "0x222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222")
 	pubkey3 := getPubkeyFromString(t, "0x333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333")
 	pubkey4 := getPubkeyFromString(t, "0x444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444")
+	pubkey5 := getPubkeyFromString(t, "0x555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555")
+	pubkey6 := getPubkeyFromString(t, "0x666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666")
+	pubkey7 := getPubkeyFromString(t, "0x777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777")
+	pubkey8 := getPubkeyFromString(t, "0x888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "Q1111111111111111111111111111111111111111")
-	feeRecipient2 := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000")
-	feeRecipient3 := getFeeRecipientFromString(t, "Q3333333333333333333333333333333333333333")
+	feeRecipient1 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111")
+	feeRecipient2 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	feeRecipient3 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003333333333333333333333333333333333333333")
+	feeRecipient8 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000008888888888888888888888888888888888888888")
 
-	defaultFeeRecipient := getFeeRecipientFromString(t, "Qdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000dddddddddddddddddddddddddddddddddddddddd")
+
+	pubkeyToStatus := map[[field_params.MLDSA87PubkeyLength]byte]qrysmpb.ValidatorStatus{
+		pubkey1: qrysmpb.ValidatorStatus_ACTIVE,
+		pubkey2: qrysmpb.ValidatorStatus_ACTIVE,
+		pubkey3: qrysmpb.ValidatorStatus_ACTIVE,
+		pubkey4: qrysmpb.ValidatorStatus_ACTIVE,
+		pubkey5: qrysmpb.ValidatorStatus_UNKNOWN_STATUS,
+		pubkey6: qrysmpb.ValidatorStatus_PENDING,
+		pubkey7: qrysmpb.ValidatorStatus_PENDING,
+		pubkey8: qrysmpb.ValidatorStatus_EXITING,
+	}
+
+	pubkeyToActivationEpoch := map[[field_params.MLDSA87PubkeyLength]byte]primitives.Epoch{
+		pubkey1: 0,
+		pubkey2: 0,
+		pubkey3: 0,
+		pubkey4: 0,
+		pubkey5: 0,
+		pubkey6: 35,
+		pubkey7: 20,
+		pubkey8: 0,
+	}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2050,15 +2335,11 @@ func TestValidator_buildPrepProposerReqs_WithDefaultConfig(t *testing.T) {
 		gomock.Any()).DoAndReturn(func(ctx context.Context, val *qrysmpb.MultipleValidatorStatusRequest) (*qrysmpb.MultipleValidatorStatusResponse, error) {
 		resp := &qrysmpb.MultipleValidatorStatusResponse{}
 		for _, k := range val.PublicKeys {
-			if bytes.Equal(k, pubkey1[:]) || bytes.Equal(k, pubkey2[:]) ||
-				bytes.Equal(k, pubkey4[:]) {
-				bytesutil.SafeCopyBytes(k)
-				resp.PublicKeys = append(resp.PublicKeys, bytesutil.SafeCopyBytes(k))
-				resp.Statuses = append(resp.Statuses, &qrysmpb.ValidatorStatusResponse{Status: qrysmpb.ValidatorStatus_ACTIVE})
-				continue
-			}
 			resp.PublicKeys = append(resp.PublicKeys, bytesutil.SafeCopyBytes(k))
-			resp.Statuses = append(resp.Statuses, &qrysmpb.ValidatorStatusResponse{Status: qrysmpb.ValidatorStatus_UNKNOWN_STATUS})
+			resp.Statuses = append(resp.Statuses, &qrysmpb.ValidatorStatusResponse{
+				Status:          pubkeyToStatus[bytesutil.ToBytes2592(k)],
+				ActivationEpoch: pubkeyToActivationEpoch[bytesutil.ToBytes2592(k)],
+			})
 		}
 		return resp, nil
 	})
@@ -2087,15 +2368,33 @@ func TestValidator_buildPrepProposerReqs_WithDefaultConfig(t *testing.T) {
 						FeeRecipient: feeRecipient3,
 					},
 				},
+				pubkey8: {
+					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
+						FeeRecipient: feeRecipient8,
+					},
+				},
 			},
 		},
 		pubkeyToValidatorIndex: map[[field_params.MLDSA87PubkeyLength]byte]primitives.ValidatorIndex{
 			pubkey1: 1,
 			pubkey4: 4,
+			pubkey5: 5,
+			pubkey6: 6,
+			pubkey7: 7,
+			pubkey8: 8,
 		},
 	}
 
-	pubkeys := [][field_params.MLDSA87PubkeyLength]byte{pubkey1, pubkey2, pubkey3, pubkey4}
+	pubkeys := [][field_params.MLDSA87PubkeyLength]byte{
+		pubkey1,
+		pubkey2,
+		pubkey3,
+		pubkey4,
+		pubkey5,
+		pubkey6,
+		pubkey7,
+		pubkey8,
+	}
 
 	expected := []*qrysmpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 		{
@@ -2110,8 +2409,16 @@ func TestValidator_buildPrepProposerReqs_WithDefaultConfig(t *testing.T) {
 			ValidatorIndex: 4,
 			FeeRecipient:   defaultFeeRecipient[:],
 		},
+		{
+			ValidatorIndex: 7,
+			FeeRecipient:   defaultFeeRecipient[:],
+		},
+		{
+			ValidatorIndex: 8,
+			FeeRecipient:   feeRecipient8[:],
+		},
 	}
-	filteredKeys, err := v.filterAndCacheActiveKeys(ctx, pubkeys, 0)
+	filteredKeys, err := v.filterAndCacheActiveKeys(ctx, pubkeys, 2560)
 	require.NoError(t, err)
 	actual, err := v.buildPrepProposerReqs(filteredKeys)
 	require.NoError(t, err)
@@ -2129,10 +2436,10 @@ func TestValidator_buildSignedRegReqs_DefaultConfigDisabled(t *testing.T) {
 	pubkey3 := getPubkeyFromString(t, "0x333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000")
-	feeRecipient2 := getFeeRecipientFromString(t, "Q2222222222222222222222222222222222222222")
+	feeRecipient1 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	feeRecipient2 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000002222222222222222222222222222222222222222")
 
-	defaultFeeRecipient := getFeeRecipientFromString(t, "Qdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000dddddddddddddddddddddddddddddddddddddddd")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2215,10 +2522,10 @@ func TestValidator_buildSignedRegReqs_DefaultConfigEnabled(t *testing.T) {
 	pubkey3 := getPubkeyFromString(t, "0x333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000")
-	feeRecipient2 := getFeeRecipientFromString(t, "Q2222222222222222222222222222222222222222")
+	feeRecipient1 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	feeRecipient2 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000002222222222222222222222222222222222222222")
 
-	defaultFeeRecipient := getFeeRecipientFromString(t, "Qdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000dddddddddddddddddddddddddddddddddddddddd")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2300,7 +2607,7 @@ func TestValidator_buildSignedRegReqs_SignerOnError(t *testing.T) {
 	pubkey1 := getPubkeyFromString(t, "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
 
 	// Fee recipients
-	defaultFeeRecipient := getFeeRecipientFromString(t, "Qdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000dddddddddddddddddddddddddddddddddddddddd")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2341,9 +2648,9 @@ func TestValidator_buildSignedRegReqs_TimestampBeforeGenesis(t *testing.T) {
 	pubkey1 := getPubkeyFromString(t, "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000")
+	feeRecipient1 := getFeeRecipientFromString(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
 
-	defaultFeeRecipient := getFeeRecipientFromString(t, "Qdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000dddddddddddddddddddddddddddddddddddddddd")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2392,4 +2699,48 @@ func TestValidator_buildSignedRegReqs_TimestampBeforeGenesis(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(actual))
+}
+
+// Regression test for the qrysm port of upstream PR #13263: domainData must
+// not hold an exclusive lock across the DomainData RPC. This exercises the
+// read-locked fast path and the double-checked write path under heavy
+// concurrency; run with -race to catch lock misuse.
+func TestDomainData_Concurrent(t *testing.T) {
+	v, m, validatorKey, finish := setup(t)
+	defer finish()
+	_ = validatorKey
+
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1920,
+		MaxCost:     192,
+		BufferItems: 64,
+	})
+	require.NoError(t, err)
+	v.domainDataCache = cache
+
+	m.validatorClient.EXPECT().DomainData(
+		gomock.Any(),
+		gomock.Any(),
+	).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil).AnyTimes()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 16; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for j := 0; j < 20; j++ {
+				// Mix a shared epoch (cache hits after warmup) with unique
+				// epochs (cache misses that go through the write lock).
+				epoch := primitives.Epoch(i % 4)
+				if j%2 == 0 {
+					epoch = primitives.Epoch(1000 + i*100 + j)
+				}
+				res, err := v.domainData(context.Background(), epoch, params.BeaconConfig().DomainBeaconAttester[:])
+				require.NoError(t, err)
+				require.NotNil(t, res)
+				require.Equal(t, 32, len(res.SignatureDomain))
+			}
+		}(i)
+	}
+	wg.Wait()
 }

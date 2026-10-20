@@ -53,6 +53,25 @@ func ProcessAttesterSlashings(
 	return beaconState, nil
 }
 
+// ProcessAttesterSlashingsNoVerify processes attester slashings without verifying them.
+// This is useful in scenarios such as block reward calculation, where we can assume the data
+// in the block is valid.
+func ProcessAttesterSlashingsNoVerify(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	slashings []*qrysmpb.AttesterSlashing,
+	slashFunc slashValidatorFunc,
+) (state.BeaconState, error) {
+	var err error
+	for _, slashing := range slashings {
+		beaconState, err = ProcessAttesterSlashingNoVerify(ctx, beaconState, slashing, slashFunc)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return beaconState, nil
+}
+
 // ProcessAttesterSlashing processes individual attester slashing.
 func ProcessAttesterSlashing(
 	ctx context.Context,
@@ -63,6 +82,27 @@ func ProcessAttesterSlashing(
 	if err := VerifyAttesterSlashing(ctx, beaconState, slashing); err != nil {
 		return nil, errors.Wrap(err, "could not verify attester slashing")
 	}
+	return processAttesterSlashing(ctx, beaconState, slashing, slashFunc)
+}
+
+// ProcessAttesterSlashingNoVerify processes individual attester slashing without verifying it.
+// This is useful in scenarios such as block reward calculation, where we can assume the data
+// in the block is valid.
+func ProcessAttesterSlashingNoVerify(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	slashing *qrysmpb.AttesterSlashing,
+	slashFunc slashValidatorFunc,
+) (state.BeaconState, error) {
+	return processAttesterSlashing(ctx, beaconState, slashing, slashFunc)
+}
+
+func processAttesterSlashing(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	slashing *qrysmpb.AttesterSlashing,
+	slashFunc slashValidatorFunc,
+) (state.BeaconState, error) {
 	slashableIndices := SlashableAttesterIndices(slashing)
 	sort.SliceStable(slashableIndices, func(i, j int) bool {
 		return slashableIndices[i] < slashableIndices[j]

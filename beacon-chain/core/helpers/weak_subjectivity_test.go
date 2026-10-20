@@ -22,38 +22,61 @@ func TestWeakSubjectivity_ComputeWeakSubjectivityPeriod(t *testing.T) {
 		valCount   uint64
 		avgBalance uint64
 		want       primitives.Epoch
+		wantErr    string
 	}{
-		// Asserting that we get the same numbers as defined in the reference table:
+		// These use the validator counts and balances from the reference table:
 		// https://github.com/ethereum/consensus-specs/blob/master/specs/phase0/weak-subjectivity.md#calculating-the-weak-subjectivity-period
-		{valCount: 32768, avgBalance: 35, want: 115},
-		{valCount: 65536, avgBalance: 35, want: 214},
-		{valCount: 131072, avgBalance: 35, want: 413},
-		{valCount: 262144, avgBalance: 35, want: 810},
-		{valCount: 524288, avgBalance: 35, want: 1604},
-		{valCount: 1048576, avgBalance: 35, want: 75},
-		{valCount: 32768, avgBalance: 40, want: 179},
-		{valCount: 65536, avgBalance: 40, want: 343},
-		{valCount: 131072, avgBalance: 40, want: 671},
-		{valCount: 262144, avgBalance: 40, want: 1326},
-		{valCount: 524288, avgBalance: 40, want: 21},
-		{valCount: 1048576, avgBalance: 40, want: 26},
+		// The expected periods reflect Qrysm's active consensus configuration.
+		//
+		// genState scales avgBalance by 1e12 (QRL balances are ~1000x Ethereum's
+		// per validator), so rows whose total active balance exceeds uint64
+		// (valCount * avgBalance * 1e12 >= 2^64) must fail with the checked-add
+		// error from TotalActiveBalance rather than silently wrap.
+		{valCount: 32768, avgBalance: 35, want: 512},
+		{valCount: 65536, avgBalance: 35, want: 1008},
+		{valCount: 131072, avgBalance: 35, want: 2001},
+		{valCount: 262144, avgBalance: 35, want: 2001},
+		{valCount: 524288, avgBalance: 35, want: 2001},
+		{valCount: 1048576, avgBalance: 35, wantErr: "addition overflows"},
+		{valCount: 32768, avgBalance: 40, want: 835},
+		{valCount: 65536, avgBalance: 40, want: 1654},
+		{valCount: 131072, avgBalance: 40, want: 3292},
+		{valCount: 262144, avgBalance: 40, want: 3292},
+		{valCount: 524288, avgBalance: 40, wantErr: "addition overflows"},
+		{valCount: 1048576, avgBalance: 40, wantErr: "addition overflows"},
 		// Additional test vectors, to check case when T*(200+3*D) >= t*(200+12*D)
 		{valCount: 32768, avgBalance: 28, want: 21},
 		{valCount: 65536, avgBalance: 28, want: 27},
 		{valCount: 131072, avgBalance: 28, want: 38},
 		{valCount: 262144, avgBalance: 28, want: 60},
 		{valCount: 524288, avgBalance: 28, want: 105},
-		{valCount: 1048576, avgBalance: 28, want: 43},
+		{valCount: 1048576, avgBalance: 28, wantErr: "addition overflows"},
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("valCount: %d, avgBalance: %d", tt.valCount, tt.avgBalance), func(t *testing.T) {
 			// Reset committee cache - as we need to recalculate active validator set for each test.
 			helpers.ClearCache()
 			got, err := helpers.ComputeWeakSubjectivityPeriod(context.Background(), genState(t, tt.valCount, tt.avgBalance), params.BeaconConfig())
+			if tt.wantErr != "" {
+				require.ErrorContains(t, tt.wantErr, err)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got, "valCount: %v, avgBalance: %v", tt.valCount, tt.avgBalance)
 		})
 	}
+}
+
+func TestWeakSubjectivity_ProposerHistoryRetentionAtValidatorCap(t *testing.T) {
+	const maxActiveValidators = 4096
+	state := genState(t, maxActiveValidators, 40)
+	wsp, err := helpers.ComputeWeakSubjectivityPeriod(context.Background(), state, params.BeaconConfig())
+	require.NoError(t, err)
+	require.Equal(t, primitives.Epoch(118), wsp)
+
+	// Proposal-history pruning deletes a record when its age equals this value,
+	// so the retained period must be strictly greater than the dynamic WSP.
+	require.Equal(t, true, params.BeaconConfig().WeakSubjectivityPeriod > wsp)
 }
 
 type mockWsCheckpoint func() (stateRoot [32]byte, blockRoot [32]byte, e primitives.Epoch)
@@ -269,10 +292,10 @@ func genState(t *testing.T, valCount, avgBalance uint64) state.BeaconState {
 	balances := make([]uint64, len(validators))
 	for i := range valCount {
 		validators[i] = &qrysmpb.Validator{
-			PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-			WithdrawalCredentials: make([]byte, 32),
-			EffectiveBalance:      avgBalance * 1e12,
-			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
+			PublicKey:           make([]byte, field_params.MLDSA87PubkeyLength),
+			WithdrawalRecipient: make([]byte, field_params.WithdrawalRecipientLength),
+			EffectiveBalance:    avgBalance * 1e12,
+			ExitEpoch:           params.BeaconConfig().FarFutureEpoch,
 		}
 		balances[i] = validators[i].EffectiveBalance
 	}

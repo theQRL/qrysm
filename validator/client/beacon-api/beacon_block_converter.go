@@ -133,7 +133,7 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTZondBlockToProto(block *apimid
 		return nil, errors.Wrapf(err, "failed to decode execution payload parent hash `%s`", block.Body.ExecutionPayload.ParentHash)
 	}
 
-	feeRecipient, err := hexutil.Decode(block.Body.ExecutionPayload.FeeRecipient)
+	feeRecipient, err := hexutil.DecodeQ(block.Body.ExecutionPayload.FeeRecipient)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode execution payload fee recipient `%s`", block.Body.ExecutionPayload.FeeRecipient)
 	}

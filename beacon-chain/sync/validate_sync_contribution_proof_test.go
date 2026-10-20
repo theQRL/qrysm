@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -40,6 +41,147 @@ import (
 	"github.com/theQRL/qrysm/testing/util"
 	"github.com/theQRL/qrysm/time/slots"
 )
+
+func TestRejectInvalidSelectionProof_Cancellation(t *testing.T) {
+	key, err := ml_dsa_87.RandKey()
+	require.NoError(t, err)
+	domain, err := signing.ComputeDomain(params.BeaconConfig().DomainSyncCommitteeSelectionProof, nil, nil)
+	require.NoError(t, err)
+	m := &qrysmpb.SignedContributionAndProof{Message: &qrysmpb.ContributionAndProof{
+		Contribution:   &qrysmpb.SyncCommitteeContribution{},
+		SelectionProof: make([]byte, field_params.MLDSA87SignatureLength),
+	}}
+	for _, mode := range []string{"invalid proof", "caller canceled", "deadline", "shutdown"} {
+		t.Run(mode, func(t *testing.T) {
+			svc := newSignatureVerifierService(t)
+			svc.cfg = &config{chain: &mockChain.ChainService{
+				PublicKey:                bytesutil.ToBytes2592(key.PublicKey().Marshal()),
+				SyncSelectionProofDomain: domain,
+			}}
+			startSignatureTestWorkers(t, svc, 1, (*ml_dsa_87.SignatureBatch).VerifySequential)
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			switch mode {
+			case "caller canceled":
+				cancel()
+			case "deadline":
+				var cancelDeadline context.CancelFunc
+				ctx, cancelDeadline = context.WithDeadline(ctx, time.Now().Add(-time.Second))
+				defer cancelDeadline()
+			case "shutdown":
+				svc.cancel()
+			}
+			result, err := svc.rejectInvalidSelectionProof(m)(ctx)
+			require.NotNil(t, err)
+			if mode == "invalid proof" {
+				require.Equal(t, pubsub.ValidationReject, result)
+			} else {
+				require.Equal(t, pubsub.ValidationIgnore, result, "local cancellation must not penalize the peer")
+			}
+		})
+	}
+}
+
+func TestSyncSelection_SignatureRetriesCannotChangeEligibility(t *testing.T) {
+	key, err := ml_dsa_87.SecretKeyFromSeed(bytes.Repeat([]byte{42}, field_params.MLDSA87SeedLength))
+	require.NoError(t, err)
+	cfg := params.BeaconConfig()
+	domain, err := signing.ComputeDomain(cfg.DomainSyncCommitteeSelectionProof, nil, nil)
+	require.NoError(t, err)
+	syncDomain, err := signing.ComputeDomain(cfg.DomainSyncCommittee, nil, nil)
+	require.NoError(t, err)
+	contributionDomain, err := signing.ComputeDomain(cfg.DomainContributionAndProof, nil, nil)
+	require.NoError(t, err)
+	chain := &mockChain.ChainService{
+		PublicKey:                   bytesutil.ToBytes2592(key.PublicKey().Marshal()),
+		SyncCommitteeIndices:        []primitives.CommitteeIndex{0},
+		SyncCommitteePubkeys:        [][]byte{key.PublicKey().Marshal()},
+		SyncSelectionProofDomain:    domain,
+		SyncCommitteeDomain:         syncDomain,
+		SyncContributionProofDomain: contributionDomain,
+		AggregatorSelectionSeed:     [32]byte{42},
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	svc := &Service{
+		ctx: ctx, cancel: cancel,
+		signatureChan: make(chan *signatureVerifier, verifierLimit),
+		cfg:           &config{chain: chain},
+	}
+	go svc.verifierRoutine()
+
+	for _, selected := range []bool{false, true} {
+		data := &qrysmpb.SyncAggregatorSelectionData{}
+		for ; data.Slot < 256; data.Slot++ {
+			eligible, err := altair.IsSyncCommitteeAggregator(chain.AggregatorSelectionSeed[:], data.Slot, 0, 0)
+			require.NoError(t, err)
+			if eligible == selected {
+				break
+			}
+		}
+		require.NotEqual(t, primitives.Slot(256), data.Slot, "expected both selected and unselected slots")
+		root, err := signing.ComputeSigningRoot(data, domain)
+		require.NoError(t, err)
+		bits := bitfield.NewBitvector128()
+		bits.SetBitAt(0, true)
+		m := &qrysmpb.SignedContributionAndProof{Message: &qrysmpb.ContributionAndProof{
+			AggregatorIndex: 0,
+			Contribution: &qrysmpb.SyncCommitteeContribution{
+				Slot: data.Slot, BlockRoot: make([]byte, 32), AggregationBits: bits,
+			},
+		}}
+		var previous []byte
+		for range 32 {
+			proof, err := key.Sign(root[:])
+			require.NoError(t, err)
+			require.Equal(t, true, proof.Verify(key.PublicKey(), root[:]))
+			require.DeepNotEqual(t, previous, proof.Marshal())
+			previous = proof.Marshal()
+			m.Message.SelectionProof = proof.Marshal()
+			result, err := svc.rejectInvalidAggregator(m)(ctx)
+			require.NoError(t, err)
+			if selected {
+				require.Equal(t, pubsub.ValidationAccept, result)
+			} else {
+				require.Equal(t, pubsub.ValidationReject, result)
+			}
+		}
+		if !selected {
+			continue
+		}
+		blockRoot := p2ptypes.SSZBytes(m.Message.Contribution.BlockRoot)
+		messageRoot, err := signing.ComputeSigningRoot(&blockRoot, syncDomain)
+		require.NoError(t, err)
+		messageSig, err := key.Sign(messageRoot[:])
+		require.NoError(t, err)
+		m.Message.Contribution.Signatures = [][]byte{messageSig.Marshal()}
+		contributionRoot, err := signing.ComputeSigningRoot(m.Message, contributionDomain)
+		require.NoError(t, err)
+		contributionSig, err := key.Sign(contributionRoot[:])
+		require.NoError(t, err)
+		m.Signature = contributionSig.Marshal()
+
+		result, err := validationPipeline(ctx,
+			rejectIncorrectSubcommitteeIndex(m), rejectEmptyContribution(m),
+			svc.rejectInvalidAggregator(m), svc.rejectInvalidIndexInSubCommittee(m),
+			svc.rejectInvalidSelectionProof(m), svc.rejectInvalidContributionSignature(m),
+			svc.rejectInvalidSyncAggregateSignature(m),
+		)
+		require.NoError(t, err)
+		require.Equal(t, pubsub.ValidationAccept, result)
+
+		// A selected member still needs a selection signature for this exact duty.
+		data.Slot++
+		wrongRoot, err := signing.ComputeSigningRoot(data, domain)
+		require.NoError(t, err)
+		wrongProof, err := key.Sign(wrongRoot[:])
+		require.NoError(t, err)
+		m.Message.SelectionProof = wrongProof.Marshal()
+		result, err = svc.rejectInvalidSelectionProof(m)(ctx)
+		require.Equal(t, pubsub.ValidationReject, result)
+		require.NotNil(t, err)
+	}
+}
 
 // TODO(now.youtrack.cloud/issue/TQ-14)
 func TestService_ValidateSyncContributionAndProof(t *testing.T) {
@@ -307,10 +449,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 					for _, p := range coms {
 						idx, ok := hState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(p))
 						assert.Equal(t, true, ok)
-						rt, err := syncSelectionProofSigningRoot(hState, slots.PrevSlot(hState.Slot()), primitives.CommitteeIndex(i))
-						assert.NoError(t, err)
-						sig := keys[idx].Sign(rt[:])
-						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
+						isAggregator, err := altair.IsSyncCommitteeAggregator(make([]byte, 32), slots.PrevSlot(hState.Slot()), i, idx)
 						require.NoError(t, err)
 						if !isAggregator {
 							msg.Message.AggregatorIndex = idx
@@ -363,12 +502,9 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 					for _, p := range coms {
 						idx, ok := hState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(p))
 						assert.Equal(t, true, ok)
-						rt, err := syncSelectionProofSigningRoot(hState, slots.PrevSlot(hState.Slot()), primitives.CommitteeIndex(i))
-						assert.NoError(t, err)
-						sig := keys[idx].Sign(rt[:])
-						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
+						isAggregator, err := altair.IsSyncCommitteeAggregator(make([]byte, 32), slots.PrevSlot(hState.Slot()), i, idx)
 						require.NoError(t, err)
-						if !isAggregator {
+						if isAggregator {
 							msg.Message.AggregatorIndex = idx
 							break
 						}
@@ -429,8 +565,9 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 						assert.Equal(t, true, ok)
 						rt, err := syncSelectionProofSigningRoot(hState, slots.PrevSlot(hState.Slot()), primitives.CommitteeIndex(i))
 						assert.NoError(t, err)
-						sig := keys[idx].Sign(rt[:])
-						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
+						sig, err := keys[idx].Sign(rt[:])
+						require.NoError(t, err)
+						isAggregator, err := altair.IsSyncCommitteeAggregator(make([]byte, 32), slots.PrevSlot(hState.Slot()), i, idx)
 						require.NoError(t, err)
 						if isAggregator {
 							infiniteSig := [field_params.MLDSA87SignatureLength]byte{0xC0}
@@ -504,13 +641,15 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 						assert.Equal(t, true, ok)
 						rt, err := syncSelectionProofSigningRoot(hState, slots.PrevSlot(hState.Slot()), primitives.CommitteeIndex(i))
 						assert.NoError(t, err)
-						sig := keys[idx].Sign(rt[:])
-						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
+						sig, err := keys[idx].Sign(rt[:])
+						require.NoError(t, err)
+						isAggregator, err := altair.IsSyncCommitteeAggregator(make([]byte, 32), slots.PrevSlot(hState.Slot()), i, idx)
 						require.NoError(t, err)
 						if isAggregator {
 							infiniteSig := [4627]byte{0xC0}
 							junkRoot := [32]byte{'A'}
-							badSig := keys[idx].Sign(junkRoot[:])
+							badSig, err := keys[idx].Sign(junkRoot[:])
+							require.NoError(t, err)
 							msg.Message.AggregatorIndex = idx
 							msg.Message.SelectionProof = sig.Marshal()
 							msg.Message.Contribution.Slot = slots.PrevSlot(hState.Slot())
@@ -525,7 +664,8 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 							assert.NoError(t, err)
 							sigRoot, err := signing.ComputeSigningRoot(msg.Message, d)
 							assert.NoError(t, err)
-							contrSig := keys[idx].Sign(sigRoot[:])
+							contrSig, err := keys[idx].Sign(sigRoot[:])
+							require.NoError(t, err)
 
 							msg.Signature = contrSig.Marshal()
 							break
@@ -585,8 +725,9 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 						assert.Equal(t, true, ok)
 						rt, err := syncSelectionProofSigningRoot(hState, slots.PrevSlot(hState.Slot()), primitives.CommitteeIndex(i))
 						assert.NoError(t, err)
-						sig := keys[idx].Sign(rt[:])
-						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
+						sig, err := keys[idx].Sign(rt[:])
+						require.NoError(t, err)
+						isAggregator, err := altair.IsSyncCommitteeAggregator(make([]byte, 32), slots.PrevSlot(hState.Slot()), i, idx)
 						require.NoError(t, err)
 						if isAggregator {
 							infiniteSig := [field_params.MLDSA87SignatureLength]byte{0xC0}
@@ -599,7 +740,8 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector128()
 							sigRoot, err := signing.ComputeSigningRoot(msg.Message, cd)
 							assert.NoError(t, err)
-							contrSig := keys[idx].Sign(sigRoot[:])
+							contrSig, err := keys[idx].Sign(sigRoot[:])
+							require.NoError(t, err)
 
 							msg.Signature = contrSig.Marshal()
 							break
@@ -670,8 +812,9 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 						assert.Equal(t, true, ok)
 						rt, err := syncSelectionProofSigningRoot(hState, slots.PrevSlot(hState.Slot()), primitives.CommitteeIndex(i))
 						assert.NoError(t, err)
-						sig := keys[idx].Sign(rt[:])
-						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
+						sig, err := keys[idx].Sign(rt[:])
+						require.NoError(t, err)
+						isAggregator, err := altair.IsSyncCommitteeAggregator(make([]byte, 32), slots.PrevSlot(hState.Slot()), i, idx)
 						require.NoError(t, err)
 						if isAggregator {
 							msg.Message.AggregatorIndex = idx
@@ -686,13 +829,16 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 							assert.NoError(t, err)
 							valIdx, ok := hState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(coms[0]))
 							assert.Equal(t, true, ok)
-							sig = keys[valIdx].Sign(sigRoot[:])
+							lsig1, err := keys[valIdx].Sign(sigRoot[:])
+							require.NoError(t, err)
+							sig = lsig1
 							msg.Message.Contribution.AggregationBits.SetBitAt(uint64(0), true)
 							msg.Message.Contribution.Signatures = [][]byte{sig.Marshal()}
 
 							sigRoot, err = signing.ComputeSigningRoot(msg.Message, cd)
 							assert.NoError(t, err)
-							contrSig := keys[idx].Sign(sigRoot[:])
+							contrSig, err := keys[idx].Sign(sigRoot[:])
+							require.NoError(t, err)
 							msg.Signature = contrSig.Marshal()
 							break
 						}
@@ -763,8 +909,9 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 						assert.Equal(t, true, ok)
 						rt, err := syncSelectionProofSigningRoot(hState, slots.PrevSlot(hState.Slot()), primitives.CommitteeIndex(i))
 						assert.NoError(t, err)
-						sig := keys[idx].Sign(rt[:])
-						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
+						sig, err := keys[idx].Sign(rt[:])
+						require.NoError(t, err)
+						isAggregator, err := altair.IsSyncCommitteeAggregator(make([]byte, 32), slots.PrevSlot(hState.Slot()), i, idx)
 						require.NoError(t, err)
 						if isAggregator {
 							msg.Message.AggregatorIndex = idx
@@ -780,14 +927,17 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 							for i, p2 := range coms {
 								idx, ok := hState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(p2))
 								assert.Equal(t, true, ok)
-								sig := keys[idx].Sign(sigRoot[:]).Marshal()
+								lsig2, err := keys[idx].Sign(sigRoot[:])
+								require.NoError(t, err)
+								sig := lsig2.Marshal()
 								sigs = append(sigs, sig)
 								msg.Message.Contribution.AggregationBits.SetBitAt(uint64(i), true)
 							}
 							msg.Message.Contribution.Signatures = sigs
 							sigRoot, err = signing.ComputeSigningRoot(msg.Message, cd)
 							assert.NoError(t, err)
-							contrSig := keys[idx].Sign(sigRoot[:])
+							contrSig, err := keys[idx].Sign(sigRoot[:])
+							require.NoError(t, err)
 							msg.Signature = contrSig.Marshal()
 							break
 						}
@@ -925,8 +1075,9 @@ func TestValidateSyncContributionAndProof(t *testing.T) {
 			assert.Equal(t, true, ok)
 			rt, err := syncSelectionProofSigningRoot(hState, slots.PrevSlot(hState.Slot()), primitives.CommitteeIndex(i))
 			assert.NoError(t, err)
-			sig := keys[idx].Sign(rt[:])
-			isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
+			sig, err := keys[idx].Sign(rt[:])
+			require.NoError(t, err)
+			isAggregator, err := altair.IsSyncCommitteeAggregator(make([]byte, 32), slots.PrevSlot(hState.Slot()), i, idx)
 			require.NoError(t, err)
 			if isAggregator {
 				msg.Message.AggregatorIndex = idx
@@ -941,13 +1092,16 @@ func TestValidateSyncContributionAndProof(t *testing.T) {
 				assert.NoError(t, err)
 				valIdx, ok := hState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(coms[0]))
 				assert.Equal(t, true, ok)
-				sig = keys[valIdx].Sign(sigRoot[:])
+				lsig3, err := keys[valIdx].Sign(sigRoot[:])
+				require.NoError(t, err)
+				sig = lsig3
 				msg.Message.Contribution.AggregationBits.SetBitAt(uint64(0), true)
 				msg.Message.Contribution.Signatures = [][]byte{sig.Marshal()}
 
 				sigRoot, err = signing.ComputeSigningRoot(msg.Message, cd)
 				assert.NoError(t, err)
-				contrSig := keys[idx].Sign(sigRoot[:])
+				contrSig, err := keys[idx].Sign(sigRoot[:])
+				require.NoError(t, err)
 				msg.Signature = contrSig.Marshal()
 				break
 			}

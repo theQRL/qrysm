@@ -45,7 +45,7 @@ func main() {
 func runit() error {
 	a := program.NewProgram()
 
-	aAddr, _ := common.NewAddressFromString("Q000000000000000000000000000000000000ff0a")
+	aAddr, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ff0a")
 
 	// Calling contract: Call contract B in a loop
 	a.Op(ops.PC)         // Push 0

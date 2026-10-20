@@ -213,6 +213,19 @@ func TestFromBytes4(t *testing.T) {
 	}
 }
 
+func TestFromBytes4_PreservesBackingArray(t *testing.T) {
+	input := []byte{1, 2, 3, 4, 5, 6, 7, 8}
+	want := append([]byte(nil), input...)
+	if got := bytesutil.FromBytes4(input[:4]); got != 0x04030201 {
+		t.Fatalf("unexpected integer: %#x", got)
+	}
+	for i := range input {
+		if input[i] != want[i] {
+			t.Fatalf("input changed at byte %d: got %d, want %d", i, input[i], want[i])
+		}
+	}
+}
+
 func TestFromBytes8(t *testing.T) {
 	tests := []uint64{
 		0,

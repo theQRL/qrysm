@@ -30,10 +30,10 @@ func TestCorrect_ActiveValidatorsCount(t *testing.T) {
 		validators := make([]*qrysmpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 		for i := range validators {
 			validators[i] = &qrysmpb.Validator{
-				PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-				WithdrawalCredentials: make([]byte, 32),
-				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
-				Slashed:               false,
+				PublicKey:           make([]byte, field_params.MLDSA87PubkeyLength),
+				WithdrawalRecipient: make([]byte, 64),
+				ExitEpoch:           params.BeaconConfig().FarFutureEpoch,
+				Slashed:             false,
 			}
 		}
 		state.Validators = validators
@@ -47,10 +47,10 @@ func TestCorrect_ActiveValidatorsCount(t *testing.T) {
 	assert.Equal(t, int(params.BeaconConfig().MinGenesisActiveValidatorCount), int(vals), "mainnet genesis active count isn't accurate")
 	for range 100 {
 		require.NoError(t, bState.AppendValidator(&qrysmpb.Validator{
-			PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-			WithdrawalCredentials: make([]byte, 32),
-			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
-			Slashed:               false,
+			PublicKey:           make([]byte, field_params.MLDSA87PubkeyLength),
+			WithdrawalRecipient: make([]byte, 64),
+			ExitEpoch:           params.BeaconConfig().FarFutureEpoch,
+			Slashed:             false,
 		}))
 	}
 	require.NoError(t, bState.SetSlot(10000))

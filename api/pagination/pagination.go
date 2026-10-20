@@ -3,6 +3,7 @@ package pagination
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -30,13 +31,21 @@ func StartAndEndPage(pageToken string, pageSize, totalSize int) (int, int, strin
 		return 0, 0, "", errors.Errorf("invalid token value provided: %d", token)
 	}
 
-	// Start page can not be greater than set size.
+	// Start page can not be greater than set size. token*pageSize is computed
+	// by the caller's request values, so guard the multiplication: an
+	// overflow would wrap to a negative start and turn into a slice-bounds
+	// panic in the handler.
+	if token > (math.MaxInt-pageSize)/pageSize {
+		return 0, 0, "", fmt.Errorf("page start %d * %d overflows", token, pageSize)
+	}
 	start := token * pageSize
 	if start >= totalSize {
 		return 0, 0, "", fmt.Errorf("page start %d >= list %d", start, totalSize)
 	}
 
-	// End page can not go out of bound.
+	// End page can not go out of bound. start < totalSize and
+	// start + pageSize <= (token+1)*pageSize <= MaxInt after the check above,
+	// so this addition cannot overflow.
 	end := start + pageSize
 	nextPageToken := strconv.Itoa(token + 1)
 

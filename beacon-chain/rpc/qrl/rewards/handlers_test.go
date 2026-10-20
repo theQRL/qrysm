@@ -92,17 +92,21 @@ func TestBlockRewards(t *testing.T) {
 	require.NoError(t, err)
 	sigRoot2, err := signing.ComputeSigningRoot(attData2, domain)
 	require.NoError(t, err)
+	attSig1, err := secretKeys[0].Sign(sigRoot1[:])
+	require.NoError(t, err)
+	attSig2, err := secretKeys[0].Sign(sigRoot2[:])
+	require.NoError(t, err)
 	b.Block.Body.AttesterSlashings = []*qrysmpb.AttesterSlashing{
 		{
 			Attestation_1: &qrysmpb.IndexedAttestation{
 				AttestingIndices: []uint64{0},
 				Data:             attData1,
-				Signatures:       [][]byte{secretKeys[0].Sign(sigRoot1[:]).Marshal()},
+				Signatures:       [][]byte{attSig1.Marshal()},
 			},
 			Attestation_2: &qrysmpb.IndexedAttestation{
 				AttestingIndices: []uint64{0},
 				Data:             attData2,
-				Signatures:       [][]byte{secretKeys[0].Sign(sigRoot2[:]).Marshal()},
+				Signatures:       [][]byte{attSig2.Marshal()},
 			},
 		},
 	}
@@ -126,15 +130,19 @@ func TestBlockRewards(t *testing.T) {
 	require.NoError(t, err)
 	sigRoot2, err = signing.ComputeSigningRoot(header2, domain)
 	require.NoError(t, err)
+	hSig1, err := secretKeys[1].Sign(sigRoot1[:])
+	require.NoError(t, err)
+	hSig2, err := secretKeys[1].Sign(sigRoot2[:])
+	require.NoError(t, err)
 	b.Block.Body.ProposerSlashings = []*qrysmpb.ProposerSlashing{
 		{
 			Header_1: &qrysmpb.SignedBeaconBlockHeader{
 				Header:    header1,
-				Signature: secretKeys[1].Sign(sigRoot1[:]).Marshal(),
+				Signature: hSig1.Marshal(),
 			},
 			Header_2: &qrysmpb.SignedBeaconBlockHeader{
 				Header:    header2,
-				Signature: secretKeys[1].Sign(sigRoot2[:]).Marshal(),
+				Signature: hSig2.Marshal(),
 			},
 		},
 	}
@@ -148,14 +156,19 @@ func TestBlockRewards(t *testing.T) {
 	require.NoError(t, err)
 	// Bits set in sync committee bits determine which validators will be treated as participating in sync committee.
 	// These validators have to sign the message.
-	sig1 := secretKeys[149].Sign(r[:]).Marshal()
-	sig2 := secretKeys[48].Sign(r[:]).Marshal()
+	lsig5, err := secretKeys[149].Sign(r[:])
+	require.NoError(t, err)
+	sig1 := lsig5.Marshal()
+	lsig6, err := secretKeys[48].Sign(r[:])
+	require.NoError(t, err)
+	sig2 := lsig6.Marshal()
 	b.Block.Body.SyncAggregate = &qrysmpb.SyncAggregate{SyncCommitteeBits: scBits, SyncCommitteeSignatures: [][]byte{sig1, sig2}}
 
 	sbb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
+	blkRoot, err := sbb.Block().HashTreeRoot()
 	require.NoError(t, err)
-	mockChainService := &mock.ChainService{Optimistic: true}
+	mockChainService := &mock.ChainService{OptimisticRoots: map[[32]byte]bool{blkRoot: true}}
 	s := &Server{
 		Blocker: &testutil.MockBlocker{SlotBlockMap: map[primitives.Slot]interfaces.ReadOnlySignedBeaconBlock{
 			2: sbb,
@@ -220,8 +233,17 @@ func TestAttestationRewards(t *testing.T) {
 	require.NoError(t, st.SetCurrentParticipationBits(participation))
 	require.NoError(t, st.SetPreviousParticipationBits(participation))
 
+	attBlkRoot, err := st.LatestBlockHeader().HashTreeRoot()
+	require.NoError(t, err)
 	currentSlot := params.BeaconConfig().SlotsPerEpoch * 3
-	mockChainService := &mock.ChainService{Optimistic: true, Slot: &currentSlot}
+	headRoot := [32]byte{'h'}
+	mockChainService := &mock.ChainService{
+		Optimistic:      true,
+		OptimisticRoots: map[[32]byte]bool{attBlkRoot: true},
+		Slot:            &currentSlot,
+		Root:            headRoot[:],
+		Ancestors:       map[[32]byte][32]byte{headRoot: attBlkRoot},
+	}
 	s := &Server{
 		Stater: &testutil.MockStater{StatesBySlot: map[primitives.Slot]state.BeaconState{
 			params.BeaconConfig().SlotsPerEpoch*3 - 1: st,
@@ -229,6 +251,8 @@ func TestAttestationRewards(t *testing.T) {
 		TimeFetcher:           mockChainService,
 		OptimisticModeFetcher: mockChainService,
 		FinalizationFetcher:   mockChainService,
+		HeadFetcher:           mockChainService,
+		ForkchoiceFetcher:     mockChainService,
 	}
 
 	t.Run("ok - ideal rewards", func(t *testing.T) {
@@ -337,8 +361,16 @@ func TestAttestationRewards(t *testing.T) {
 		require.NoError(t, st.SetCurrentParticipationBits(participation))
 		require.NoError(t, st.SetPreviousParticipationBits(participation))
 
+		subBlkRoot, err := st.LatestBlockHeader().HashTreeRoot()
+		require.NoError(t, err)
 		currentSlot := params.BeaconConfig().SlotsPerEpoch * 3
-		mockChainService := &mock.ChainService{Optimistic: true, Slot: &currentSlot}
+		mockChainService := &mock.ChainService{
+			Optimistic:      true,
+			OptimisticRoots: map[[32]byte]bool{subBlkRoot: true},
+			Slot:            &currentSlot,
+			Root:            headRoot[:],
+			Ancestors:       map[[32]byte][32]byte{headRoot: subBlkRoot},
+		}
 		s := &Server{
 			Stater: &testutil.MockStater{StatesBySlot: map[primitives.Slot]state.BeaconState{
 				params.BeaconConfig().SlotsPerEpoch*3 - 1: st,
@@ -346,6 +378,8 @@ func TestAttestationRewards(t *testing.T) {
 			TimeFetcher:           mockChainService,
 			OptimisticModeFetcher: mockChainService,
 			FinalizationFetcher:   mockChainService,
+			HeadFetcher:           mockChainService,
+			ForkchoiceFetcher:     mockChainService,
 		}
 
 		url := "http://only.the.epoch.number.at.the.end.is.important/1"
@@ -365,6 +399,81 @@ func TestAttestationRewards(t *testing.T) {
 		assert.Equal(t, "0", resp.Data.TotalRewards[0].Head)
 		assert.Equal(t, "-496943261", resp.Data.TotalRewards[0].Source)
 		assert.Equal(t, "-922894628", resp.Data.TotalRewards[0].Target)
+	})
+	t.Run("zero state root (state at skipped slot) uses ancestor root", func(t *testing.T) {
+		// A state replayed past the last block of the epoch carries a header
+		// whose state root is zero; its hash tree root is not a stored block
+		// root, so looking it up used to fail with "could not find block in
+		// DB" (500). The root must come from fork choice instead. (upstream #17112)
+		st := st.Copy()
+		header := st.LatestBlockHeader()
+		header.StateRoot = params.BeaconConfig().ZeroHash[:]
+		require.NoError(t, st.SetLatestBlockHeader(header))
+		headerRoot, err := header.HashTreeRoot()
+		require.NoError(t, err)
+		ancestorRoot := [32]byte{'a'}
+		require.NotEqual(t, ancestorRoot, headerRoot)
+
+		chain := &mock.ChainService{
+			Optimistic:      true,
+			OptimisticRoots: map[[32]byte]bool{ancestorRoot: true},
+			Slot:            &currentSlot,
+			Root:            headRoot[:],
+			Ancestors:       map[[32]byte][32]byte{headRoot: ancestorRoot},
+		}
+		server := &Server{
+			Stater: &testutil.MockStater{StatesBySlot: map[primitives.Slot]state.BeaconState{
+				params.BeaconConfig().SlotsPerEpoch*3 - 1: st,
+			}},
+			TimeFetcher:           chain,
+			OptimisticModeFetcher: chain,
+			FinalizationFetcher:   chain,
+			HeadFetcher:           chain,
+			ForkchoiceFetcher:     chain,
+		}
+
+		url := "http://only.the.epoch.number.at.the.end.is.important/1"
+		request := httptest.NewRequest("POST", url, nil)
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+
+		server.AttestationRewards(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		resp := &AttestationRewardsResponse{}
+		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), resp))
+		assert.Equal(t, true, resp.ExecutionOptimistic)
+		assert.Equal(t, ancestorRoot, chain.OptimisticCheckRootReceived)
+	})
+	t.Run("node not optimistic skips per-root lookup", func(t *testing.T) {
+		chain := &mock.ChainService{
+			Optimistic:      false,
+			OptimisticRoots: map[[32]byte]bool{attBlkRoot: true},
+			Slot:            &currentSlot,
+			Root:            headRoot[:],
+			Ancestors:       map[[32]byte][32]byte{headRoot: attBlkRoot},
+		}
+		server := &Server{
+			Stater: &testutil.MockStater{StatesBySlot: map[primitives.Slot]state.BeaconState{
+				params.BeaconConfig().SlotsPerEpoch*3 - 1: st,
+			}},
+			TimeFetcher:           chain,
+			OptimisticModeFetcher: chain,
+			FinalizationFetcher:   chain,
+			HeadFetcher:           chain,
+			ForkchoiceFetcher:     chain,
+		}
+
+		url := "http://only.the.epoch.number.at.the.end.is.important/1"
+		request := httptest.NewRequest("POST", url, nil)
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+
+		server.AttestationRewards(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		resp := &AttestationRewardsResponse{}
+		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), resp))
+		assert.Equal(t, false, resp.ExecutionOptimistic)
+		assert.Equal(t, [32]byte{}, chain.OptimisticCheckRootReceived)
 	})
 	t.Run("invalid validator index/pubkey", func(t *testing.T) {
 		url := "http://only.the.epoch.number.at.the.end.is.important/1"
@@ -449,6 +558,19 @@ func TestAttestationRewards(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, e.Code)
 		assert.Equal(t, "Attestation rewards are available after two epoch transitions to ensure all attestations have a chance of inclusion", e.Message)
 	})
+	t.Run("overflow future epoch", func(t *testing.T) {
+		url := "http://only.the.epoch.number.at.the.end.is.important/18446744073709551615"
+		request := httptest.NewRequest("POST", url, nil)
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+
+		s.AttestationRewards(writer, request)
+		assert.Equal(t, http.StatusNotFound, writer.Code)
+		e := &http2.DefaultErrorJson{}
+		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), e))
+		assert.Equal(t, http.StatusNotFound, e.Code)
+		assert.Equal(t, "Attestation rewards are available after two epoch transitions to ensure all attestations have a chance of inclusion", e.Message)
+	})
 }
 
 func TestSyncCommiteeRewards(t *testing.T) {
@@ -503,15 +625,18 @@ func TestSyncCommiteeRewards(t *testing.T) {
 	// These validators have to sign the message.
 	sigs := make([][]byte, fieldparams.SyncCommitteeLength-2)
 	for i := range sigs {
-		sigs[i] = secretKeys[i].Sign(r[:]).Marshal()
+		lsig7, err := secretKeys[i].Sign(r[:])
+		require.NoError(t, err)
+		sigs[i] = lsig7.Marshal()
 	}
 	b.Block.Body.SyncAggregate = &qrysmpb.SyncAggregate{SyncCommitteeBits: scBits, SyncCommitteeSignatures: sigs}
 	sbb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
+	scBlkRoot, err := sbb.Block().HashTreeRoot()
 	require.NoError(t, err)
 
 	currentSlot := params.BeaconConfig().SlotsPerEpoch
-	mockChainService := &mock.ChainService{Optimistic: true, Slot: &currentSlot}
+	mockChainService := &mock.ChainService{OptimisticRoots: map[[32]byte]bool{scBlkRoot: true}, Slot: &currentSlot}
 	s := &Server{
 		Blocker: &testutil.MockBlocker{SlotBlockMap: map[primitives.Slot]interfaces.ReadOnlySignedBeaconBlock{
 			128: sbb,

@@ -32,7 +32,7 @@ message ExecutionPayloadBodyV1 {
 
 message ExecutionPayloadZond {
 	bytes parent_hash           = 1 [(theqrl.qrl.ext.ssz_size) = "32"];
-	bytes fee_recipient         = 2 [(theqrl.qrl.ext.ssz_size) = "20"];
+	bytes fee_recipient         = 2 [(theqrl.qrl.ext.ssz_size) = "64"];
 	bytes state_root            = 3 [(theqrl.qrl.ext.ssz_size) = "32"];
 	bytes receipts_root         = 4 [(theqrl.qrl.ext.ssz_size) = "32"];
 	bytes logs_bloom            = 5 [(theqrl.qrl.ext.ssz_size) = "logs_bloom.size"];
@@ -56,7 +56,7 @@ message ExecutionPayloadZondWithValue {
 
 message ExecutionPayloadHeaderZond {
 	bytes parent_hash       = 1 [(theqrl.qrl.ext.ssz_size) = "32"];
-	bytes fee_recipient     = 2 [(theqrl.qrl.ext.ssz_size) = "20"];
+	bytes fee_recipient     = 2 [(theqrl.qrl.ext.ssz_size) = "64"];
 	bytes state_root        = 3 [(theqrl.qrl.ext.ssz_size) = "32"];
 	bytes receipts_root     = 4 [(theqrl.qrl.ext.ssz_size) = "32"];
 	bytes logs_bloom        = 5 [(theqrl.qrl.ext.ssz_size) = "logs_bloom.size"];
@@ -75,7 +75,7 @@ message ExecutionPayloadHeaderZond {
 message PayloadAttributesV2 {
 	uint64 timestamp                = 1;
 	bytes prev_randao               = 2 [(theqrl.qrl.ext.ssz_size) = "32"];
-	bytes suggested_fee_recipient   = 3 [(theqrl.qrl.ext.ssz_size) = "20"];
+	bytes suggested_fee_recipient   = 3 [(theqrl.qrl.ext.ssz_size) = "64"];
 	repeated Withdrawal withdrawals = 4 [(theqrl.qrl.ext.ssz_max) = "withdrawal.size"];
 }
 
@@ -108,7 +108,7 @@ message Withdrawal {
 	uint64 validator_index = 2 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 
 	// The execution address receiving the funds
-	bytes address = 3 [(theqrl.qrl.ext.ssz_size) = "20"];
+	bytes address = 3 [(theqrl.qrl.ext.ssz_size) = "64"];
 
 	// The withdrawn amount in Shor
 	uint64 amount = 4;

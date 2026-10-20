@@ -183,7 +183,7 @@ func (BeaconBlock) Copy() (interfaces.ReadOnlyBeaconBlock, error) {
 
 type BeaconBlockBody struct{}
 
-func (BeaconBlockBody) RandaoReveal() [field_params.MLDSA87SignatureLength]byte {
+func (BeaconBlockBody) RandaoReveal() [field_params.RandaoRevealLength]byte {
 	panic("implement me")
 }
 

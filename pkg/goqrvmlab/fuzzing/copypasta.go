@@ -48,42 +48,65 @@ func (ga *GenesisAlloc) UnmarshalJSON(data []byte) error {
 //go:generate gencodec -type GenesisAccount -field-override genesisAccountMarshaling -out gen_genesis_account.go
 
 // GenesisAccount is an account in the state of the genesis block.
-// Copied from go-ethereum, with the mod of making Storage mandatory
+// Copied from go-ethereum, with the mod of making Storage mandatory.
+// Post-48B-address migration the storage value width is 64 bytes while
+// the key stays 32 bytes (Keccak-256 slot path).
 type GenesisAccount struct {
 	Code []byte `json:"code"`
 	// N.B: parity demands storage even if it's empty
-	Storage map[common.Hash]common.Hash `json:"storage"`
-	Balance *big.Int                    `json:"balance" gencodec:"required"`
-	Nonce   uint64                      `json:"nonce"`
-	Seed    []byte                      `json:"seed,omitempty"` // for tests
+	Storage map[common.Hash]common.StorageValue64 `json:"storage"`
+	Balance *big.Int                              `json:"balance" gencodec:"required"`
+	Nonce   uint64                                `json:"nonce"`
+	Seed    []byte                                `json:"seed,omitempty"` // for tests
 }
 
 type genesisAccountMarshaling struct {
 	Code       hexutil.Bytes
 	Balance    *math.HexOrDecimal256
 	Nonce      math.HexOrDecimal64
-	Storage    map[storageJSON]storageJSON
+	Storage    map[storageKeyJSON]storageValue64JSON
 	PrivateKey hexutil.Bytes
 }
 
-// storageJSON represents a 256 bit byte array, but allows less than 256 bits when
-// unmarshaling from hex.
-type storageJSON common.Hash
+// storageKeyJSON represents a 256 bit byte array (storage slot key),
+// but allows less than 256 bits when unmarshaling from hex.
+type storageKeyJSON common.Hash
 
-func (h *storageJSON) UnmarshalText(text []byte) error {
+func (h *storageKeyJSON) UnmarshalText(text []byte) error {
 	text = bytes.TrimPrefix(text, []byte("0x"))
 	if len(text) > 64 {
-		return fmt.Errorf("too many hex characters in storage key/value %q", text)
+		return fmt.Errorf("too many hex characters in storage key %q", text)
 	}
 	offset := len(h) - len(text)/2 // pad on the left
 	if _, err := hex.Decode(h[offset:], text); err != nil {
 		fmt.Println(err)
-		return fmt.Errorf("invalid hex storage key/value %q", text)
+		return fmt.Errorf("invalid hex storage key %q", text)
 	}
 	return nil
 }
 
-func (h storageJSON) MarshalText() ([]byte, error) {
+func (h storageKeyJSON) MarshalText() ([]byte, error) {
+	return hexutil.Bytes(h[:]).MarshalText()
+}
+
+// storageValue64JSON represents a 512 bit byte array (storage slot value),
+// but allows less than 512 bits when unmarshaling from hex.
+type storageValue64JSON common.StorageValue64
+
+func (h *storageValue64JSON) UnmarshalText(text []byte) error {
+	text = bytes.TrimPrefix(text, []byte("0x"))
+	if len(text) > 128 {
+		return fmt.Errorf("too many hex characters in storage value %q", text)
+	}
+	offset := len(h) - len(text)/2 // pad on the left
+	if _, err := hex.Decode(h[offset:], text); err != nil {
+		fmt.Println(err)
+		return fmt.Errorf("invalid hex storage value %q", text)
+	}
+	return nil
+}
+
+func (h storageValue64JSON) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(h[:]).MarshalText()
 }
 

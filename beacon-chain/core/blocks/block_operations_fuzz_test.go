@@ -11,6 +11,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -152,7 +153,7 @@ func TestFuzzProcessRandaoNoVerify_10000(t *testing.T) {
 		fuzzer.Fuzz(blockBody)
 		s, err := state_native.InitializeFromProtoUnsafeZond(state)
 		require.NoError(t, err)
-		r, err := ProcessRandaoNoVerify(s, blockBody.RandaoReveal)
+		r, err := ProcessRandaoNoVerify(context.Background(), s, bytesutil.ToBytes32(blockBody.RandaoReveal))
 		if err != nil && r != nil {
 			t.Fatalf("return value should be nil on err. found: %v on error: %v for state: %v and block: %v", r, err, state, blockBody)
 		}

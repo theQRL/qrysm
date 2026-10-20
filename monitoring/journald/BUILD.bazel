@@ -18,7 +18,9 @@ go_library(
             "@com_github_coreos_go_systemd//journal",
             "@com_github_sirupsen_logrus//:logrus",
         ],
-        "//conditions:default": [],
+        "//conditions:default": [
+            "@com_github_sirupsen_logrus//:logrus",
+        ],
     }),
 )
 

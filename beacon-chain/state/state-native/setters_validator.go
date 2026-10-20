@@ -5,6 +5,8 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
 	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
 	"github.com/theQRL/qrysm/config/features"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
 	consensus_types "github.com/theQRL/qrysm/consensus-types"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
@@ -13,7 +15,20 @@ import (
 
 // SetValidators for the beacon state. Updates the entire
 // to a new value by overwriting the previous one.
+// normalizeRandaoCommitment gives a validator without a RANDAO commitment the
+// zero commitment, so that the field always has its fixed SSZ size. A zero
+// commitment has no known pre-image: such a validator never proposes a valid
+// block, which matches how process_deposit treats an empty commitment.
+func normalizeRandaoCommitment(v *qrysmpb.Validator) {
+	if v != nil && len(v.RandaoCommitment) == 0 {
+		v.RandaoCommitment = make([]byte, fieldparams.RandaoCommitmentLength)
+	}
+}
+
 func (b *BeaconState) SetValidators(val []*qrysmpb.Validator) error {
+	for _, v := range val {
+		normalizeRandaoCommitment(v)
+	}
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -30,71 +45,45 @@ func (b *BeaconState) SetValidators(val []*qrysmpb.Validator) error {
 
 	b.markFieldAsDirty(types.Validators)
 	b.rebuildTrie[types.Validators] = true
+	if b.valMapHandler != nil {
+		b.valMapHandler.MinusRef()
+	}
 	b.valMapHandler = stateutil.NewValMapHandler(val)
 	return nil
 }
 
 // ApplyToEveryValidator applies the provided callback function to each validator in the
-// validator registry.
+// validator registry. The callback receives a copy and may call other state methods.
+// Successful updates remain applied if a later callback fails.
 func (b *BeaconState) ApplyToEveryValidator(f func(idx int, val *qrysmpb.Validator) (bool, *qrysmpb.Validator, error)) error {
-	var changedVals []uint64
-	if features.Get().EnableExperimentalState {
-		l := b.validatorsMultiValue.Len(b)
-		for i := range l {
-			v, err := b.validatorsMultiValue.At(b, uint64(i))
-			if err != nil {
-				return err
-			}
-			changed, newVal, err := f(i, v)
-			if err != nil {
-				return err
-			}
-			if changed {
-				changedVals = append(changedVals, uint64(i))
-				if err = b.validatorsMultiValue.UpdateAt(b, uint64(i), newVal); err != nil {
-					return errors.Wrapf(err, "could not update validator at index %d", i)
-				}
+	for i := range b.NumValidators() {
+		val, err := b.ValidatorAtIndex(primitives.ValidatorIndex(i))
+		if err != nil {
+			return err
+		}
+		changed, newVal, err := f(i, val)
+		if err != nil {
+			return err
+		}
+		if changed {
+			// Publish the value and its dirty index together, respecting any
+			// state copies made while the callback was running.
+			if err := b.UpdateValidatorAtIndex(primitives.ValidatorIndex(i), newVal); err != nil {
+				return errors.Wrapf(err, "could not update validator at index %d", i)
 			}
 		}
-	} else {
-		b.lock.Lock()
-
-		v := b.validators
-		if ref := b.sharedFieldReferences[types.Validators]; ref.Refs() > 1 {
-			v = b.validatorsReferences()
-			ref.MinusRef()
-			b.sharedFieldReferences[types.Validators] = stateutil.NewRef(1)
-		}
-
-		b.lock.Unlock()
-
-		for i, val := range v {
-			changed, newVal, err := f(i, val)
-			if err != nil {
-				return err
-			}
-			if changed {
-				changedVals = append(changedVals, uint64(i))
-				v[i] = newVal
-			}
-		}
-
-		b.lock.Lock()
-		b.validators = v
-		b.lock.Unlock()
 	}
 
-	b.lock.Lock()
-	defer b.lock.Unlock()
-
-	b.markFieldAsDirty(types.Validators)
-	b.addDirtyIndices(types.Validators, changedVals)
 	return nil
 }
 
 // UpdateValidatorAtIndex for the beacon state. Updates the validator
 // at a specific index to a new value.
 func (b *BeaconState) UpdateValidatorAtIndex(idx primitives.ValidatorIndex, val *qrysmpb.Validator) error {
+	normalizeRandaoCommitment(val)
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	if features.Get().EnableExperimentalState {
 		if err := b.validatorsMultiValue.UpdateAt(b, uint64(idx), val); err != nil {
 			return errors.Wrap(err, "could not update validator")
@@ -104,8 +93,6 @@ func (b *BeaconState) UpdateValidatorAtIndex(idx primitives.ValidatorIndex, val 
 			return errors.Wrapf(consensus_types.ErrOutOfBounds, "validator index %d does not exist", idx)
 		}
 
-		b.lock.Lock()
-
 		v := b.validators
 		if ref := b.sharedFieldReferences[types.Validators]; ref.Refs() > 1 {
 			v = b.validatorsReferences()
@@ -114,12 +101,7 @@ func (b *BeaconState) UpdateValidatorAtIndex(idx primitives.ValidatorIndex, val 
 		}
 		v[idx] = val
 		b.validators = v
-
-		b.lock.Unlock()
 	}
-
-	b.lock.Lock()
-	defer b.lock.Unlock()
 
 	b.markFieldAsDirty(types.Validators)
 	b.addDirtyIndices(types.Validators, []uint64{uint64(idx)})
@@ -151,6 +133,9 @@ func (b *BeaconState) SetBalances(val []uint64) error {
 // UpdateBalancesAtIndex for the beacon state. This method updates the balance
 // at a specific index to a new value.
 func (b *BeaconState) UpdateBalancesAtIndex(idx primitives.ValidatorIndex, val uint64) error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	if features.Get().EnableExperimentalState {
 		if err := b.balancesMultiValue.UpdateAt(b, uint64(idx), val); err != nil {
 			return errors.Wrap(err, "could not update balances")
@@ -160,8 +145,6 @@ func (b *BeaconState) UpdateBalancesAtIndex(idx primitives.ValidatorIndex, val u
 			return errors.Wrapf(consensus_types.ErrOutOfBounds, "balance index %d does not exist", idx)
 		}
 
-		b.lock.Lock()
-
 		bals := b.balances
 		if b.sharedFieldReferences[types.Balances].Refs() > 1 {
 			bals = b.balancesVal()
@@ -170,12 +153,7 @@ func (b *BeaconState) UpdateBalancesAtIndex(idx primitives.ValidatorIndex, val u
 		}
 		bals[idx] = val
 		b.balances = bals
-
-		b.lock.Unlock()
 	}
-
-	b.lock.Lock()
-	defer b.lock.Unlock()
 
 	b.markFieldAsDirty(types.Balances)
 	b.addDirtyIndices(types.Balances, []uint64{uint64(idx)})
@@ -199,11 +177,12 @@ func (b *BeaconState) SetSlashings(val []uint64) error {
 // UpdateSlashingsAtIndex for the beacon state. Updates the slashings
 // at a specific index to a new value.
 func (b *BeaconState) UpdateSlashingsAtIndex(idx, val uint64) error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	if uint64(len(b.slashings)) <= idx {
 		return errors.Errorf("invalid index provided %d", idx)
 	}
-	b.lock.Lock()
-	defer b.lock.Unlock()
 
 	s := b.slashings
 	if b.sharedFieldReferences[types.Slashings].Refs() > 1 {
@@ -223,13 +202,18 @@ func (b *BeaconState) UpdateSlashingsAtIndex(idx, val uint64) error {
 // AppendValidator for the beacon state. Appends the new value
 // to the end of list.
 func (b *BeaconState) AppendValidator(val *qrysmpb.Validator) error {
+	if val == nil {
+		return errors.New("cannot append nil validator")
+	}
+	normalizeRandaoCommitment(val)
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	var valIdx primitives.ValidatorIndex
 	if features.Get().EnableExperimentalState {
 		b.validatorsMultiValue.Append(b, val)
 		valIdx = primitives.ValidatorIndex(b.validatorsMultiValue.Len(b) - 1)
 	} else {
-		b.lock.Lock()
-
 		vals := b.validators
 		if b.sharedFieldReferences[types.Validators].Refs() > 1 {
 			vals = b.validatorsReferences()
@@ -239,13 +223,13 @@ func (b *BeaconState) AppendValidator(val *qrysmpb.Validator) error {
 
 		b.validators = append(vals, val)
 		valIdx = primitives.ValidatorIndex(len(b.validators) - 1)
-
-		b.lock.Unlock()
 	}
 
-	b.lock.Lock()
-	defer b.lock.Unlock()
-
+	if b.valMapHandler.Refs() > 1 {
+		m := b.valMapHandler.Copy()
+		b.valMapHandler.MinusRef()
+		b.valMapHandler = m
+	}
 	b.valMapHandler.Set(bytesutil.ToBytes2592(val.PublicKey), valIdx)
 	b.markFieldAsDirty(types.Validators)
 	b.addDirtyIndices(types.Validators, []uint64{uint64(valIdx)})
@@ -255,16 +239,17 @@ func (b *BeaconState) AppendValidator(val *qrysmpb.Validator) error {
 // AppendBalance for the beacon state. Appends the new value
 // to the end of list.
 func (b *BeaconState) AppendBalance(bal uint64) error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	var balIdx uint64
 	if features.Get().EnableExperimentalState {
 		b.balancesMultiValue.Append(b, bal)
 		balIdx = uint64(b.balancesMultiValue.Len(b) - 1)
 	} else {
-		b.lock.Lock()
-
 		bals := b.balances
 		if b.sharedFieldReferences[types.Balances].Refs() > 1 {
-			bals = make([]uint64, 0, len(b.balances)+1)
+			bals = make([]uint64, 0, len(b.balances)+int(params.BeaconConfig().MaxDeposits))
 			bals = append(bals, b.balances...)
 			b.sharedFieldReferences[types.Balances].MinusRef()
 			b.sharedFieldReferences[types.Balances] = stateutil.NewRef(1)
@@ -272,12 +257,7 @@ func (b *BeaconState) AppendBalance(bal uint64) error {
 
 		b.balances = append(bals, bal)
 		balIdx = uint64(len(b.balances) - 1)
-
-		b.lock.Unlock()
 	}
-
-	b.lock.Lock()
-	defer b.lock.Unlock()
 
 	b.markFieldAsDirty(types.Balances)
 	b.addDirtyIndices(types.Balances, []uint64{balIdx})
@@ -286,25 +266,21 @@ func (b *BeaconState) AppendBalance(bal uint64) error {
 
 // AppendInactivityScore for the beacon state.
 func (b *BeaconState) AppendInactivityScore(s uint64) error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	if features.Get().EnableExperimentalState {
 		b.inactivityScoresMultiValue.Append(b, s)
 	} else {
-		b.lock.Lock()
-
 		scores := b.inactivityScores
 		if b.sharedFieldReferences[types.InactivityScores].Refs() > 1 {
-			scores = make([]uint64, 0, len(b.inactivityScores)+1)
+			scores = make([]uint64, 0, len(b.inactivityScores)+int(params.BeaconConfig().MaxDeposits))
 			scores = append(scores, b.inactivityScores...)
 			b.sharedFieldReferences[types.InactivityScores].MinusRef()
 			b.sharedFieldReferences[types.InactivityScores] = stateutil.NewRef(1)
 		}
 		b.inactivityScores = append(scores, s)
-
-		b.lock.Unlock()
 	}
-
-	b.lock.Lock()
-	defer b.lock.Unlock()
 
 	b.markFieldAsDirty(types.InactivityScores)
 	return nil

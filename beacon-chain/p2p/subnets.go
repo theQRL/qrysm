@@ -2,15 +2,20 @@ package p2p
 
 import (
 	"context"
+	"math"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/theQRL/go-qrl/p2p/qnr"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/consensus-types/wrapper"
 	"go.opencensus.io/trace"
 
@@ -24,71 +29,239 @@ var syncCommsSubnetCount = params.BeaconConfig().SyncCommitteeSubnetCount
 var attSubnetQnrKey = params.BeaconNetworkConfig().AttSubnetKey
 var syncCommsSubnetQnrKey = params.BeaconNetworkConfig().SyncCommsSubnetKey
 
+// attnetsBitvectorBits is the width of the `attnets` bitvector carried in QNRs
+// and in MetaData (bitfield.Bitvector64, 8 bytes). It is deliberately fixed at
+// 64 bits rather than derived from AttestationSubnetCount so that raising the
+// subnet count later (up to 64) does not change the wire encoding: only the
+// first AttestationSubnetCount bits are meaningful, and any higher bits in a
+// peer's record are ignored rather than treated as malformed.
+const attnetsBitvectorBits = 64
+
 // The value used with the subnet, inorder
 // to create an appropriate key to retrieve
 // the relevant lock. This is used to differentiate
 // sync subnets from attestation subnets. This is deliberately
-// chosen as more than 64(attestation subnet count).
+// chosen as more than attnetsBitvectorBits, the maximum
+// attestation subnet count.
 const syncLockerVal = 100
 
+// nodeFilter returns a function that filters nodes based on the subnet topic and subnet index.
+func (s *Service) nodeFilter(topic string, index uint64) (func(node *qnode.Node) bool, error) {
+	switch {
+	case strings.Contains(topic, GossipAttestationMessage):
+		return s.filterPeerForAttSubnet(index), nil
+	case strings.Contains(topic, GossipSyncCommitteeMessage):
+		return s.filterPeerForSyncSubnet(index), nil
+	default:
+		return nil, errors.Errorf("no subnet exists for provided topic: %s", topic)
+	}
+}
+
+// searchForPeers performs a network search for peers subscribed to a particular subnet.
+// It exits as soon as one of these conditions is met:
+//   - It looped through `batchSize` nodes.
+//   - It found `peersToFindCount` peers corresponding to the `filter` criteria.
+//   - Iterator is exhausted.
+//   - The context is done. The caller is responsible for closing the iterator
+//     when the context ends, since `iterator.Next` can block indefinitely and
+//     only `iterator.Close` unblocks it; the nodes found so far are returned.
+func searchForPeers(
+	ctx context.Context,
+	iterator qnode.Iterator,
+	batchSize int,
+	peersToFindCount uint,
+	filter func(node *qnode.Node) bool,
+) []*qnode.Node {
+	nodeFromNodeID := make(map[qnode.ID]*qnode.Node, batchSize)
+	for i := 0; i < batchSize && uint(len(nodeFromNodeID)) < peersToFindCount && iterator.Next(); i++ {
+		if ctx.Err() != nil {
+			break
+		}
+		node := iterator.Node()
+
+		// Dedup first: keep the previously stored node when its sequence
+		// number is at least as high as the new one. Doing this before the
+		// filter ensures that when a node ID arrives multiple times during
+		// iteration, we always evaluate the freshest record.
+		prevNode, ok := nodeFromNodeID[node.ID()]
+		if ok && prevNode.Seq() >= node.Seq() {
+			continue
+		}
+
+		// Filter out nodes that do not meet the criteria. If a newer ENR
+		// for the same node ID fails the filter (e.g. it dropped the
+		// requested subnet), discard the stale lower-seq entry too — the
+		// peer is no longer a valid match. (upstream PR #15578)
+		if !filter(node) {
+			if ok {
+				delete(nodeFromNodeID, prevNode.ID())
+			}
+			continue
+		}
+
+		nodeFromNodeID[node.ID()] = node
+	}
+
+	// Convert the map to a slice.
+	nodes := make([]*qnode.Node, 0, len(nodeFromNodeID))
+	for _, node := range nodeFromNodeID {
+		nodes = append(nodes, node)
+	}
+
+	return nodes
+}
+
+// dialPeer dials a peer in a separate goroutine.
+func (s *Service) dialPeer(ctx context.Context, wg *sync.WaitGroup, node *qnode.Node) {
+	info, _, err := convertToAddrInfo(node)
+	if err != nil {
+		return
+	}
+
+	if info == nil {
+		return
+	}
+
+	wg.Add(1)
+	go func() {
+		if err := s.connectWithPeer(ctx, *info); err != nil {
+			log.WithError(err).Tracef("Could not connect with peer %s", info.String())
+		}
+
+		wg.Done()
+	}()
+}
+
 // FindPeersWithSubnet performs a network search for peers
-// subscribed to a particular subnet. Then we try to connect
-// with those peers. This method will block until the required amount of
-// peers are found, the method only exits in the event of context timeouts.
-func (s *Service) FindPeersWithSubnet(ctx context.Context, topic string,
-	index uint64, threshold int) (bool, error) {
+// subscribed to a particular subnet. Then it tries to connect
+// with those peers. This method will block until either:
+// - The required amount of peers are found, the method returns true.
+// - The context is canceled, the method returns false.
+// On some edge cases, this method may hang indefinitely while peers
+// are actually found. In such a case, the user should cancel the context
+// and re-run the method again.
+func (s *Service) FindPeersWithSubnet(
+	ctx context.Context,
+	topic string,
+	index uint64,
+	threshold int,
+) (bool, error) {
+	const minLogInterval = 1 * time.Minute
+
 	ctx, span := trace.StartSpan(ctx, "p2p.FindPeersWithSubnet")
 	defer span.End()
 
 	span.AddAttributes(trace.Int64Attribute("index", int64(index))) // lint:ignore uintcast -- It's safe to do this for tracing.
 
 	if s.dv5Listener == nil {
-		// return if discovery isn't set
+		// Return if discovery isn't set.
 		return false, nil
 	}
 
 	topic += s.Encoding().ProtocolSuffix()
+
+	// `iterator.Next` can block indefinitely (discv5 slows down and retries
+	// when its table is small or empty) and only `iterator.Close` unblocks
+	// it, so close the iterator as soon as the search context ends. The
+	// context is also cancelled on return so that the goroutine never
+	// outlives the search.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	iterator := s.dv5Listener.RandomNodes()
-	defer iterator.Close()
-	switch {
-	case strings.Contains(topic, GossipAttestationMessage):
-		iterator = filterNodes(ctx, iterator, s.filterPeerForAttSubnet(index))
-	case strings.Contains(topic, GossipSyncCommitteeMessage):
-		iterator = filterNodes(ctx, iterator, s.filterPeerForSyncSubnet(index))
-	default:
-		return false, errors.New("no subnet exists for provided topic")
+	go func() {
+		<-ctx.Done()
+		iterator.Close()
+	}()
+
+	filter, err := s.nodeFilter(topic, index)
+	if err != nil {
+		return false, errors.Wrap(err, "node filter")
 	}
 
-	currNum := len(s.pubsub.ListPeers(topic))
+	peersSummary := func(topic string, threshold int) (int, int) {
+		// Retrieve how many peers we have for this topic.
+		peerCountForTopic := len(s.pubsub.ListPeers(topic))
+
+		// Compute how many peers we are missing to reach the threshold.
+		missingPeerCountForTopic := max(0, threshold-peerCountForTopic)
+
+		return peerCountForTopic, missingPeerCountForTopic
+	}
+
+	// Compute how many peers we are missing to reach the threshold.
+	peerCountForTopic, missingPeerCountForTopic := peersSummary(topic, threshold)
+
+	// Exit early if we have enough peers.
+	if missingPeerCountForTopic == 0 {
+		return true, nil
+	}
+
+	logEntry := log.WithFields(logrus.Fields{
+		"topic":           topic,
+		"targetPeerCount": threshold,
+	})
+
+	logEntry.WithField("currentPeerCount", peerCountForTopic).Debug("Searching for new peers for a subnet - start")
+
+	lastLogTime := time.Now()
+
 	wg := new(sync.WaitGroup)
 	for {
-		if currNum >= threshold {
+		// If the context is done, we can exit the loop. This is the unhappy path.
+		if err := ctx.Err(); err != nil {
+			return false, errors.Errorf(
+				"unable to find requisite number of peers for topic %s - only %d out of %d peers available after searching",
+				topic, peerCountForTopic, threshold,
+			)
+		}
+
+		// Search for new peers in the network.
+		nodes := searchForPeers(ctx, iterator, batchSize, uint(missingPeerCountForTopic), filter)
+
+		// Restrict dials if limit is applied.
+		maxConcurrentDials := math.MaxInt
+		if flags.MaxDialIsActive() {
+			maxConcurrentDials = flags.Get().MaxConcurrentDials
+		}
+
+		// Dial the peers in batches. Dials run under the service context, not
+		// the search context: the search budget is typically a couple of
+		// seconds and may already be spent by the time a peer is found, and a
+		// dial cut short by that budget would fail for every candidate and
+		// get each of them downscored. Each dial is still bounded by
+		// maxDialTimeout in connectWithPeer.
+		for start := 0; start < len(nodes); start += maxConcurrentDials {
+			stop := min(start+maxConcurrentDials, len(nodes))
+			for _, node := range nodes[start:stop] {
+				s.dialPeer(s.ctx, wg, node)
+			}
+
+			// Wait for all dials to be completed.
+			wg.Wait()
+		}
+
+		peerCountForTopic, missingPeerCountForTopic = peersSummary(topic, threshold)
+
+		// If we have enough peers, we can exit the loop. This is the happy path.
+		if missingPeerCountForTopic == 0 {
 			break
 		}
-		if err := ctx.Err(); err != nil {
-			return false, errors.Errorf("unable to find requisite number of peers for topic %s - "+
-				"only %d out of %d peers were able to be found", topic, currNum, threshold)
+
+		if time.Since(lastLogTime) > minLogInterval {
+			lastLogTime = time.Now()
+			logEntry.WithField("currentPeerCount", peerCountForTopic).Debug("Searching for new peers for a subnet - continue")
 		}
-		nodes := qnode.ReadNodes(iterator, int(params.BeaconNetworkConfig().MinimumPeersInSubnetSearch))
-		for _, node := range nodes {
-			info, _, err := convertToAddrInfo(node)
-			if err != nil {
-				continue
-			}
-			wg.Go(func() {
-				if err := s.connectWithPeer(ctx, *info); err != nil {
-					log.WithError(err).Debugf("Could not connect with peer %s", info.String())
-				}
-			})
-		}
-		// Wait for all dials to be completed.
-		wg.Wait()
-		currNum = len(s.pubsub.ListPeers(topic))
 	}
+
+	logEntry.WithField("currentPeerCount", threshold).Debug("Searching for new peers for a subnet - success")
 	return true, nil
 }
 
 // returns a method with filters peers specifically for a particular attestation subnet.
+// Errors from attSubnets are logged at Debug level so a single peer with a
+// malformed subnet record is skipped (not silently dropped) without aborting
+// the broader subnet search — qrysm's filter signature is bool, but the
+// diagnostic intent matches upstream PR #15815.
 func (s *Service) filterPeerForAttSubnet(index uint64) func(node *qnode.Node) bool {
 	return func(node *qnode.Node) bool {
 		if !s.filterPeer(node) {
@@ -96,6 +269,10 @@ func (s *Service) filterPeerForAttSubnet(index uint64) func(node *qnode.Node) bo
 		}
 		subnets, err := attSubnets(node.Record())
 		if err != nil {
+			log.WithError(err).WithFields(logrus.Fields{
+				"nodeID":      node.ID(),
+				"topicFormat": GossipAttestationMessage,
+			}).Debug("Could not get needed subnets from peer")
 			return false
 		}
 		return slices.Contains(subnets, index)
@@ -103,6 +280,8 @@ func (s *Service) filterPeerForAttSubnet(index uint64) func(node *qnode.Node) bo
 }
 
 // returns a method with filters peers specifically for a particular sync subnet.
+// See filterPeerForAttSubnet for rationale on the error-handling pattern.
+// (upstream PR #15815)
 func (s *Service) filterPeerForSyncSubnet(index uint64) func(node *qnode.Node) bool {
 	return func(node *qnode.Node) bool {
 		if !s.filterPeer(node) {
@@ -110,6 +289,10 @@ func (s *Service) filterPeerForSyncSubnet(index uint64) func(node *qnode.Node) b
 		}
 		subnets, err := syncSubnets(node.Record())
 		if err != nil {
+			log.WithError(err).WithFields(logrus.Fields{
+				"nodeID":      node.ID(),
+				"topicFormat": GossipSyncCommitteeMessage,
+			}).Debug("Could not get needed subnets from peer")
 			return false
 		}
 		return slices.Contains(subnets, index)
@@ -126,20 +309,87 @@ func (s *Service) hasPeerWithSubnet(topic string) bool {
 	return len(s.pubsub.ListPeers(topic+s.Encoding().ProtocolSuffix())) >= int(minPeers) // lint:ignore uintcast -- Min peers can be safely cast to int.
 }
 
+func advertisedSubnetBitfields(currEpoch primitives.Epoch) (bitfield.Bitvector64, bitfield.Bitvector4) {
+	if flags.Get().SubscribeToAllSubnets {
+		return allAttestationSubnetsBitfield(), allSyncCommitteeSubnetsBitfield()
+	}
+
+	bitVAtt := bitfield.NewBitvector64()
+	committees := cache.SubnetIDs.GetAllSubnets()
+	for _, idx := range committees {
+		bitVAtt.SetBitAt(idx, true)
+	}
+
+	bitVSync := bitfield.Bitvector4{byte(0x00)}
+	committees = cache.SyncSubnetIDs.GetAllSubnets(currEpoch)
+	for _, idx := range committees {
+		bitVSync.SetBitAt(idx, true)
+	}
+
+	return bitVAtt, bitVSync
+}
+
+func allAttestationSubnetsBitfield() bitfield.Bitvector64 {
+	bitV := bitfield.NewBitvector64()
+	for idx := uint64(0); idx < attestationSubnetCount; idx++ {
+		bitV.SetBitAt(idx, true)
+	}
+	return bitV
+}
+
+func allSyncCommitteeSubnetsBitfield() bitfield.Bitvector4 {
+	bitV := bitfield.Bitvector4{byte(0x00)}
+	for idx := uint64(0); idx < syncCommsSubnetCount; idx++ {
+		bitV.SetBitAt(idx, true)
+	}
+	return bitV
+}
+
+func (s *Service) metadataBitfields() (bitfield.Bitvector64, bitfield.Bitvector4) {
+	if s.metaData == nil || s.metaData.IsNil() || s.metaData.MetadataObjV1() == nil {
+		return bitfield.NewBitvector64(), bitfield.Bitvector4{byte(0x00)}
+	}
+
+	md := s.metaData.MetadataObjV1()
+	return md.Attnets, md.Syncnets
+}
+
 // Updates the service's discv5 listener record's attestation subnet
 // with a new value for a bitfield of subnets tracked. It also record's
 // the sync committee subnet in the qnr. It also updates the node's
 // metadata by increasing the sequence number and the subnets tracked by the node.
-func (s *Service) updateSubnetRecordWithMetadata(bitVAtt bitfield.Bitvector64, bitVSync bitfield.Bitvector4) {
-	entry := qnr.WithEntry(attSubnetQnrKey, &bitVAtt)
-	subEntry := qnr.WithEntry(syncCommsSubnetQnrKey, &bitVSync)
-	s.dv5Listener.LocalNode().Set(entry)
-	s.dv5Listener.LocalNode().Set(subEntry)
+func (s *Service) updateSubnetRecordWithMetadata(bitVAtt bitfield.Bitvector64, bitVSync bitfield.Bitvector4) error {
+	if s.dv5Listener != nil {
+		entry := qnr.WithEntry(attSubnetQnrKey, &bitVAtt)
+		subEntry := qnr.WithEntry(syncCommsSubnetQnrKey, &bitVSync)
+		s.dv5Listener.LocalNode().Set(entry)
+		s.dv5Listener.LocalNode().Set(subEntry)
+	}
+
+	seq := uint64(0)
+	if s.metaData != nil && !s.metaData.IsNil() {
+		seq = s.metaData.SequenceNumber()
+	}
 	s.metaData = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
-		SeqNumber: s.metaData.SequenceNumber() + 1,
+		SeqNumber: seq + 1,
 		Attnets:   bitVAtt,
 		Syncnets:  bitVSync,
 	})
+
+	if err := s.saveSequenceNumberIfNeeded(); err != nil {
+		return errors.Wrap(err, "saving sequence number after updating subnets")
+	}
+	return nil
+}
+
+// saveSequenceNumberIfNeeded persists the metadata sequence number to the database when
+// the node uses a static peer ID, so peers don't reject our metadata responses after a
+// restart with a smaller sequence number.
+func (s *Service) saveSequenceNumberIfNeeded() error {
+	if s.cfg == nil || !s.cfg.StaticPeerID || s.cfg.DB == nil {
+		return nil
+	}
+	return s.cfg.DB.SaveMetadataSeqNum(s.ctx, s.metaData.SequenceNumber())
 }
 
 // Initializes a bitvector of attestation subnets beacon nodes is subscribed to
@@ -167,10 +417,12 @@ func attSubnets(record *qnr.Record) ([]uint64, error) {
 	if err != nil {
 		return nil, err
 	}
-	// lint:ignore uintcast -- subnet count can be safely cast to int.
-	if len(bitV) != byteCount(int(attestationSubnetCount)) {
+	// The record is validated against the fixed 64-bit wire width, not
+	// AttestationSubnetCount; see attnetsBitvectorBits.
+	if len(bitV) != byteCount(attnetsBitvectorBits) {
 		return []uint64{}, errors.Errorf("invalid bitvector provided, it has a size of %d", len(bitV))
 	}
+	// Bits at or above AttestationSubnetCount are ignored.
 	var committeeIdxs []uint64
 	for i := uint64(0); i < attestationSubnetCount; i++ {
 		if bitV.BitAt(i) {

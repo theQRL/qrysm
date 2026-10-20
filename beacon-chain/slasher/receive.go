@@ -16,6 +16,8 @@ import (
 // validating their integrity before appending them to an attestation queue
 // for batch processing in a separate routine.
 func (s *Service) receiveAttestations(ctx context.Context, indexedAttsChan chan *qrysmpb.IndexedAttestation) {
+	defer s.wg.Done()
+
 	sub := s.serviceCfg.IndexedAttestationsFeed.Subscribe(indexedAttsChan)
 	defer sub.Unsubscribe()
 	for {
@@ -45,6 +47,8 @@ func (s *Service) receiveAttestations(ctx context.Context, indexedAttsChan chan 
 
 // Receive beacon blocks from some source event feed,
 func (s *Service) receiveBlocks(ctx context.Context, beaconBlockHeadersChan chan *qrysmpb.SignedBeaconBlockHeader) {
+	defer s.wg.Done()
+
 	sub := s.serviceCfg.BeaconBlockHeadersFeed.Subscribe(beaconBlockHeadersChan)
 	defer sub.Unsubscribe()
 	for {
@@ -77,6 +81,8 @@ func (s *Service) receiveBlocks(ctx context.Context, beaconBlockHeadersChan chan
 // This grouping will allow us to perform detection on batches of attestations
 // per validator chunk index which can be done concurrently.
 func (s *Service) processQueuedAttestations(ctx context.Context, slotTicker <-chan primitives.Slot) {
+	defer s.wg.Done()
+
 	for {
 		select {
 		case currentSlot := <-slotTicker:
@@ -100,19 +106,22 @@ func (s *Service) processQueuedAttestations(ctx context.Context, slotTicker <-ch
 				"numDroppedAtts":  numDropped,
 			}).Info("Processing queued attestations for slashing detection")
 
-			// Save the attestation records to our database.
-			if err := s.serviceCfg.Database.SaveAttestationRecordsForValidators(
-				ctx, validAtts,
-			); err != nil {
-				log.WithError(err).Error("Could not save attestation records to DB")
-				continue
-			}
-
-			// Check for slashings.
+			// Check for slashings. Attestation records are saved to disk inside
+			// checkSlashableAttestations between the double-vote and surround
+			// checks so that on-disk double-vote detection compares against
+			// previously saved batches rather than the current one.
 			slashings, err := s.checkSlashableAttestations(ctx, currentEpoch, validAtts)
 			if err != nil {
-				log.WithError(err).Error("Could not check slashable attestations")
-				continue
+				// The spans of this pass did not reach the disk. The slashings
+				// found so far are still processed below, and the attestations
+				// go back on the queue so that their spans are written once the
+				// store recovers; the records saved during the pass make a
+				// retry find no double vote, which is why the slashings cannot
+				// wait for it.
+				log.WithError(err).Error("Could not check slashable attestations; queuing the attestations again")
+				s.requeueAttestations(validAtts)
+			} else {
+				s.forgetAttestationRetries(validAtts)
 			}
 
 			// Process attester slashings by verifying their signatures, submitting
@@ -121,6 +130,11 @@ func (s *Service) processQueuedAttestations(ctx context.Context, slotTicker <-ch
 				log.WithError(err).Error("Could not process attester slashings")
 				continue
 			}
+
+			// The spans on disk are consistent with the latest epoch written per
+			// validator only if that map survives a crash; persist it as the
+			// epoch advances rather than only on a clean shutdown.
+			s.persistLatestEpochWritten(ctx, currentEpoch)
 
 			processedAttestationsTotal.Add(float64(len(validAtts)))
 		case <-ctx.Done():
@@ -132,6 +146,8 @@ func (s *Service) processQueuedAttestations(ctx context.Context, slotTicker <-ch
 // Process queued blocks every time an epoch ticker fires. We retrieve
 // these blocks from a queue, then perform double proposal detection.
 func (s *Service) processQueuedBlocks(ctx context.Context, slotTicker <-chan primitives.Slot) {
+	defer s.wg.Done()
+
 	for {
 		select {
 		case currentSlot := <-slotTicker:
@@ -172,6 +188,8 @@ func (s *Service) processQueuedBlocks(ctx context.Context, slotTicker <-chan pri
 
 // Prunes slasher data on each slot tick to prevent unnecessary build-up of disk space usage.
 func (s *Service) pruneSlasherData(ctx context.Context, slotTicker <-chan primitives.Slot) {
+	defer s.wg.Done()
+
 	for {
 		select {
 		case <-slotTicker:

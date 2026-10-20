@@ -80,3 +80,11 @@ func TestEpochBoundaryStateCache_CanTrim(t *testing.T) {
 		}
 	}
 }
+
+func TestEpochBoundaryStateCache_RejectsNilState(t *testing.T) {
+	e := newBoundaryStateCache()
+	require.ErrorIs(t, e.put([32]byte{'a'}, nil), errNilBoundaryState)
+	_, exists, err := e.getByBlockRoot([32]byte{'a'})
+	require.NoError(t, err)
+	require.Equal(t, false, exists)
+}

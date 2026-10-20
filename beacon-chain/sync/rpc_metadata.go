@@ -6,7 +6,6 @@ import (
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/blockchain"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
@@ -83,7 +82,10 @@ func (s *Service) metaDataHandler(_ context.Context, _ any, stream libp2pcore.St
 	if err != nil {
 		return err
 	}
-	closeStream(stream, log)
+	// Close the write side and wait for the peer to ack so they observe a
+	// clean EOF rather than a reset — keeps their connection-quality
+	// heuristics from drifting against us.
+	closeStreamAndWait(stream, log)
 	return nil
 }
 
@@ -99,23 +101,17 @@ func (s *Service) sendMetaDataRequest(ctx context.Context, id peer.ID) (metadata
 	if err != nil {
 		return nil, err
 	}
-	defer closeStream(stream, log)
+	// Use closeStreamAndWait so the remote sees a clean EOF instead of a
+	// reset when we're done reading the metadata response.
+	defer closeStreamAndWait(stream, log)
 	pid := stream.Conn().RemotePeer()
 	code, errMsg, err := ReadStatusCode(stream, s.cfg.p2p.Encoding())
 	if err != nil {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-		log.WithFields(logrus.Fields{
-			"pid":   pid,
-			"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-		}).Debug("Peer is penalized for error while reading the status code")
+		s.downscorePeer(pid, "metadataReadStatusCodeError")
 		return nil, err
 	}
 	if code != 0 {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-		log.WithFields(logrus.Fields{
-			"pid":   pid,
-			"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-		}).Debug("Peer is penalized for unsuccessful status")
+		s.downscorePeer(pid, "metadataNonNullStatusCode")
 		return nil, errors.New(errMsg)
 	}
 	valRoot := s.cfg.clock.GenesisValidatorsRoot()
@@ -137,12 +133,7 @@ func (s *Service) sendMetaDataRequest(ctx context.Context, id peer.ID) (metadata
 		return nil, err
 	}
 	if err := s.cfg.p2p.Encoding().DecodeWithMaxLength(stream, msg); err != nil {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-		log.WithFields(logrus.Fields{
-			"pid":   pid,
-			"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-		}).Debug("Peer is penalized for decoding error")
-
+		s.downscorePeer(pid, "metadataDecodeError")
 		return nil, err
 	}
 	return msg, nil

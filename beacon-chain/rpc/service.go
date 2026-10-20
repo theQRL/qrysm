@@ -45,7 +45,6 @@ import (
 	nodev1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/node"
 	validatorv1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/validator"
 	httpserver "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/validator"
-	slasherservice "github.com/theQRL/qrysm/beacon-chain/slasher"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
 	chainSync "github.com/theQRL/qrysm/beacon-chain/sync"
@@ -105,7 +104,6 @@ type Config struct {
 	AttestationsPool              attestations.Pool
 	ExitPool                      voluntaryexits.PoolManager
 	SlashingsPool                 slashings.PoolManager
-	SlashingChecker               slasherservice.SlashingChecker
 	SyncCommitteeObjectPool       synccommittee.Pool
 	SyncService                   chainSync.Checker
 	Broadcaster                   p2p.Broadcaster
@@ -121,6 +119,7 @@ type Config struct {
 	MaxMsgSize                    int
 	ExecutionEngineCaller         execution.EngineCaller
 	ProposerIdsCache              *cache.ProposerPayloadIDsCache
+	AttestationCache              *cache.AttestationCache
 	OptimisticModeFetcher         blockchain.OptimisticModeFetcher
 	BlockBuilder                  builder.BlockBuilder
 	Router                        *mux.Router
@@ -181,17 +180,12 @@ func NewService(ctx context.Context, cfg *Config) *Service {
 	}
 	s.grpcServer = grpc.NewServer(opts...)
 
-	return s
-}
-
-// paranoid build time check to ensure ChainInfoFetcher implements required interfaces
-var _ stategen.CanonicalChecker = blockchain.ChainInfoFetcher(nil)
-var _ stategen.CurrentSlotter = blockchain.ChainInfoFetcher(nil)
-
-// Start the gRPC server.
-func (s *Service) Start() {
-	grpcprometheus.EnableHandlingTimeHistogram()
-
+	// Register HTTP routes and gRPC services here (rather than in Start) so that
+	// any consumer holding s.cfg.Router after NewService returns sees a fully-
+	// populated router. Doing this in Start created a race window with the
+	// grpc-gateway service that consumes the same router: requests that arrived
+	// before Start finished could hit gorilla/mux while routes were still being
+	// added and panic on a nil-deref. See upstream PR #13676.
 	var stateCache stategen.CachedGetter
 	if s.cfg.StateGen != nil {
 		stateCache = s.cfg.StateGen.CombinedCache()
@@ -211,6 +205,7 @@ func (s *Service) Start() {
 	}
 
 	rewardsServer := &rewards.Server{
+		ForkchoiceFetcher:     s.cfg.ForkchoiceFetcher,
 		Blocker:               blocker,
 		OptimisticModeFetcher: s.cfg.OptimisticModeFetcher,
 		FinalizationFetcher:   s.cfg.FinalizationFetcher,
@@ -231,19 +226,27 @@ func (s *Service) Start() {
 	}
 	s.cfg.Router.HandleFunc("/qrl/v1/builder/states/{state_id}/expected_withdrawals", builderServer.ExpectedWithdrawals).Methods(http.MethodGet)
 
+	// The attestation data cache is shared with the blockchain service, which
+	// clears it whenever the head changes.
+	attestationCache := s.cfg.AttestationCache
+	if attestationCache == nil {
+		attestationCache = cache.NewAttestationCache()
+	}
 	coreService := &core.Service{
-		HeadFetcher:        s.cfg.HeadFetcher,
-		GenesisTimeFetcher: s.cfg.GenesisTimeFetcher,
-		SyncChecker:        s.cfg.SyncService,
-		Broadcaster:        s.cfg.Broadcaster,
-		SyncCommitteePool:  s.cfg.SyncCommitteeObjectPool,
-		OperationNotifier:  s.cfg.OperationNotifier,
-		AttestationCache:   cache.NewAttestationCache(),
-		StateGen:           s.cfg.StateGen,
-		P2P:                s.cfg.Broadcaster,
+		HeadFetcher:           s.cfg.HeadFetcher,
+		GenesisTimeFetcher:    s.cfg.GenesisTimeFetcher,
+		SyncChecker:           s.cfg.SyncService,
+		Broadcaster:           s.cfg.Broadcaster,
+		SyncCommitteePool:     s.cfg.SyncCommitteeObjectPool,
+		OperationNotifier:     s.cfg.OperationNotifier,
+		AttestationCache:      attestationCache,
+		StateGen:              s.cfg.StateGen,
+		P2P:                   s.cfg.Broadcaster,
+		OptimisticModeFetcher: s.cfg.OptimisticModeFetcher,
 	}
 
 	validatorServer := &validatorv1alpha1.Server{
+		AttestationReceiver:    s.cfg.AttestationReceiver,
 		Ctx:                    s.ctx,
 		AttPool:                s.cfg.AttestationsPool,
 		ExitPool:               s.cfg.ExitPool,
@@ -382,6 +385,7 @@ func (s *Service) Start() {
 		CoreService:                 coreService,
 	}
 	beaconChainServerV1 := &beacon.Server{
+		AttestationReceiver:           s.cfg.AttestationReceiver,
 		CanonicalHistory:              ch,
 		BeaconDB:                      s.cfg.BeaconDB,
 		AttestationsPool:              s.cfg.AttestationsPool,
@@ -448,6 +452,7 @@ func (s *Service) Start() {
 		OperationNotifier: s.cfg.OperationNotifier,
 		HeadFetcher:       s.cfg.HeadFetcher,
 		ChainInfoFetcher:  s.cfg.ChainInfoFetcher,
+		BlockBuilder:      s.cfg.BlockBuilder,
 	})
 	if s.cfg.EnableDebugRPCEndpoints {
 		log.Info("Enabled debug gRPC endpoints")
@@ -477,6 +482,18 @@ func (s *Service) Start() {
 	qrlpbservice.RegisterBeaconValidatorServer(s.grpcServer, validatorServerV1)
 	// Register reflection service on gRPC server.
 	reflection.Register(s.grpcServer)
+
+	return s
+}
+
+// paranoid build time check to ensure ChainInfoFetcher implements required interfaces
+var _ stategen.CanonicalChecker = blockchain.ChainInfoFetcher(nil)
+var _ stategen.CurrentSlotter = blockchain.ChainInfoFetcher(nil)
+
+// Start the gRPC server. Routes and gRPC services were registered in NewService;
+// here we just enable Prometheus histograms and launch the listener goroutine.
+func (s *Service) Start() {
+	grpcprometheus.EnableHandlingTimeHistogram()
 
 	go func() {
 		if s.listener != nil {

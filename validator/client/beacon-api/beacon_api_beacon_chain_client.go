@@ -1,10 +1,7 @@
 package beacon_api
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"net/http"
 	"reflect"
 	"strconv"
 	"time"
@@ -12,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/validator"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
@@ -25,8 +21,6 @@ type beaconApiBeaconChainClient struct {
 	jsonRestHandler         jsonRestHandler
 	stateValidatorsProvider stateValidatorsProvider
 }
-
-const getValidatorPerformanceEndpoint = "/qrysm/validators/performance"
 
 func (c beaconApiBeaconChainClient) getHeadBlockHeaders(ctx context.Context) (*beacon.GetBlockHeaderResponse, error) {
 	blockHeader := beacon.GetBlockHeaderResponse{}
@@ -154,7 +148,7 @@ func (c beaconApiBeaconChainClient) ListValidatorBalances(ctx context.Context, i
 	}
 
 	// TODO: Implement me
-	panic("beaconApiBeaconChainClient.ListValidatorBalances is not implemented. To use a fallback client, pass a fallback client as the last argument of NewBeaconApiBeaconChainClientWithFallback.") // lint:nopanic
+	return nil, errors.New("beaconApiBeaconChainClient.ListValidatorBalances is not implemented. To use a fallback client, pass a fallback client as the last argument of NewBeaconApiBeaconChainClientWithFallback.")
 }
 
 func (c beaconApiBeaconChainClient) ListValidators(ctx context.Context, in *qrysmpb.ListValidatorsRequest) (*qrysmpb.Validators, error) {
@@ -242,9 +236,9 @@ func (c beaconApiBeaconChainClient) ListValidators(ctx context.Context, in *qrys
 			return nil, errors.Wrapf(err, "failed to decode validator pubkey `%s`", stateValidator.Validator.Pubkey)
 		}
 
-		withdrawalCredentials, err := hexutil.Decode(stateValidator.Validator.WithdrawalCredentials)
+		withdrawalRecipient, err := hexutil.Decode(stateValidator.Validator.WithdrawalRecipient)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode validator withdrawal credentials `%s`", stateValidator.Validator.WithdrawalCredentials)
+			return nil, errors.Wrapf(err, "failed to decode validator withdrawal recipient `%s`", stateValidator.Validator.WithdrawalRecipient)
 		}
 
 		effectiveBalance, err := strconv.ParseUint(stateValidator.Validator.EffectiveBalance, 10, 64)
@@ -277,17 +271,23 @@ func (c beaconApiBeaconChainClient) ListValidators(ctx context.Context, in *qrys
 			return nil, errors.Wrapf(err, "failed to parse validator withdrawable epoch `%s`", stateValidator.Validator.WithdrawableEpoch)
 		}
 
+		randaoCommitment, err := hexutil.Decode(stateValidator.Validator.RandaoCommitment)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to decode validator randao commitment `%s`", stateValidator.Validator.RandaoCommitment)
+		}
+
 		validators[idx-start] = &qrysmpb.Validators_ValidatorContainer{
 			Index: primitives.ValidatorIndex(validatorIndex),
 			Validator: &qrysmpb.Validator{
 				PublicKey:                  pubkey,
-				WithdrawalCredentials:      withdrawalCredentials,
+				WithdrawalRecipient:        withdrawalRecipient,
 				EffectiveBalance:           effectiveBalance,
 				Slashed:                    stateValidator.Validator.Slashed,
 				ActivationEligibilityEpoch: primitives.Epoch(activationEligibilityEpoch),
 				ActivationEpoch:            primitives.Epoch(activationEpoch),
 				ExitEpoch:                  primitives.Epoch(exitEpoch),
 				WithdrawableEpoch:          primitives.Epoch(withdrawableEpoch),
+				RandaoCommitment:           randaoCommitment,
 			},
 		}
 	}
@@ -305,43 +305,19 @@ func (c beaconApiBeaconChainClient) ListValidators(ctx context.Context, in *qrys
 	}, nil
 }
 
+// GetValidatorPerformance is the standard BeaconChainClient method retained for
+// interface compatibility. The actual REST implementation lives on QrysmChainClient
+// (see qrysm_beacon_chain_client.go) so that the qrysm-specific endpoint can be
+// gated on a node-version check.
 func (c beaconApiBeaconChainClient) GetValidatorPerformance(ctx context.Context, in *qrysmpb.ValidatorPerformanceRequest) (*qrysmpb.ValidatorPerformanceResponse, error) {
-	request, err := json.Marshal(validator.ValidatorPerformanceRequest{
-		PublicKeys: in.PublicKeys,
-		Indices:    in.Indices,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal request")
+	if c.fallbackClient != nil {
+		return c.fallbackClient.GetValidatorPerformance(ctx, in)
 	}
-	resp := &validator.ValidatorPerformanceResponse{}
-	if _, err := c.jsonRestHandler.PostRestJson(
-		ctx,
-		getValidatorPerformanceEndpoint,
-		nil,
-		bytes.NewBuffer(request),
-		resp,
-	); err != nil {
-		return nil, errors.Wrap(err, "failed to get validator performance")
-	}
-
-	return &qrysmpb.ValidatorPerformanceResponse{
-		CurrentEffectiveBalances:      resp.CurrentEffectiveBalances,
-		CorrectlyVotedSource:          resp.CorrectlyVotedSource,
-		CorrectlyVotedTarget:          resp.CorrectlyVotedTarget,
-		CorrectlyVotedHead:            resp.CorrectlyVotedHead,
-		BalancesBeforeEpochTransition: resp.BalancesBeforeEpochTransition,
-		BalancesAfterEpochTransition:  resp.BalancesAfterEpochTransition,
-		MissingValidators:             resp.MissingValidators,
-		PublicKeys:                    resp.PublicKeys,
-		InactivityScores:              resp.InactivityScores,
-	}, nil
+	return nil, errors.New("beaconApiBeaconChainClient.GetValidatorPerformance is not implemented. To use a fallback client, pass a fallback client as the last argument of NewBeaconApiBeaconChainClientWithFallback.")
 }
 
 func NewBeaconApiBeaconChainClientWithFallback(host string, timeout time.Duration, fallbackClient iface.BeaconChainClient) iface.BeaconChainClient {
-	jsonRestHandler := beaconApiJsonRestHandler{
-		httpClient: http.Client{Timeout: timeout},
-		host:       host,
-	}
+	jsonRestHandler := newBeaconAPIJSONRestHandler(host, timeout)
 
 	return &beaconApiBeaconChainClient{
 		jsonRestHandler:         jsonRestHandler,

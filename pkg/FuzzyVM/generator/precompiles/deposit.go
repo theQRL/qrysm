@@ -22,7 +22,7 @@ import (
 	"github.com/theQRL/qrysm/pkg/goqrvmlab/program"
 )
 
-var depositRootAddr, _ = common.NewAddressFromString("Q0000000000000000000000000000000000000001")
+var depositRootAddr, _ = common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
 
 type depositRootCaller struct{}
 

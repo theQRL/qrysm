@@ -24,25 +24,48 @@ func UnrealizedCheckpointBalances(cp, pp []byte, validators []*qrysmpb.Validator
 
 	var err error
 	for i, v := range validators {
-		active := v.ActivationEpoch <= currentEpoch && currentEpoch < v.ExitEpoch
-		if active && !v.Slashed {
+		activeCurrent := v.ActivationEpoch <= currentEpoch && currentEpoch < v.ExitEpoch
+		if activeCurrent {
 			activeBalance, err = math.Add64(activeBalance, v.EffectiveBalance)
 			if err != nil {
 				return 0, 0, 0, err
 			}
-			if ((cp[i] >> targetIdx) & 1) == 1 {
-				currentTarget, err = math.Add64(currentTarget, v.EffectiveBalance)
-				if err != nil {
-					return 0, 0, 0, err
-				}
+		}
+		if v.Slashed {
+			continue
+		}
+		if activeCurrent && ((cp[i]>>targetIdx)&1) == 1 {
+			currentTarget, err = math.Add64(currentTarget, v.EffectiveBalance)
+			if err != nil {
+				return 0, 0, 0, err
 			}
-			if ((pp[i] >> targetIdx) & 1) == 1 {
-				prevTarget, err = math.Add64(prevTarget, v.EffectiveBalance)
-				if err != nil {
-					return 0, 0, 0, err
-				}
+		}
+		activePrevious := v.ActivationEpoch < currentEpoch && currentEpoch <= v.ExitEpoch
+		if activePrevious && ((pp[i]>>targetIdx)&1) == 1 {
+			prevTarget, err = math.Add64(prevTarget, v.EffectiveBalance)
+			if err != nil {
+				return 0, 0, 0, err
 			}
 		}
 	}
+	activeBalance, prevTarget, currentTarget = ensureLowerBound(activeBalance, prevTarget, currentTarget)
 	return activeBalance, prevTarget, currentTarget, nil
+}
+
+// ensureLowerBound enforces a minimum value of EffectiveBalanceIncrement on the
+// three balances returned by UnrealizedCheckpointBalances. This avoids zero
+// values in edge cases (e.g. early epochs or no active stake) that would
+// otherwise break downstream justification math.
+func ensureLowerBound(activeCurrEpoch, prevTargetAttested, currTargetAttested uint64) (uint64, uint64, uint64) {
+	ebi := params.BeaconConfig().EffectiveBalanceIncrement
+	if ebi > activeCurrEpoch {
+		activeCurrEpoch = ebi
+	}
+	if ebi > prevTargetAttested {
+		prevTargetAttested = ebi
+	}
+	if ebi > currTargetAttested {
+		currTargetAttested = ebi
+	}
+	return activeCurrEpoch, prevTargetAttested, currTargetAttested
 }

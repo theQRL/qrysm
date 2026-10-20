@@ -31,6 +31,7 @@ go_test(
     srcs = ["generate_genesis_test.go"],
     embed = [":testnet"],
     deps = [
+        "//config/params",
         "//crypto/ml_dsa_87",
         "//runtime/interop",
         "//testing/assert",

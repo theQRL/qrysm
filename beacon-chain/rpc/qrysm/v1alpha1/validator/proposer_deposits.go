@@ -116,16 +116,18 @@ func (vs *Server) deposits(
 		}
 	}
 
+	// Build each proof into a fresh Deposit rather than mutating the cache-owned
+	// containers: PendingContainers hands out the cache's own *DepositContainer
+	// pointers, and PruneProofs concurrently nils their Proof under a lock the
+	// proposer does not hold (and two concurrent proposals would cross-write the
+	// same objects). Sharing the immutable Data is safe; only the Proof is per-request.
+	var pendingDeposits []*qrysmpb.Deposit
 	for i := range pendingDeps {
-		pendingDeps[i].Deposit, err = constructMerkleProof(depositTrie, int(pendingDeps[i].Index), pendingDeps[i].Deposit)
+		dep, err := constructMerkleProof(depositTrie, int(pendingDeps[i].Index), pendingDeps[i].Deposit)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	var pendingDeposits []*qrysmpb.Deposit
-	for i := uint64(0); i < uint64(len(pendingDeps)); i++ {
-		pendingDeposits = append(pendingDeposits, pendingDeps[i].Deposit)
+		pendingDeposits = append(pendingDeposits, dep)
 	}
 	return pendingDeposits, nil
 }
@@ -225,8 +227,14 @@ func constructMerkleProof(trie cache.MerkleTree, index int, deposit *qrysmpb.Dep
 	// For every deposit, we construct a Merkle proof using the execution chain service's
 	// in-memory deposits trie, which is updated only once the state's LatestExecutionData
 	// property changes during a state transition after a voting period.
-	deposit.Proof = proof
-	return deposit, nil
+	//
+	// Return a new Deposit rather than mutating the passed-in (cache-owned) object: the
+	// Data is immutable after insertion so sharing the pointer is safe, but the Proof
+	// is per-request and must not be written onto the shared cache object.
+	return &qrysmpb.Deposit{
+		Data:  deposit.Data,
+		Proof: proof,
+	}, nil
 }
 
 // This checks whether we should fallback to rebuild the whole deposit trie.

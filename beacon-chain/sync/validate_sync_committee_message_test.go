@@ -368,7 +368,9 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 					PublicKey:            bytesutil.ToBytes2592(keys[chosenVal].PublicKey().Marshal()),
 				}
 
-				msg.Signature = keys[chosenVal].Sign(sigRoot[:]).Marshal()
+				lsig1, err := keys[chosenVal].Sign(sigRoot[:])
+				require.NoError(t, err)
+				msg.Signature = lsig1.Marshal()
 				msg.BlockRoot = headRoot[:]
 				msg.ValidatorIndex = primitives.ValidatorIndex(chosenVal)
 				msg.Slot = slots.PrevSlot(hState.Slot())
@@ -405,8 +407,11 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			svc := NewService(ctx, append(opts, tt.svcopts...)...)
 			var clock *startup.Clock
 			svc, tt.args.topic, clock = tt.setupSvc(svc, tt.args.msg, tt.args.topic)
-			go svc.Start()
+			// Set the clock before starting the service so Start() observes a
+			// fully-initialized clockWaiter. Previously the goroutine raced the
+			// SetClock call. (upstream PR #15792)
 			require.NoError(t, cw.SetClock(clock))
+			go svc.Start()
 
 			marshalledObj, err := tt.args.msg.MarshalSSZ()
 			assert.NoError(t, err)
@@ -501,6 +506,7 @@ func TestService_rejectIncorrectSyncCommittee(t *testing.T) {
 			cfg: &config{
 				chain: &mockChain.ChainService{},
 				clock: startup.NewClock(time.Now(), [32]byte{1}),
+				p2p:   mockp2p.NewTestP2P(t),
 			},
 			committeeIndices: []primitives.CommitteeIndex{0},
 			setupTopic: func(_ *Service) string {
@@ -513,18 +519,57 @@ func TestService_rejectIncorrectSyncCommittee(t *testing.T) {
 			cfg: &config{
 				chain: &mockChain.ChainService{},
 				clock: startup.NewClock(time.Now(), [32]byte{1}),
+				p2p:   mockp2p.NewTestP2P(t),
 			},
 			committeeIndices: []primitives.CommitteeIndex{0},
 			setupTopic: func(s *Service) string {
 				format := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SyncCommitteeMessage]()]
 
-				digest, err := s.currentForkDigest()
+				genRoot := s.cfg.clock.GenesisValidatorsRoot()
+				digest, err := forks.ForkDigestFromEpoch(0, genRoot[:])
 				require.NoError(t, err)
 				prefix := fmt.Sprintf(format, digest, 0 /* validator index 0 */)
-				topic := prefix + "foobar"
-				return topic
+				return prefix + s.cfg.p2p.Encoding().ProtocolSuffix()
 			},
 			want: pubsub.ValidationAccept,
+		},
+		{
+			// Regression (upstream #16872): the topic must match exactly. A
+			// message for subnet 1 must not be accepted on the subnet 10 topic,
+			// which merely shares the numeric prefix "…sync_committee_1".
+			name: "subnet prefix collision is rejected",
+			cfg: &config{
+				chain: &mockChain.ChainService{},
+				clock: startup.NewClock(time.Now(), [32]byte{1}),
+				p2p:   mockp2p.NewTestP2P(t),
+			},
+			// First committee index of subnet 1.
+			committeeIndices: []primitives.CommitteeIndex{primitives.CommitteeIndex(params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount)},
+			setupTopic: func(s *Service) string {
+				format := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SyncCommitteeMessage]()]
+				genRoot := s.cfg.clock.GenesisValidatorsRoot()
+				digest, err := forks.ForkDigestFromEpoch(0, genRoot[:])
+				require.NoError(t, err)
+				return fmt.Sprintf(format, digest, 10 /* subnet 10 */) + s.cfg.p2p.Encoding().ProtocolSuffix()
+			},
+			want: pubsub.ValidationReject,
+		},
+		{
+			name: "missing protocol suffix is rejected",
+			cfg: &config{
+				chain: &mockChain.ChainService{},
+				clock: startup.NewClock(time.Now(), [32]byte{1}),
+				p2p:   mockp2p.NewTestP2P(t),
+			},
+			committeeIndices: []primitives.CommitteeIndex{0},
+			setupTopic: func(s *Service) string {
+				format := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SyncCommitteeMessage]()]
+				genRoot := s.cfg.clock.GenesisValidatorsRoot()
+				digest, err := forks.ForkDigestFromEpoch(0, genRoot[:])
+				require.NoError(t, err)
+				return fmt.Sprintf(format, digest, 0)
+			},
+			want: pubsub.ValidationReject,
 		},
 	}
 	for _, tt := range tests {
@@ -533,7 +578,7 @@ func TestService_rejectIncorrectSyncCommittee(t *testing.T) {
 				cfg: tt.cfg,
 			}
 			topic := tt.setupTopic(s)
-			f := s.rejectIncorrectSyncCommittee(tt.committeeIndices, topic)
+			f := s.rejectIncorrectSyncCommittee(tt.committeeIndices, 0, topic)
 			result, err := f(context.Background())
 			_ = err
 			require.Equal(t, tt.want, result)

@@ -2,6 +2,7 @@ package slasher
 
 import (
 	"bytes"
+	"sort"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -37,16 +38,23 @@ func (s *Service) groupByValidatorChunkIndex(
 	return groupedAttestations
 }
 
-// Group attestations by the chunk index their source epoch corresponds to.
-func (s *Service) groupByChunkIndex(
-	attestations []*slashertypes.IndexedAttestationWrapper,
-) map[uint64][]*slashertypes.IndexedAttestationWrapper {
-	attestationsByChunkIndex := make(map[uint64][]*slashertypes.IndexedAttestationWrapper)
-	for _, att := range attestations {
-		chunkIdx := s.params.chunkIndex(att.IndexedAttestation.Data.Source.Epoch)
-		attestationsByChunkIndex[chunkIdx] = append(attestationsByChunkIndex[chunkIdx], att)
-	}
-	return attestationsByChunkIndex
+// Returns a copy of the attestations ordered by source epoch, descending if
+// requested and ascending otherwise. The sort is stable so attestations with
+// equal source epochs keep their input order. The input slice is not modified.
+func sortBySourceEpoch(
+	attestations []*slashertypes.IndexedAttestationWrapper, descending bool,
+) []*slashertypes.IndexedAttestationWrapper {
+	sorted := make([]*slashertypes.IndexedAttestationWrapper, len(attestations))
+	copy(sorted, attestations)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		si := sorted[i].IndexedAttestation.Data.Source.Epoch
+		sj := sorted[j].IndexedAttestation.Data.Source.Epoch
+		if descending {
+			return si > sj
+		}
+		return si < sj
+	})
+	return sorted
 }
 
 // This function returns a list of valid attestations, a list of attestations that are

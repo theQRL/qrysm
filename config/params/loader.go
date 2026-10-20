@@ -8,10 +8,35 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/math"
 	"gopkg.in/yaml.v2"
 )
+
+// forkVersionHexLength checks the original scalar before generic hex padding.
+// YAML resolves quoted keys, multiline values and aliases for this check.
+type forkVersionHexLength struct{}
+
+func (*forkVersionHexLength) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var value string
+	if err := unmarshal(&value); err != nil {
+		// Byte-sequence versions are checked by BeaconChainConfig.Validate.
+		return nil
+	}
+	if !strings.HasPrefix(value, "0x") {
+		return nil
+	}
+	decoded, err := hex.DecodeString(value[2:])
+	if err != nil || len(decoded) == 0 {
+		// Let the normal hex converter report malformed values with line numbers.
+		return nil
+	}
+	if len(decoded) != fieldparams.VersionLength {
+		return fmt.Errorf("GENESIS_FORK_VERSION must be exactly %d bytes, got %d", fieldparams.VersionLength, len(decoded))
+	}
+	return nil
+}
 
 func isMinimal(lines []string) bool {
 	for _, l := range lines {
@@ -25,19 +50,29 @@ func isMinimal(lines []string) bool {
 	return false
 }
 
+// UnmarshalConfig applies YAML overrides to a copy of conf, or to the selected
+// preset when conf is nil. A failed load leaves the supplied config unchanged.
 func UnmarshalConfig(yamlFile []byte, conf *BeaconChainConfig) (*BeaconChainConfig, error) {
+	var versionCheck struct {
+		GenesisForkVersion forkVersionHexLength `yaml:"GENESIS_FORK_VERSION"`
+	}
+	if err := yaml.Unmarshal(yamlFile, &versionCheck); err != nil {
+		return nil, errors.Wrap(err, "Failed to parse chain config yaml file.")
+	}
 	// To track if config name is defined inside config file.
 	hasConfigName := false
 	// Convert 0x hex inputs to fixed bytes arrays
 	lines := strings.Split(string(yamlFile), "\n")
 	if conf == nil {
 		if isMinimal(lines) {
-			conf = MinimalSpecConfig().Copy()
+			conf = MinimalSpecConfig()
 		} else {
 			// Default to using mainnet.
-			conf = MainnetConfig().Copy()
+			conf = MainnetConfig()
 		}
 	}
+	// UnmarshalStrict can populate valid fields before returning an error.
+	conf = conf.Copy()
 	for i, line := range lines {
 		// No need to convert the deposit contract address to byte array (as config expects a string).
 		if strings.HasPrefix(line, "DEPOSIT_CONTRACT_ADDRESS") {
@@ -46,24 +81,30 @@ func UnmarshalConfig(yamlFile []byte, conf *BeaconChainConfig) (*BeaconChainConf
 		if strings.HasPrefix(line, "CONFIG_NAME") {
 			hasConfigName = true
 		}
-		if !strings.HasPrefix(line, "#") && strings.Contains(line, "0x") {
-			parts := ReplaceHexStringWithYAMLFormat(line)
+		if !strings.HasPrefix(strings.TrimSpace(line), "#") && strings.Contains(line, "0x") {
+			parts, err := ReplaceHexStringWithYAMLFormat(line)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Failed to parse chain config yaml file at line %d", i+1)
+			}
 			lines[i] = strings.Join(parts, "\n")
 		}
 	}
 	yamlFile = []byte(strings.Join(lines, "\n"))
 	if err := yaml.UnmarshalStrict(yamlFile, conf); err != nil {
-		if _, ok := err.(*yaml.TypeError); !ok {
-			return nil, errors.Wrap(err, "Failed to parse chain config yaml file.")
-		} else {
-			log.WithError(err).Error("There were some issues parsing the config from a yaml file")
-		}
+		return nil, errors.Wrap(err, "Failed to parse chain config yaml file.")
 	}
 	if !hasConfigName {
 		conf.ConfigName = DevnetName
 	}
+	if err := conf.Validate(); err != nil {
+		return nil, errors.Wrap(err, "invalid chain config")
+	}
 	// recompute SqrRootSlotsPerEpoch constant to handle non-standard values of SlotsPerEpoch
 	conf.SqrRootSlotsPerEpoch = primitives.Slot(math.IntegerSquareRoot(uint64(conf.SlotsPerEpoch)))
+	// Rebuild ForkVersionSchedule so consumers picking up the config see the
+	// fork epochs / versions from the YAML rather than the defaults inherited
+	// from the seed config.
+	conf.InitializeForkSchedule()
 	log.Debugf("Config file values: %+v", conf)
 	return conf, nil
 }
@@ -86,12 +127,28 @@ func LoadChainConfigFile(path string, conf *BeaconChainConfig) error {
 	return SetActive(c)
 }
 
-// ReplaceHexStringWithYAMLFormat will replace hex strings that the yaml parser will understand.
-func ReplaceHexStringWithYAMLFormat(line string) []string {
-	parts := strings.Split(line, "0x")
-	decoded, err := hex.DecodeString(parts[1])
+// ReplaceHexStringWithYAMLFormat converts hex values to YAML bytes, rejecting
+// malformed hex without returning partially decoded output.
+func ReplaceHexStringWithYAMLFormat(line string) ([]string, error) {
+	// A YAML comment must be separated from a plain scalar by whitespace.
+	// Ignore comments before looking for hex, including hex examples in comments.
+	for i := range line {
+		if line[i] == '#' && (i == 0 || line[i-1] == ' ' || line[i-1] == '\t') {
+			line = line[:i]
+			break
+		}
+	}
+	parts := strings.SplitN(line, "0x", 2)
+	if len(parts) == 1 {
+		return parts, nil
+	}
+	value := strings.TrimSpace(parts[1])
+	if value == "" {
+		return nil, errors.New("failed to decode hex string: empty value")
+	}
+	decoded, err := hex.DecodeString(value)
 	if err != nil {
-		log.WithError(err).Error("Failed to decode hex string.")
+		return nil, errors.Wrap(err, "failed to decode hex string")
 	}
 	switch l := len(decoded); {
 	case l == 1:
@@ -99,7 +156,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 		b = decoded[0]
 		fixedByte, err := yaml.Marshal(b)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal config file.")
+			return nil, errors.Wrap(err, "failed to marshal config file")
 		}
 		parts[0] += string(fixedByte)
 		parts = parts[:1]
@@ -108,7 +165,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 		copy(arr[:], decoded)
 		fixedByte, err := yaml.Marshal(arr)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal config file.")
+			return nil, errors.Wrap(err, "failed to marshal config file")
 		}
 		parts[1] = string(fixedByte)
 	case l > 4 && l <= 8:
@@ -116,7 +173,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 		copy(arr[:], decoded)
 		fixedByte, err := yaml.Marshal(arr)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal config file.")
+			return nil, errors.Wrap(err, "failed to marshal config file")
 		}
 		parts[1] = string(fixedByte)
 	case l > 8 && l <= 16:
@@ -124,7 +181,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 		copy(arr[:], decoded)
 		fixedByte, err := yaml.Marshal(arr)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal config file.")
+			return nil, errors.Wrap(err, "failed to marshal config file")
 		}
 		parts[1] = string(fixedByte)
 	case l > 16 && l <= 20:
@@ -132,7 +189,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 		copy(arr[:], decoded)
 		fixedByte, err := yaml.Marshal(arr)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal config file.")
+			return nil, errors.Wrap(err, "failed to marshal config file")
 		}
 		parts[1] = string(fixedByte)
 	case l > 20 && l <= 32:
@@ -140,7 +197,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 		copy(arr[:], decoded)
 		fixedByte, err := yaml.Marshal(arr)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal config file.")
+			return nil, errors.Wrap(err, "failed to marshal config file")
 		}
 		parts[1] = string(fixedByte)
 	case l > 32 && l <= 48:
@@ -148,7 +205,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 		copy(arr[:], decoded)
 		fixedByte, err := yaml.Marshal(arr)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal config file.")
+			return nil, errors.Wrap(err, "failed to marshal config file")
 		}
 		parts[1] = string(fixedByte)
 	case l > 48 && l <= 64:
@@ -156,7 +213,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 		copy(arr[:], decoded)
 		fixedByte, err := yaml.Marshal(arr)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal config file.")
+			return nil, errors.Wrap(err, "failed to marshal config file")
 		}
 		parts[1] = string(fixedByte)
 	case l > 64 && l <= 96:
@@ -164,11 +221,11 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 		copy(arr[:], decoded)
 		fixedByte, err := yaml.Marshal(arr)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal config file.")
+			return nil, errors.Wrap(err, "failed to marshal config file")
 		}
 		parts[1] = string(fixedByte)
 	}
-	return parts
+	return parts, nil
 }
 
 // ConfigToYaml takes a provided config and outputs its contents
@@ -193,6 +250,7 @@ func ConfigToYaml(cfg *BeaconChainConfig) []byte {
 		fmt.Sprintf("MAX_SEED_LOOKAHEAD: %d", cfg.MaxSeedLookahead),
 		fmt.Sprintf("EJECTION_BALANCE: %d", cfg.EjectionBalance),
 		fmt.Sprintf("MIN_PER_EPOCH_CHURN_LIMIT: %d", cfg.MinPerEpochChurnLimit),
+		fmt.Sprintf("MAX_PER_EPOCH_ACTIVATION_CHURN_LIMIT: %d", cfg.MaxPerEpochActivationChurnLimit),
 		fmt.Sprintf("DEPOSIT_CHAIN_ID: %d", cfg.DepositChainID),
 		fmt.Sprintf("DEPOSIT_NETWORK_ID: %d", cfg.DepositNetworkID),
 		fmt.Sprintf("INACTIVITY_SCORE_BIAS: %d", cfg.InactivityScoreBias),

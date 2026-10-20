@@ -19,10 +19,10 @@ func main() {
 
 func makeTest() *fuzzing.GeneralStateTest {
 	gst := fuzzing.BasicStateTest("Berlin")
-	precompileAddress, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000011")
+	precompileAddress, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011")
 
-	a, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000aa")
-	b, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000bb")
+	a, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa")
+	b, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bb")
 	// 0xaa calls 0xbb, with exactly 0x2cef gas
 	{
 		aa := program.NewProgram()
@@ -30,7 +30,7 @@ func makeTest() *fuzzing.GeneralStateTest {
 		gst.AddAccount(a, fuzzing.GenesisAccount{
 			Code:    aa.Bytecode(),
 			Balance: big.NewInt(5),
-			Storage: make(map[common.Hash]common.Hash),
+			Storage: make(map[common.Hash]common.StorageValue64),
 		})
 	}
 	// 0xbb does a call
@@ -54,14 +54,14 @@ func makeTest() *fuzzing.GeneralStateTest {
 		gst.AddAccount(b, fuzzing.GenesisAccount{
 			Code:    bb.Bytecode(),
 			Balance: big.NewInt(5),
-			Storage: make(map[common.Hash]common.Hash),
+			Storage: make(map[common.Hash]common.StorageValue64),
 		})
 	}
 
 	// Create the precompile too
 	//gst.AddAccount(precompileAddress, fuzzing.GenesisAccount{
 	//	Balance: big.NewInt(5),
-	//	Storage: make(map[common.Hash]common.Hash),
+	//	Storage: make(map[common.Hash]common.StorageValue64),
 	//})
 
 	// The transaction from sender to a

@@ -70,6 +70,9 @@ func InitializeFromProtoUnsafeZond(st *qrysmpb.BeaconStateZond) (state.BeaconSta
 	if st == nil {
 		return nil, errors.New("received nil state")
 	}
+	for _, v := range st.Validators {
+		normalizeRandaoCommitment(v)
+	}
 
 	hRoots := customtypes.HistoricalRoots(make([][32]byte, len(st.HistoricalRoots)))
 	for i, r := range st.HistoricalRoots {
@@ -515,15 +518,20 @@ func (b *BeaconState) recomputeFieldTrie(index types.FieldIndex, elements any) (
 			fTrieMutex.Unlock()
 			return [32]byte{}, err
 		}
-		// Reduce reference count as we are instantiating a new trie.
-		fTrie.FieldReference().MinusRef()
 		fTrieMutex.Unlock()
 		return b.stateFieldLeaves[index].TrieRoot()
 	}
 
 	if fTrie.FieldReference().Refs() > 1 {
+		var newTrie *fieldtrie.FieldTrie
+		// We copy (not transfer) the validators trie because regenerating it
+		// in the event of late blocks is expensive on mainnet-sized state.
+		if index == types.Validators {
+			newTrie = fTrie.CopyTrie()
+		} else {
+			newTrie = fTrie.TransferTrie()
+		}
 		fTrie.FieldReference().MinusRef()
-		newTrie := fTrie.TransferTrie()
 		b.stateFieldLeaves[index] = newTrie
 		fTrie = newTrie
 	}
@@ -546,6 +554,9 @@ func (b *BeaconState) resetFieldTrie(index types.FieldIndex, elements any, lengt
 	if err != nil {
 		return err
 	}
+	if old := b.stateFieldLeaves[index]; old != nil && old.FieldReference() != nil {
+		old.FieldReference().MinusRef()
+	}
 	b.stateFieldLeaves[index] = fTrie
 	b.dirtyIndices[index] = []uint64{}
 	return nil
@@ -554,10 +565,15 @@ func (b *BeaconState) resetFieldTrie(index types.FieldIndex, elements any, lengt
 func finalizerCleanup(b *BeaconState) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-	for field, v := range b.sharedFieldReferences {
+	if b.valMapHandler != nil {
+		b.valMapHandler.MinusRef()
+	}
+	for _, v := range b.sharedFieldReferences {
 		v.MinusRef()
-		if b.stateFieldLeaves[field].FieldReference() != nil {
-			b.stateFieldLeaves[field].FieldReference().MinusRef()
+	}
+	for _, trie := range b.stateFieldLeaves {
+		if trie.FieldReference() != nil {
+			trie.FieldReference().MinusRef()
 		}
 	}
 	for i := range b.dirtyFields {

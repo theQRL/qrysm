@@ -53,7 +53,7 @@ type ReadOnlyBeaconBlock interface {
 // ReadOnlyBeaconBlockBody describes the method set employed by an object
 // that is a beacon block body.
 type ReadOnlyBeaconBlockBody interface {
-	RandaoReveal() [field_params.MLDSA87SignatureLength]byte
+	RandaoReveal() [field_params.RandaoRevealLength]byte
 	ExecutionData() *qrysmpb.ExecutionData
 	Graffiti() [field_params.RootLength]byte
 	ProposerSlashings() []*qrysmpb.ProposerSlashing

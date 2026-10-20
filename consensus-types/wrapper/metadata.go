@@ -28,6 +28,11 @@ func (m MetadataV1) AttnetsBitfield() bitfield.Bitvector64 {
 	return m.md.Attnets
 }
 
+// SyncnetsBitfield returns the sync committee subnet bitfield stored in the metadata.
+func (m MetadataV1) SyncnetsBitfield() bitfield.Bitvector4 {
+	return m.md.Syncnets
+}
+
 // InnerObject returns the underlying metadata protobuf structure.
 func (m MetadataV1) InnerObject() any {
 	return m.md

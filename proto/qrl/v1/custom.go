@@ -22,8 +22,9 @@ func (x *SyncCommittee) Equals(other *SyncCommittee) bool {
 	return true
 }
 
+// FloorLog2 returns the floor of log2(x), or -1 when x is zero.
 func FloorLog2(x uint64) int {
-	return bits.Len64(uint64(x - 1))
+	return bits.Len64(x) - 1
 }
 
 func isEmptyWithLength(bb [][]byte, length uint64) bool {
@@ -34,8 +35,9 @@ func isEmptyWithLength(bb [][]byte, length uint64) bool {
 	if len(bb) != l {
 		return false
 	}
+	var zeroRoot [32]byte
 	for _, b := range bb {
-		if !bytes.Equal(b, []byte{}) {
+		if len(b) != 0 && !bytes.Equal(b, zeroRoot[:]) {
 			return false
 		}
 	}

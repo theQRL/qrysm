@@ -37,7 +37,7 @@ func (s *Service) processBlock(ctx context.Context, b interfaces.ReadOnlySignedB
 		log.WithError(err).Error("Could not compute block's hash tree root")
 		return
 	}
-	st := s.config.StateGen.StateByRootIfCachedNoCopy(root)
+	st := s.config.StateGen.StateByRootIfCached(root)
 	if st == nil {
 		log.WithField("BeaconBlockRoot", fmt.Sprintf("%#x", bytesutil.Trunc(root[:]))).Debug(
 			"Skipping block collection due to state not found in cache")

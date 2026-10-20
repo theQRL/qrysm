@@ -191,7 +191,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 								Proof: [][]byte{[]byte("A")},
 								Data: &qrysmpb.Deposit_Data{
 									PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-									WithdrawalCredentials: make([]byte, 32),
+									WithdrawalRecipient: make([]byte, 64),
 									Amount:                0,
 									Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 								},
@@ -304,7 +304,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 								Proof: [][]byte{[]byte("A")},
 								Data: &qrysmpb.Deposit_Data{
 									PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-									WithdrawalCredentials: make([]byte, 32),
+									WithdrawalRecipient: make([]byte, 64),
 									Amount:                0,
 									Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 								},
@@ -716,7 +716,7 @@ func MockBeaconBlockAltair() *v1.BeaconBlockAltair {
 					Proof: []string{"0x41"},
 					Data: &v1.DepositData{
 						PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-						WithdrawalCredentials: make([]byte, 32),
+						WithdrawalRecipient: make([]byte, 64),
 						Amount:                "0",
 						Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 					},
@@ -786,7 +786,7 @@ func MockBeaconBlockBody() *v1.BeaconBlockBody {
 				Proof: []string{"0x41"},
 				Data: &v1.DepositData{
 					PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
+					WithdrawalRecipient: make([]byte, 64),
 					Amount:                "0",
 					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 				},

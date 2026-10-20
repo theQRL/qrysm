@@ -65,7 +65,6 @@ go_library(
         "@com_github_gorilla_mux//:mux",
         "@com_github_pkg_errors//:errors",
         "@com_github_prometheus_client_golang//prometheus",
-        "@com_github_prysmaticlabs_fastssz//:fastssz",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_theqrl_go_qrl//common",
         "@com_github_urfave_cli_v2//:cli",
@@ -81,6 +80,8 @@ go_test(
     ],
     embed = [":node"],
     deps = [
+        "//beacon-chain/db",
+        "//beacon-chain/db/kv",
         "//beacon-chain/blockchain",
         "//beacon-chain/builder",
         "//beacon-chain/core/feed/state",

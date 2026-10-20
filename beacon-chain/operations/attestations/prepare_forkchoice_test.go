@@ -1,6 +1,7 @@
 package attestations
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sort"
@@ -28,7 +29,8 @@ func TestBatchAttestations_Multiple(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte("dummy_test_data"))
+	sig, err := priv.Sign([]byte("dummy_test_data"))
+	require.NoError(t, err)
 	var mockRoot [32]byte
 
 	unaggregatedAtts := []*qrysmpb.Attestation{
@@ -99,15 +101,9 @@ func TestBatchAttestations_Multiple(t *testing.T) {
 	}
 	require.NoError(t, s.batchForkChoiceAtts(context.Background()))
 
-	wanted, err := attaggregation.Aggregate([]*qrysmpb.Attestation{aggregatedAtts[0], blockAtts[0]})
-	require.NoError(t, err)
-	aggregated, err := attaggregation.Aggregate([]*qrysmpb.Attestation{aggregatedAtts[1], blockAtts[1]})
-	require.NoError(t, err)
-	wanted = append(wanted, aggregated...)
-	aggregated, err = attaggregation.Aggregate([]*qrysmpb.Attestation{aggregatedAtts[2], blockAtts[2]})
-	require.NoError(t, err)
-
-	wanted = append(wanted, aggregated...)
+	// The single unaggregated vote at each slot stays unaggregated. Only
+	// gossip aggregates enter this queue; included participants remain separate.
+	wanted := aggregatedAtts
 	require.NoError(t, s.cfg.Pool.AggregateUnaggregatedAttestations(context.Background()))
 	received := s.cfg.Pool.ForkchoiceAttestations()
 
@@ -119,6 +115,7 @@ func TestBatchAttestations_Multiple(t *testing.T) {
 	})
 
 	assert.DeepSSZEqual(t, wanted, received)
+	require.Equal(t, len(blockAtts), len(s.cfg.Pool.BlockAttestations()), "included votes keep their own retry queue")
 }
 
 func TestBatchAttestations_Single(t *testing.T) {
@@ -127,7 +124,8 @@ func TestBatchAttestations_Single(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte("dummy_test_data"))
+	sig, err := priv.Sign([]byte("dummy_test_data"))
+	require.NoError(t, err)
 	var mockRoot [32]byte
 	d := &qrysmpb.AttestationData{
 		BeaconBlockRoot: mockRoot[:],
@@ -154,16 +152,16 @@ func TestBatchAttestations_Single(t *testing.T) {
 	for _, att := range blockAtts {
 		require.NoError(t, s.cfg.Pool.SaveBlockAttestation(att))
 	}
+	pending := s.cfg.Pool.BlockAttestations()
 	require.NoError(t, s.batchForkChoiceAtts(context.Background()))
 
-	wanted, err := attaggregation.Aggregate(append(aggregatedAtts, unaggregatedAtts...))
-	require.NoError(t, err)
-
-	wanted, err = attaggregation.Aggregate(append(wanted, blockAtts...))
+	// Both unaggregated participants are already in the first gossip aggregate.
+	wanted, err := attaggregation.Aggregate(aggregatedAtts)
 	require.NoError(t, err)
 
 	got := s.cfg.Pool.ForkchoiceAttestations()
 	assert.DeepEqual(t, wanted, got)
+	require.DeepSSZEqual(t, pending, s.cfg.Pool.BlockAttestations())
 }
 
 func TestAggregateAndSaveForkChoiceAtts_Single(t *testing.T) {
@@ -172,7 +170,8 @@ func TestAggregateAndSaveForkChoiceAtts_Single(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte("dummy_test_data"))
+	sig, err := priv.Sign([]byte("dummy_test_data"))
+	require.NoError(t, err)
 	var mockRoot [32]byte
 	d := &qrysmpb.AttestationData{
 		BeaconBlockRoot: mockRoot[:],
@@ -196,7 +195,9 @@ func TestAggregateAndSaveForkChoiceAtts_Multiple(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte("dummy_test_data")).Marshal()
+	lsig1, err := priv.Sign([]byte("dummy_test_data"))
+	require.NoError(t, err)
+	sig := lsig1.Marshal()
 	var mockRoot [32]byte
 	d := &qrysmpb.AttestationData{
 		BeaconBlockRoot: mockRoot[:],
@@ -235,9 +236,19 @@ func TestAggregateAndSaveForkChoiceAtts_Multiple(t *testing.T) {
 	wanted = append(wanted, att3...)
 
 	received := s.cfg.Pool.ForkchoiceAttestations()
-	sort.Slice(received, func(i, j int) bool {
-		return received[i].Data.Slot < received[j].Data.Slot
-	})
+	// Aggregation order within a slot is not deterministic; sort both sides
+	// by (slot, aggregation bits) before comparing.
+	sortAtts := func(atts []*qrysmpb.Attestation) {
+		sort.Slice(atts, func(i, j int) bool {
+			if atts[i].Data.Slot != atts[j].Data.Slot {
+				return atts[i].Data.Slot < atts[j].Data.Slot
+			}
+			return bytes.Compare(atts[i].AggregationBits, atts[j].AggregationBits) < 0
+		})
+	}
+	sortAtts(wanted)
+	sortAtts(received)
+	require.Equal(t, len(wanted), len(received))
 	for i, a := range wanted {
 		assert.Equal(t, true, proto.Equal(a, received[i]))
 	}

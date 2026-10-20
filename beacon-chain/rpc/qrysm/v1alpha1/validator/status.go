@@ -266,6 +266,9 @@ func (vs *Server) validatorStatus(
 		Status:          qrysmpb.ValidatorStatus_UNKNOWN_STATUS,
 		ActivationEpoch: params.BeaconConfig().FarFutureEpoch,
 	}
+	if len(pubKey) == 0 {
+		return resp, nonExistentIndex
+	}
 	vStatus, idx, err := statusForPubKey(headState, pubKey)
 	if err != nil && err != errPubkeyDoesNotExist {
 		tracing.AnnotateError(span, err)
@@ -381,16 +384,13 @@ func statusForPubKey(headState state.ReadOnlyBeaconState, pubKey []byte) (qrysmp
 
 func assignmentStatus(beaconState state.ReadOnlyBeaconState, validatorIndex primitives.ValidatorIndex) qrysmpb.ValidatorStatus {
 	validator, err := beaconState.ValidatorAtIndexReadOnly(validatorIndex)
-	if err != nil {
+	if err != nil || validator.IsNil() {
 		return qrysmpb.ValidatorStatus_UNKNOWN_STATUS
 	}
+
 	currentEpoch := time.CurrentEpoch(beaconState)
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
 	validatorBalance := validator.EffectiveBalance()
-
-	if validator.IsNil() {
-		return qrysmpb.ValidatorStatus_UNKNOWN_STATUS
-	}
 	if currentEpoch < validator.ActivationEligibilityEpoch() {
 		return depositStatus(validatorBalance)
 	}

@@ -7,11 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -40,11 +38,12 @@ func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan c
 }
 
 // internalWaitForActivation performs the following:
-// 1) While the key manager is empty, poll the key manager until some validator keys exist.
+// 1) While the key manager is empty, wait for account updates or periodically refetch
+// the key manager until some validator keys exist.
 // 2) Open a server side stream for activation events against the given keys.
 // 3) In another go routine, the key manager is monitored for updates and emits an update event on
 // the accountsChangedChan. When an event signal is received, restart the internalWaitForActivation routine.
-// 4) If the stream is reset in error, restart the routine.
+// 4) If the stream is reset in error, or closed before any validator is active, restart the routine.
 // 5) If the stream returns a response indicating one or more validators are active, exit the routine.
 func (v *validator) internalWaitForActivation(ctx context.Context, accountsChangedChan <-chan [][field_params.MLDSA87PubkeyLength]byte) error {
 	ctx, span := trace.StartSpan(ctx, "validator.WaitForActivation")
@@ -61,18 +60,19 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 		defer ticker.Stop()
 		for {
 			select {
+			case <-accountsChangedChan:
 			case <-ticker.C:
-				validatingKeys, err = v.keyManager.FetchValidatingPublicKeys(ctx)
-				if err != nil {
-					return errors.Wrap(err, msgCouldNotFetchKeys)
-				}
-				if len(validatingKeys) == 0 {
-					log.Warn(msgNoKeysFetched)
-					continue
-				}
 			case <-ctx.Done():
 				log.Debug("Context closed, exiting fetching validating keys")
 				return ctx.Err()
+			}
+			validatingKeys, err = v.keyManager.FetchValidatingPublicKeys(ctx)
+			if err != nil {
+				return errors.Wrap(err, msgCouldNotFetchKeys)
+			}
+			if len(validatingKeys) == 0 {
+				log.Warn(msgNoKeysFetched)
+				continue
 			}
 			break
 		}
@@ -96,7 +96,7 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 		return err
 	}
 
-	v.ticker = slots.NewSlotTicker(time.Unix(int64(v.genesisTime), 0), params.BeaconConfig().SecondsPerSlot)
+	v.SetTicker()
 	return nil
 }
 
@@ -108,10 +108,6 @@ func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedCh
 			return v.internalWaitForActivation(ctx, accountsChangedChan)
 		default:
 			res, err := (*stream).Recv()
-			// If the stream is closed, we stop the loop.
-			if errors.Is(err, io.EOF) {
-				break
-			}
 			// If context is canceled we return from the function.
 			if ctx.Err() == context.Canceled {
 				return errors.Wrap(ctx.Err(), "context has been canceled so shutting down the loop")
@@ -119,8 +115,17 @@ func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedCh
 			if err != nil {
 				tracing.AnnotateError(span, err)
 				attempts := streamAttempts(ctx)
-				log.WithError(err).WithField("attempts", attempts).
-					Error("Stream broken while waiting for activation. Reconnecting...")
+				msg := "Stream broken while waiting for activation. Reconnecting..."
+				if errors.Is(err, io.EOF) {
+					// The beacon node only closes the stream right after sending a
+					// response that contains an active validator, which is handled
+					// below before Recv is called again. Reaching EOF therefore means
+					// the stream ended before any validator was observed active (e.g.
+					// closed by an intermediary); it must not be reported as an
+					// activation. Reconnect and keep waiting instead.
+					msg = "Stream closed before any validator was activated. Reconnecting..."
+				}
+				log.WithError(err).WithField("attempts", attempts).Error(msg)
 				// Reconnection attempt backoff, up to 60s.
 				time.Sleep(time.Second * time.Duration(min(uint64(attempts), 60)))
 				return v.internalWaitForActivation(incrementRetries(ctx), accountsChangedChan)

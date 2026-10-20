@@ -4,7 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -48,4 +50,31 @@ func TestLastArchivedPoint_CanRetrieve(t *testing.T) {
 	i, err = db.LastArchivedSlot(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, primitives.Slot(3), i, "Did not get correct index")
+}
+
+func TestArchivedPointRoot_PrefersFinalizedRootAtSlot(t *testing.T) {
+	ctx := context.Background()
+	db := setupDB(t)
+	genesisRoot := [32]byte{'g'}
+	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesisRoot))
+	slot := primitives.Slot(128)
+	// The non-canonical sibling is saved first, so it comes first in the packed index value.
+	sibling := [32]byte{'s'}
+	st, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	require.NoError(t, st.SetSlot(slot))
+	require.NoError(t, db.SaveState(ctx, st, sibling))
+	b := util.NewBeaconBlockZond()
+	b.Block.Slot = slot
+	b.Block.ParentRoot = genesisRoot[:]
+	wb, err := blocks.NewSignedBeaconBlock(b)
+	require.NoError(t, err)
+	canonical, err := wb.Block().HashTreeRoot()
+	require.NoError(t, err)
+	require.NoError(t, db.SaveBlock(ctx, wb))
+	require.NoError(t, db.SaveState(ctx, st, canonical))
+	require.NoError(t, db.SaveFinalizedCheckpoint(ctx, &qrysmpb.Checkpoint{Epoch: 4, Root: canonical[:]}))
+
+	assert.Equal(t, canonical, db.ArchivedPointRoot(ctx, slot))
+	assert.Equal(t, canonical, db.LastArchivedRoot(ctx))
 }

@@ -63,17 +63,33 @@ func (mr *MockSecretKeyMockRecorder) PublicKey() *gomock.Call {
 }
 
 // Sign mocks base method.
-func (m *MockSecretKey) Sign(msg []byte) common.Signature {
+func (m *MockSecretKey) Sign(msg []byte) (common.Signature, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Sign", msg)
 	ret0, _ := ret[0].(common.Signature)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Sign indicates an expected call of Sign.
 func (mr *MockSecretKeyMockRecorder) Sign(msg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sign", reflect.TypeFor[func(msg []byte) common.Signature](), msg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sign", reflect.TypeFor[func(msg []byte) (common.Signature, error)](), msg)
+}
+
+// SignDeterministic mocks base method.
+func (m *MockSecretKey) SignDeterministic(msg []byte) (common.Signature, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SignDeterministic", msg)
+	ret0, _ := ret[0].(common.Signature)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SignDeterministic indicates an expected call of SignDeterministic.
+func (mr *MockSecretKeyMockRecorder) SignDeterministic(msg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SignDeterministic", reflect.TypeFor[func(msg []byte) (common.Signature, error)](), msg)
 }
 
 // MockPublicKey is a mock of PublicKey interface.

@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-bitfield"
+	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-qrl/p2p/discover"
 	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/theQRL/go-qrl/p2p/qnr"
-	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
 	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/time/slots"
@@ -37,41 +38,40 @@ type Listener interface {
 // with the tracked committee ids for the epoch, allowing our node
 // to be dynamically discoverable by others given our tracked committee ids.
 func (s *Service) RefreshQNR() {
-	// return early if discv5 isnt running
-	if s.dv5Listener == nil || !s.isInitialized() {
+	if !s.isInitialized() {
 		return
 	}
-	bitV := bitfield.NewBitvector64()
-	committees := cache.SubnetIDs.GetAllSubnets()
-	for _, idx := range committees {
-		bitV.SetBitAt(idx, true)
-	}
-	currentBitV, err := attBitvector(s.dv5Listener.Self().Record())
-	if err != nil {
-		log.WithError(err).Error("Could not retrieve att bitfield")
-		return
-	}
-	// Compare current epoch with our fork epochs
-	currEpoch := slots.ToEpoch(slots.CurrentSlot(uint64(s.genesisTime.Unix())))
 
-	// Retrieve sync subnets from application level
-	// cache.
-	bitS := bitfield.Bitvector4{byte(0x00)}
-	committees = cache.SyncSubnetIDs.GetAllSubnets(currEpoch)
-	for _, idx := range committees {
-		bitS.SetBitAt(idx, true)
+	currEpoch := slots.ToEpoch(slots.CurrentSlot(uint64(s.genesisTime.Unix())))
+	bitV, bitS := advertisedSubnetBitfields(currEpoch)
+	currentMetaBitV, currentMetaBitS := s.metadataBitfields()
+	metadataUnchanged := bytes.Equal(bitV, currentMetaBitV) && bytes.Equal(bitS, currentMetaBitS) &&
+		s.metaData != nil && !s.metaData.IsNil() && s.metaData.Version() == version.Zond
+
+	qnrUnchanged := true
+	if s.dv5Listener != nil {
+		currentBitV, err := attBitvector(s.dv5Listener.Self().Record())
+		if err != nil {
+			log.WithError(err).Error("Could not retrieve att bitfield")
+			return
+		}
+		currentBitS, err := syncBitvector(s.dv5Listener.Self().Record())
+		if err != nil {
+			log.WithError(err).Error("Could not retrieve sync bitfield")
+			return
+		}
+		qnrUnchanged = bytes.Equal(bitV, currentBitV) && bytes.Equal(bitS, currentBitS)
 	}
-	currentBitS, err := syncBitvector(s.dv5Listener.Self().Record())
-	if err != nil {
-		log.WithError(err).Error("Could not retrieve sync bitfield")
+
+	if metadataUnchanged && qnrUnchanged {
 		return
 	}
-	if bytes.Equal(bitV, currentBitV) && bytes.Equal(bitS, currentBitS) &&
-		s.Metadata().Version() == version.Zond {
-		// return early if bitfields haven't changed
-		return
+
+	// Don't return on error: the failure is from saving the metadata sequence number,
+	// which doesn't justify dropping the in-memory metadata update.
+	if err := s.updateSubnetRecordWithMetadata(bitV, bitS); err != nil {
+		log.WithError(err).Error("Failed to update subnet record with metadata")
 	}
-	s.updateSubnetRecordWithMetadata(bitV, bitS)
 
 	// ping all peers to inform them of new metadata
 	s.pingPeers()
@@ -79,9 +79,34 @@ func (s *Service) RefreshQNR() {
 
 // listen for new nodes watches for new nodes in the network and adds them to the peerstore.
 func (s *Service) listenForNewNodes() {
+	const minLogInterval = 1 * time.Minute
+
+	peersSummary := func(threshold uint) (uint, uint) {
+		// Retrieve how many active peers we have.
+		activePeers := s.Peers().Active()
+		activePeerCount := uint(len(activePeers))
+
+		// Compute how many peers we are missing to reach the threshold.
+		if activePeerCount >= threshold {
+			return activePeerCount, 0
+		}
+
+		missingPeerCount := threshold - activePeerCount
+
+		return activePeerCount, missingPeerCount
+	}
+
+	var lastLogTime time.Time
+
 	iterator := s.dv5Listener.RandomNodes()
-	iterator = qnode.Filter(iterator, s.filterPeer)
 	defer iterator.Close()
+	// `iterator.Next` can block indefinitely and only `iterator.Close`
+	// unblocks it, so close it as soon as the service stops.
+	go func() {
+		<-s.ctx.Done()
+		iterator.Close()
+	}()
+
 	for {
 		// Exit if service's context is canceled
 		if s.ctx.Err() != nil {
@@ -94,23 +119,59 @@ func (s *Service) listenForNewNodes() {
 			time.Sleep(pollingPeriod)
 			continue
 		}
-		exists := iterator.Next()
-		if !exists {
-			break
+
+		// Compute the number of new peers we want to dial.
+		activePeerCount, missingPeerCount := peersSummary(s.cfg.MaxPeers)
+
+		fields := logrus.Fields{
+			"currentPeerCount": activePeerCount,
+			"targetPeerCount":  s.cfg.MaxPeers,
 		}
-		node := iterator.Node()
-		peerInfo, _, err := convertToAddrInfo(node)
-		if err != nil {
-			log.WithError(err).Error("Could not convert to peer info")
+
+		if missingPeerCount == 0 {
+			log.Trace("Not looking for peers, at peer limit")
+			time.Sleep(pollingPeriod)
 			continue
 		}
-		// Make sure that peer is not dialed too often, for each connection attempt there's a backoff period.
-		s.Peers().RandomizeBackOff(peerInfo.ID)
-		go func(info *peer.AddrInfo) {
-			if err := s.connectWithPeer(s.ctx, *info); err != nil {
-				log.WithError(err).Debugf("Could not connect with new peer %s", info.String())
+
+		if time.Since(lastLogTime) > minLogInterval {
+			lastLogTime = time.Now()
+			log.WithFields(fields).Debug("Searching for new active peers")
+		}
+
+		// Restrict dials if limit is applied.
+		if flags.MaxDialIsActive() {
+			maxConcurrentDials := uint(flags.Get().MaxConcurrentDials)
+			missingPeerCount = min(missingPeerCount, maxConcurrentDials)
+		}
+
+		// Search for new peers.
+		wantedNodes := searchForPeers(s.ctx, iterator, batchSize, missingPeerCount, s.filterPeer)
+
+		wg := new(sync.WaitGroup)
+		for i := 0; i < len(wantedNodes); i++ {
+			node := wantedNodes[i]
+			peerInfo, _, err := convertToAddrInfo(node)
+			if err != nil {
+				log.WithError(err).Error("Could not convert to peer info")
+				continue
 			}
-		}(peerInfo)
+
+			if peerInfo == nil {
+				continue
+			}
+
+			// Make sure that peer is not dialed too often, for each connection attempt there's a backoff period.
+			s.Peers().RandomizeBackOff(peerInfo.ID)
+			wg.Add(1)
+			go func(info *peer.AddrInfo) {
+				if err := s.connectWithPeer(s.ctx, *info); err != nil {
+					log.WithError(err).Debugf("Could not connect with new peer %s", info.String())
+				}
+				wg.Done()
+			}(peerInfo)
+		}
+		wg.Wait()
 	}
 }
 
@@ -278,6 +339,8 @@ func (s *Service) filterPeer(node *qnode.Node) bool {
 		return false
 	}
 	if s.peers.IsActive(peerData.ID) {
+		// Constantly update QNR for known peers.
+		s.peers.UpdateENR(node.Record(), peerData.ID)
 		return false
 	}
 	if s.host.Network().Connectedness(peerData.ID) == network.Connected {
@@ -455,6 +518,10 @@ func peerIdsFromMultiAddrs(addrs []ma.Multiaddr) []peer.ID {
 		info, err := peer.AddrInfoFromP2pAddr(a)
 		if err != nil {
 			log.WithError(err).Errorf("Could not derive peer info from multiaddress %s", a.String())
+			continue
+		}
+		if len(info.Addrs) == 0 {
+			log.WithField("peerID", info.ID).Warn("Skipping peer with no transport address")
 			continue
 		}
 		peers = append(peers, info.ID)

@@ -3,7 +3,7 @@ package node
 import (
 	"fmt"
 
-	fastssz "github.com/prysmaticlabs/fastssz"
+	"github.com/pkg/errors"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/cmd"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
@@ -24,9 +24,27 @@ func configureTracing(cliCtx *cli.Context) error {
 }
 
 func configureChainConfig(cliCtx *cli.Context) error {
-	if cliCtx.IsSet(cmd.ChainConfigFileFlag.Name) {
+	cfg := params.BeaconConfig()
+	fromFile := cliCtx.IsSet(cmd.ChainConfigFileFlag.Name)
+	if fromFile {
 		chainConfigFileName := cliCtx.String(cmd.ChainConfigFileFlag.Name)
-		return params.LoadChainConfigFile(chainConfigFileName, nil)
+		var err error
+		cfg, err = params.UnmarshalConfigFile(chainConfigFileName, nil)
+		if err != nil {
+			return err
+		}
+	}
+	// The selected preset or file must satisfy consensus invariants and match
+	// this binary's SSZ state layout. Validate files before activating them so
+	// a rejected configuration leaves the active config unchanged.
+	if err := cfg.Validate(); err != nil {
+		return errors.Wrap(err, "invalid chain config")
+	}
+	if err := cfg.ValidateStateLayout(); err != nil {
+		return errors.Wrap(err, "chain config does not match this binary")
+	}
+	if fromFile {
+		return params.SetActive(cfg)
 	}
 	return nil
 }
@@ -79,8 +97,16 @@ func configureBuilderCircuitBreaker(cliCtx *cli.Context) error {
 
 func configureSlotsPerArchivedPoint(cliCtx *cli.Context) error {
 	if cliCtx.IsSet(flags.SlotsPerArchivedPoint.Name) {
+		// The interval divides slots in the state migration and the dirty-state
+		// cleanup: zero would be a division by zero there, and a negative value
+		// would wrap to an interval no chain reaches, so no state is ever
+		// archived and every replay starts from genesis.
+		value := cliCtx.Int(flags.SlotsPerArchivedPoint.Name)
+		if value <= 0 {
+			return fmt.Errorf("%s must be a positive number of slots, got %d", flags.SlotsPerArchivedPoint.Name, value)
+		}
 		c := params.BeaconConfig().Copy()
-		c.SlotsPerArchivedPoint = primitives.Slot(cliCtx.Int(flags.SlotsPerArchivedPoint.Name))
+		c.SlotsPerArchivedPoint = primitives.Slot(value)
 		if err := params.SetActive(c); err != nil {
 			return err
 		}
@@ -118,15 +144,13 @@ func configureExecutionConfig(cliCtx *cli.Context) error {
 }
 
 func configureNetwork(cliCtx *cli.Context) {
-	if len(cliCtx.StringSlice(cmd.BootstrapNode.Name)) > 0 {
+	// Use IsSet rather than len(...) > 0: the flag carries a default slice of
+	// mainnet bootnodes, so len() > 0 is always true and would otherwise
+	// silently override testnet bootnodes loaded via --config-file.
+	if cliCtx.IsSet(cmd.BootstrapNode.Name) {
 		c := params.BeaconNetworkConfig()
 		c.BootstrapNodes = cliCtx.StringSlice(cmd.BootstrapNode.Name)
 		params.OverrideBeaconNetworkConfig(c)
-	}
-	if cliCtx.IsSet(flags.ContractDeploymentBlock.Name) {
-		networkCfg := params.BeaconNetworkConfig()
-		networkCfg.ContractDeploymentBlock = uint64(cliCtx.Int(flags.ContractDeploymentBlock.Name))
-		params.OverrideBeaconNetworkConfig(networkCfg)
 	}
 }
 
@@ -178,8 +202,4 @@ func configureExecutionSetting(cliCtx *cli.Context) error {
 	log.Infof("Default fee recipient is set to %s, recipient may be overwritten from validator client and persist in db."+
 		" Default fee recipient will be used as a fall back", checksumAddress.Hex())
 	return params.SetActive(c)
-}
-
-func configureFastSSZHashingAlgorithm() {
-	fastssz.EnableVectorizedHTR = true
 }

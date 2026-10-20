@@ -2,7 +2,6 @@ package validator
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
@@ -23,7 +22,6 @@ import (
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
-	attaggregation "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/attestations"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -63,7 +61,8 @@ func TestSubmitAggregateAndProof_CantFindValidatorIndex(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte{'A'})
+	sig, err := priv.Sign([]byte{'A'})
+	require.NoError(t, err)
 	req := &qrysmpb.AggregateSelectionRequest{CommitteeIndex: 1, SlotSignature: sig.Marshal(), PublicKey: pubKey(3)}
 	wanted := "Could not locate validator index in DB"
 	_, err = server.SubmitAggregateSelectionProof(ctx, req)
@@ -71,16 +70,14 @@ func TestSubmitAggregateAndProof_CantFindValidatorIndex(t *testing.T) {
 }
 
 func TestSubmitAggregateAndProof_IsAggregatorAndNoAtts(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	params.OverrideBeaconConfig(params.MinimalSpecConfig())
 	ctx := context.Background()
 
-	s, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
-		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
-		Validators: []*qrysmpb.Validator{
-			{PublicKey: pubKey(0)},
-			{PublicKey: pubKey(1)},
-		},
-	})
+	s, keys := util.DeterministicGenesisStateZond(t, 32)
+	committee, err := helpers.BeaconCommitteeFromState(ctx, s, 0, 0)
 	require.NoError(t, err)
+	require.NotEqual(t, 0, len(committee))
 
 	server := &Server{
 		HeadFetcher:           &mock.ChainService{State: s},
@@ -90,13 +87,10 @@ func TestSubmitAggregateAndProof_IsAggregatorAndNoAtts(t *testing.T) {
 		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 	}
 
-	priv, err := ml_dsa_87.RandKey()
+	key := keys[committee[0]]
+	sig, err := key.Sign([]byte{'A'})
 	require.NoError(t, err)
-	sig := priv.Sign([]byte{'A'})
-	v, err := s.ValidatorAtIndex(1)
-	require.NoError(t, err)
-	pubKey := v.PublicKey
-	req := &qrysmpb.AggregateSelectionRequest{CommitteeIndex: 1, SlotSignature: sig.Marshal(), PublicKey: pubKey}
+	req := &qrysmpb.AggregateSelectionRequest{SlotSignature: sig.Marshal(), PublicKey: key.PublicKey().Marshal()}
 
 	_, err = server.SubmitAggregateSelectionProof(ctx, req)
 	assert.ErrorContains(t, "Could not find attestation for slot and committee in pool", err)
@@ -105,12 +99,12 @@ func TestSubmitAggregateAndProof_IsAggregatorAndNoAtts(t *testing.T) {
 func TestSubmitAggregateAndProof_UnaggregateOk(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	c := params.MinimalSpecConfig().Copy()
-	c.TargetAggregatorsPerCommittee = 16
+	c.TargetAggregatorsPerCommittee = 8
 	params.OverrideBeaconConfig(c)
 
 	ctx := context.Background()
 
-	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 32)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	att0, err := generateUnaggregatedAtt(beaconState, 0, privKeys)
 	require.NoError(t, err)
 	err = beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().MinAttestationInclusionDelay)
@@ -127,7 +121,8 @@ func TestSubmitAggregateAndProof_UnaggregateOk(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte{'B'})
+	sig, err := priv.Sign([]byte{'B'})
+	require.NoError(t, err)
 	v, err := beaconState.ValidatorAtIndex(1)
 	require.NoError(t, err)
 	pubKey := v.PublicKey
@@ -141,12 +136,12 @@ func TestSubmitAggregateAndProof_UnaggregateOk(t *testing.T) {
 func TestSubmitAggregateAndProof_AggregateOk(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	c := params.MinimalSpecConfig().Copy()
-	c.TargetAggregatorsPerCommittee = 16
+	c.TargetAggregatorsPerCommittee = 8
 	params.OverrideBeaconConfig(c)
 
 	ctx := context.Background()
 
-	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 32)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	att0, err := generateAtt(beaconState, 0, privKeys)
 	require.NoError(t, err)
 	att1, err := generateAtt(beaconState, 2, privKeys)
@@ -166,7 +161,8 @@ func TestSubmitAggregateAndProof_AggregateOk(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte{'B'})
+	sig, err := priv.Sign([]byte{'B'})
+	require.NoError(t, err)
 	v, err := beaconState.ValidatorAtIndex(1)
 	require.NoError(t, err)
 	pubKey := v.PublicKey
@@ -176,24 +172,17 @@ func TestSubmitAggregateAndProof_AggregateOk(t *testing.T) {
 	require.NoError(t, aggregatorServer.AttPool.SaveAggregatedAttestation(att1))
 	_, err = aggregatorServer.SubmitAggregateSelectionProof(ctx, req)
 	require.NoError(t, err)
-
-	aggregatedAtts := aggregatorServer.AttPool.AggregatedAttestations()
-	wanted, err := attaggregation.AggregatePair(att0, att1)
-	require.NoError(t, err)
-	if reflect.DeepEqual(aggregatedAtts, wanted) {
-		t.Error("Did not receive wanted attestation")
-	}
 }
 
 func TestSubmitAggregateAndProof_AggregateNotOk(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	c := params.MinimalSpecConfig().Copy()
-	c.TargetAggregatorsPerCommittee = 16
+	c.TargetAggregatorsPerCommittee = 8
 	params.OverrideBeaconConfig(c)
 
 	ctx := context.Background()
 
-	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 64)
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+params.BeaconConfig().MinAttestationInclusionDelay))
 
 	aggregatorServer := &Server{
@@ -207,7 +196,8 @@ func TestSubmitAggregateAndProof_AggregateNotOk(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte{'B'})
+	sig, err := priv.Sign([]byte{'B'})
+	require.NoError(t, err)
 	v, err := beaconState.ValidatorAtIndex(1)
 	require.NoError(t, err)
 	pubKey := v.PublicKey
@@ -285,8 +275,11 @@ func generateUnaggregatedAtt(state state.ReadOnlyBeaconState, index uint64, priv
 		if err != nil {
 			return nil, err
 		}
-		sig := privKeys[indice].Sign(hashTreeRoot[:]).Marshal()
-		sigs[i] = sig
+		lsig1, err := privKeys[indice].Sign(hashTreeRoot[:])
+		if err != nil {
+			return nil, err
+		}
+		sigs[i] = lsig1.Marshal()
 	}
 
 	att.Signatures = sigs
@@ -297,7 +290,7 @@ func generateUnaggregatedAtt(state state.ReadOnlyBeaconState, index uint64, priv
 func TestSubmitAggregateAndProof_PreferOwnAttestation(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	c := params.MinimalSpecConfig().Copy()
-	c.TargetAggregatorsPerCommittee = 16
+	c.TargetAggregatorsPerCommittee = 8
 	params.OverrideBeaconConfig(c)
 
 	ctx := context.Background()
@@ -305,7 +298,7 @@ func TestSubmitAggregateAndProof_PreferOwnAttestation(t *testing.T) {
 	// This test creates 3 attestations. 0 and 2 have the same attestation data and can be
 	// aggregated. 1 has the validator's signature making this request and that is the expected
 	// attestation to sign, even though the aggregated 0&2 would have more aggregated bits.
-	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 32)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	att0, err := generateAtt(beaconState, 0, privKeys)
 	require.NoError(t, err)
 	att0.Data.BeaconBlockRoot = bytesutil.PadTo([]byte("foo"), fieldparams.RootLength)
@@ -333,10 +326,13 @@ func TestSubmitAggregateAndProof_PreferOwnAttestation(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte{'B'})
-	v, err := beaconState.ValidatorAtIndex(1)
+	sig, err := priv.Sign([]byte{'B'})
 	require.NoError(t, err)
-	pubKey := v.PublicKey
+	// The aggregator is the first member of committee (slot 0, index 1), so its
+	// bit is position 0, which only att1 sets.
+	committee, err := helpers.BeaconCommitteeFromState(ctx, beaconState, 0, 1)
+	require.NoError(t, err)
+	pubKey := privKeys[committee[0]].PublicKey().Marshal()
 	req := &qrysmpb.AggregateSelectionRequest{CommitteeIndex: 1, SlotSignature: sig.Marshal(), PublicKey: pubKey}
 
 	err = aggregatorServer.AttPool.SaveAggregatedAttestations([]*qrysmpb.Attestation{
@@ -354,14 +350,14 @@ func TestSubmitAggregateAndProof_PreferOwnAttestation(t *testing.T) {
 func TestSubmitAggregateAndProof_SelectsMostBitsWhenOwnAttestationNotPresent(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	c := params.MinimalSpecConfig().Copy()
-	c.TargetAggregatorsPerCommittee = 16
+	c.TargetAggregatorsPerCommittee = 8
 	params.OverrideBeaconConfig(c)
 
 	ctx := context.Background()
 
 	// This test creates two distinct attestations, neither of which contain the validator's index,
 	// index 0. This test should choose the most bits attestation, att1.
-	beaconState, privKeys := util.DeterministicGenesisStateZond(t, fieldparams.RootLength)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	att0, err := generateAtt(beaconState, 0, privKeys)
 	require.NoError(t, err)
 	att0.Data.BeaconBlockRoot = bytesutil.PadTo([]byte("foo"), fieldparams.RootLength)
@@ -385,7 +381,8 @@ func TestSubmitAggregateAndProof_SelectsMostBitsWhenOwnAttestationNotPresent(t *
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte{'B'})
+	sig, err := priv.Sign([]byte{'B'})
+	require.NoError(t, err)
 	v, err := beaconState.ValidatorAtIndex(1)
 	require.NoError(t, err)
 	pubKey := v.PublicKey

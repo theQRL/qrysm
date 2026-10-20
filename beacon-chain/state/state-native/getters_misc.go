@@ -23,7 +23,8 @@ func (b *BeaconState) GenesisValidatorsRoot() []byte {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
-	return b.genesisValidatorsRoot[:]
+	root := b.genesisValidatorsRoot
+	return root[:]
 }
 
 // Version of the beacon state. This method
@@ -43,10 +44,6 @@ func (b *BeaconState) Slot() primitives.Slot {
 
 // Fork version of the beacon chain.
 func (b *BeaconState) Fork() *qrysmpb.Fork {
-	if b.fork == nil {
-		return nil
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -73,24 +70,24 @@ func (b *BeaconState) forkVal() *qrysmpb.Fork {
 
 // HistoricalRoots based on epochs stored in the beacon state.
 func (b *BeaconState) HistoricalRoots() ([][]byte, error) {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.historicalRoots == nil {
 		return nil, nil
 	}
-
-	b.lock.RLock()
-	defer b.lock.RUnlock()
 
 	return b.historicalRoots.Slice(), nil
 }
 
 // HistoricalSummaries of the beacon state.
 func (b *BeaconState) HistoricalSummaries() ([]*qrysmpb.HistoricalSummary, error) {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.historicalSummaries == nil {
 		return nil, nil
 	}
-
-	b.lock.RLock()
-	defer b.lock.RUnlock()
 
 	return b.historicalSummariesVal(), nil
 }

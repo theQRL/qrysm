@@ -44,6 +44,14 @@ import (
 //	    next_validator_index = ValidatorIndex(next_index % len(state.validators))
 //	    state.next_withdrawal_validator_index = next_validator_index
 func ProcessWithdrawals(st state.BeaconState, executionData interfaces.ExecutionData) (state.BeaconState, error) {
+	if executionData == nil {
+		return nil, errors.New("nil execution data")
+	}
+	// The sweep update below reduces the next validator index modulo the
+	// registry size; an empty registry has nothing to withdraw from.
+	if st.NumValidators() == 0 {
+		return nil, errors.New("cannot process withdrawals for a state with no validators")
+	}
 	expectedWithdrawals, err := st.ExpectedWithdrawals()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get expected withdrawals")

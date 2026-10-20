@@ -27,9 +27,19 @@ func NewValMapHandler(vals []*qrysmpb.Validator) *ValidatorMapHandler {
 	}
 }
 
-// AddRef copies the whole map and returns a map handler with the copied map.
+// AddRef records another state sharing this map.
 func (v *ValidatorMapHandler) AddRef() {
 	v.mapRef.AddRef()
+}
+
+// MinusRef releases a state's reference to this map.
+func (v *ValidatorMapHandler) MinusRef() {
+	v.mapRef.MinusRef()
+}
+
+// Refs returns the number of states sharing this map.
+func (v *ValidatorMapHandler) Refs() uint {
+	return v.mapRef.Refs()
 }
 
 // IsNil returns true if the underlying validator index map is nil.
@@ -40,7 +50,7 @@ func (v *ValidatorMapHandler) IsNil() bool {
 // Copy the whole map and returns a map handler with the copied map.
 func (v *ValidatorMapHandler) Copy() *ValidatorMapHandler {
 	if v == nil || v.valIdxMap == nil {
-		return &ValidatorMapHandler{valIdxMap: map[[field_params.MLDSA87PubkeyLength]byte]primitives.ValidatorIndex{}, mapRef: new(Reference), RWMutex: new(sync.RWMutex)}
+		return &ValidatorMapHandler{valIdxMap: map[[field_params.MLDSA87PubkeyLength]byte]primitives.ValidatorIndex{}, mapRef: NewRef(1), RWMutex: new(sync.RWMutex)}
 	}
 	v.RLock()
 	defer v.RUnlock()

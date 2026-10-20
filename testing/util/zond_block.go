@@ -128,7 +128,7 @@ func GenerateFullBlockZond(
 	blockHash := indexToHash(uint64(slot))
 	newExecutionPayloadZond := &v1.ExecutionPayloadZond{
 		ParentHash:    parentExecution.BlockHash(),
-		FeeRecipient:  make([]byte, 20),
+		FeeRecipient:  make([]byte, 64),
 		StateRoot:     params.BeaconConfig().ZeroHash[:],
 		ReceiptsRoot:  params.BeaconConfig().ZeroHash[:],
 		LogsBloom:     make([]byte, 256),

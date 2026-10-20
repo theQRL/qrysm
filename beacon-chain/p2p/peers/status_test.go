@@ -3,6 +3,8 @@ package peers_test
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
+	"net"
 	"strconv"
 	"testing"
 	"time"
@@ -59,7 +61,7 @@ func TestPeerExplicitAdd(t *testing.T) {
 
 	resAddress, err := p.Address(id)
 	require.NoError(t, err)
-	assert.Equal(t, address, resAddress, "Unexpected address")
+	assert.Equal(t, true, address.Equal(resAddress), "Unexpected address")
 
 	resDirection, err := p.Direction(id)
 	require.NoError(t, err)
@@ -73,7 +75,7 @@ func TestPeerExplicitAdd(t *testing.T) {
 
 	resAddress2, err := p.Address(id)
 	require.NoError(t, err)
-	assert.Equal(t, address2, resAddress2, "Unexpected address")
+	assert.Equal(t, true, address2.Equal(resAddress2), "Unexpected address")
 
 	resDirection2, err := p.Direction(id)
 	require.NoError(t, err)
@@ -549,45 +551,121 @@ func TestPrune(t *testing.T) {
 }
 
 func TestPeerIPTracker(t *testing.T) {
-	resetCfg := features.InitWithReset(&features.Flags{
-		EnablePeerScorer: false,
-	})
-	defer resetCfg()
-	maxBadResponses := 2
+	for _, scorerEnabled := range []bool{true, false} {
+		t.Run(fmt.Sprintf("EnablePeerScorer=%v", scorerEnabled), func(t *testing.T) {
+			resetCfg := features.InitWithReset(&features.Flags{
+				EnablePeerScorer: scorerEnabled,
+			})
+			defer resetCfg()
+			p := peers.NewStatus(context.Background(), &peers.StatusConfig{
+				PeerLimit: 30,
+				ScorerParams: &scorers.Config{
+					BadResponsesScorerConfig: &scorers.BadResponsesScorerConfig{
+						Threshold: 2,
+					},
+				},
+			})
+
+			sharedIP := "211.227.218.116"
+			addrAt := func(port int) ma.Multiaddr {
+				addr, err := ma.NewMultiaddr("/ip4/" + sharedIP + "/tcp/" + strconv.Itoa(port))
+				require.NoError(t, err)
+				return addr
+			}
+
+			// Unverified entries: discovered records that merely claim the IP
+			// and never connect. However many there are, they must not make
+			// the IP bad (that is what lets a DHT node ban honest peers).
+			var discovered []peer.ID
+			for i := range peers.ColocationLimit + 10 {
+				discovered = append(discovered, createPeer(t, p, addrAt(3000+i), network.DirUnknown, peers.PeerDisconnected))
+			}
+			for _, pr := range discovered {
+				assert.Equal(t, false, p.IsBad(pr), "disconnected peer counted toward colocation")
+			}
+			honest := createPeer(t, p, addrAt(4000), network.DirInbound, peers.PeerConnected)
+			assert.Equal(t, false, p.IsBad(honest), "connected peer banned because of unverified records")
+
+			// Live connections do count: up to ColocationLimit peers at one IP
+			// are fine, one more makes the IP bad for all of them.
+			var connected []peer.ID
+			for i := 1; i < peers.ColocationLimit; i++ {
+				connected = append(connected, createPeer(t, p, addrAt(5000+i), network.DirInbound, peers.PeerConnected))
+			}
+			for _, pr := range append(connected, honest) {
+				assert.Equal(t, false, p.IsBad(pr), "peer within the colocation limit is bad")
+			}
+			// A peer still establishing its connection counts as well.
+			extra := createPeer(t, p, addrAt(6000), network.DirInbound, peers.PeerConnecting)
+			for _, pr := range append(connected, honest, extra) {
+				assert.Equal(t, true, p.IsBad(pr), "peer above the colocation limit is not bad")
+			}
+			// The discovered-only entries at that IP are bad too now: the
+			// verdict is about the IP, and they would be a further identity.
+			for _, pr := range discovered {
+				assert.Equal(t, true, p.IsBad(pr))
+			}
+
+			// The ban is not permanent: it lifts as soon as enough connections
+			// at that IP are gone, without a restart.
+			p.SetConnectionState(extra, peers.PeerDisconnected)
+			for _, pr := range append(connected, honest) {
+				assert.Equal(t, false, p.IsBad(pr), "colocation ban did not lift after disconnect")
+			}
+			// The disconnected one is still refused: the IP is at its limit
+			// and it would be a further identity there.
+			assert.Equal(t, true, p.IsBad(extra))
+
+			// Pruning drops the disconnected entries and keeps the tally of
+			// the remaining live connections intact.
+			for i := 0; i < p.MaxPeerLimit()+100; i++ {
+				pid := addPeer(t, p, peers.PeerDisconnected)
+				p.Scorers().BadResponsesScorer().Increment(pid)
+			}
+			p.Prune()
+			for _, pr := range append(connected, honest) {
+				_, err := p.ConnectionState(pr)
+				require.NoError(t, err, "connected peer pruned")
+				assert.Equal(t, false, p.IsBad(pr))
+			}
+			again := createPeer(t, p, addrAt(7000), network.DirInbound, peers.PeerConnected)
+			for _, pr := range append(connected, honest, again) {
+				assert.Equal(t, true, p.IsBad(pr), "tally lost after prune")
+			}
+		})
+	}
+}
+
+func TestPeerIPTracker_AddressChangeMovesCount(t *testing.T) {
 	p := peers.NewStatus(context.Background(), &peers.StatusConfig{
 		PeerLimit: 30,
 		ScorerParams: &scorers.Config{
-			BadResponsesScorerConfig: &scorers.BadResponsesScorerConfig{
-				Threshold: maxBadResponses,
-			},
+			BadResponsesScorerConfig: &scorers.BadResponsesScorerConfig{Threshold: 2},
 		},
 	})
-
-	badIP := "211.227.218.116"
-	var badPeers []peer.ID
-	for i := range peers.ColocationLimit + 10 {
-		port := strconv.Itoa(3000 + i)
-		addr, err := ma.NewMultiaddr("/ip4/" + badIP + "/tcp/" + port)
-		if err != nil {
-			t.Fatal(err)
-		}
-		badPeers = append(badPeers, createPeer(t, p, addr, network.DirUnknown, peerdata.PeerConnectionState(qrlpb.ConnectionState_DISCONNECTED)))
+	addr := func(ip string, port int) ma.Multiaddr {
+		a, err := ma.NewMultiaddr("/ip4/" + ip + "/tcp/" + strconv.Itoa(port))
+		require.NoError(t, err)
+		return a
 	}
-	for _, pr := range badPeers {
-		assert.Equal(t, true, p.IsBad(pr), "peer with bad ip is not bad")
+	// ColocationLimit connected peers at IP A, one at IP B.
+	var atA []peer.ID
+	for i := range peers.ColocationLimit {
+		atA = append(atA, createPeer(t, p, addr("10.0.0.1", 3000+i), network.DirInbound, peers.PeerConnected))
 	}
-
-	// Add in bad peers, so that our records are trimmed out
-	// from the peer store.
-	for i := 0; i < p.MaxPeerLimit()+100; i++ {
-		// Peer added to peer handler.
-		pid := addPeer(t, p, peers.PeerDisconnected)
-		p.Scorers().BadResponsesScorer().Increment(pid)
+	mover := createPeer(t, p, addr("10.0.0.2", 3000), network.DirInbound, peers.PeerConnected)
+	for _, pr := range atA {
+		assert.Equal(t, false, p.IsBad(pr))
 	}
-	p.Prune()
-
-	for _, pr := range badPeers {
-		assert.Equal(t, false, p.IsBad(pr), "peer with good ip is regarded as bad")
+	// The connected peer at B is re-added with an address at A: A is now over the limit.
+	p.Add(nil, mover, addr("10.0.0.1", 9000), network.DirInbound)
+	for _, pr := range append(atA, mover) {
+		assert.Equal(t, true, p.IsBad(pr))
+	}
+	// And back again: A recovers, B is untouched.
+	p.Add(nil, mover, addr("10.0.0.2", 3000), network.DirInbound)
+	for _, pr := range append(atA, mover) {
+		assert.Equal(t, false, p.IsBad(pr))
 	}
 }
 
@@ -1161,4 +1239,37 @@ func createPeer(t *testing.T, p *peers.Status, addr ma.Multiaddr,
 	p.Add(new(qnr.Record), id, addr, dir)
 	p.SetConnectionState(id, state)
 	return id
+}
+
+func TestPeerIPTracker_Whitelist(t *testing.T) {
+	_, whitelisted, err := net.ParseCIDR("10.0.0.0/24")
+	require.NoError(t, err)
+	p := peers.NewStatus(context.Background(), &peers.StatusConfig{
+		PeerLimit: 30,
+		ScorerParams: &scorers.Config{
+			BadResponsesScorerConfig: &scorers.BadResponsesScorerConfig{Threshold: 2},
+		},
+		IPColocationWhitelist: []*net.IPNet{whitelisted},
+	})
+	addr := func(ip string, port int) ma.Multiaddr {
+		a, err := ma.NewMultiaddr("/ip4/" + ip + "/tcp/" + strconv.Itoa(port))
+		require.NoError(t, err)
+		return a
+	}
+	// Many live connections from a whitelisted range are all fine.
+	var inRange []peer.ID
+	for i := range peers.ColocationLimit + 10 {
+		inRange = append(inRange, createPeer(t, p, addr("10.0.0.7", 3000+i), network.DirInbound, peers.PeerConnected))
+	}
+	for _, pr := range inRange {
+		assert.Equal(t, false, p.IsBad(pr), "whitelisted IP hit the colocation limit")
+	}
+	// The limit still applies outside the whitelist.
+	var outside []peer.ID
+	for i := range peers.ColocationLimit + 1 {
+		outside = append(outside, createPeer(t, p, addr("10.0.1.7", 3000+i), network.DirInbound, peers.PeerConnected))
+	}
+	for _, pr := range outside {
+		assert.Equal(t, true, p.IsBad(pr), "non-whitelisted IP escaped the colocation limit")
+	}
 }

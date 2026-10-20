@@ -402,10 +402,11 @@ type DepositJson struct {
 }
 
 type Deposit_DataJson struct {
-	PublicKey             string `json:"pubkey" hex:"true"`
-	WithdrawalCredentials string `json:"withdrawal_credentials" hex:"true"`
-	Amount                string `json:"amount"`
-	Signature             string `json:"signature" hex:"true"`
+	PublicKey           string `json:"pubkey" hex:"true"`
+	WithdrawalRecipient string `json:"withdrawal_recipient" hex:"true"`
+	Amount              string `json:"amount"`
+	RandaoCommitment    string `json:"randao_commitment" hex:"true"`
+	Signature           string `json:"signature" hex:"true"`
 }
 
 type SignedVoluntaryExitJson struct {
@@ -429,6 +430,7 @@ type IdentityJson struct {
 type MetadataJson struct {
 	SeqNumber string `json:"seq_number"`
 	Attnets   string `json:"attnets" hex:"true"`
+	Syncnets  string `json:"syncnets,omitempty" hex:"true"`
 }
 
 type PeerJson struct {
@@ -493,13 +495,14 @@ type ForkJson struct {
 
 type ValidatorJson struct {
 	PublicKey                  string `json:"pubkey" hex:"true"`
-	WithdrawalCredentials      string `json:"withdrawal_credentials" hex:"true"`
+	WithdrawalRecipient        string `json:"withdrawal_recipient" hex:"true"`
 	EffectiveBalance           string `json:"effective_balance"`
 	Slashed                    bool   `json:"slashed"`
 	ActivationEligibilityEpoch string `json:"activation_eligibility_epoch"`
 	ActivationEpoch            string `json:"activation_epoch"`
 	ExitEpoch                  string `json:"exit_epoch"`
 	WithdrawableEpoch          string `json:"withdrawable_epoch"`
+	RandaoCommitment           string `json:"randao_commitment" hex:"true"`
 }
 
 type SyncCommitteeJson struct {
@@ -692,8 +695,8 @@ type EventChainReorgJson struct {
 	Slot                string `json:"slot"`
 	Depth               string `json:"depth"`
 	OldHeadBlock        string `json:"old_head_block" hex:"true"`
-	NewHeadBlock        string `json:"old_head_state" hex:"true"`
-	OldHeadState        string `json:"new_head_block" hex:"true"`
+	NewHeadBlock        string `json:"new_head_block" hex:"true"`
+	OldHeadState        string `json:"old_head_state" hex:"true"`
 	NewHeadState        string `json:"new_head_state" hex:"true"`
 	Epoch               string `json:"epoch"`
 	ExecutionOptimistic bool   `json:"execution_optimistic"`

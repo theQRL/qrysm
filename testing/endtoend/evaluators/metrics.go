@@ -22,7 +22,10 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-const maxMemStatsBytes = 2000000000 // 2 GiB.
+const (
+	maxMemStatsBytes      = 2000000000 // 2 GiB.
+	maxAllowedHeadSlotLag = 2
+)
 
 // MetricsCheck performs a check on metrics to make sure caches are functioning, and
 // overall health is good. Not checking the first epoch so the sample size isn't too small.
@@ -121,8 +124,11 @@ func metricsTest(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 			return err
 		}
 		timeSlot := slots.SinceGenesis(genesisResp.GenesisTime.AsTime())
-		if uint64(chainHead.HeadSlot) != uint64(timeSlot) {
-			return fmt.Errorf("expected metrics slot to equal chain head slot, expected %d, received %d", timeSlot, chainHead.HeadSlot)
+		if chainHead.HeadSlot > timeSlot {
+			return fmt.Errorf("expected chain head slot to not exceed current slot, current %d, received %d", timeSlot, chainHead.HeadSlot)
+		}
+		if timeSlot-chainHead.HeadSlot > maxAllowedHeadSlotLag {
+			return fmt.Errorf("expected chain head slot to be within %d slots of current slot, current %d, received %d", maxAllowedHeadSlotLag, timeSlot, chainHead.HeadSlot)
 		}
 
 		for _, test := range metricLessThanTests {

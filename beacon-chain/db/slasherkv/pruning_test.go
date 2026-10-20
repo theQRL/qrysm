@@ -7,8 +7,11 @@ import (
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/time/slots"
 	bolt "go.etcd.io/bbolt"
@@ -34,10 +37,7 @@ func TestStore_PruneProposalsAtEpoch(t *testing.T) {
 
 		err = beaconDB.db.Update(func(tx *bolt.Tx) error {
 			bkt := tx.Bucket(proposalRecordsBucket)
-			key, err := keyForValidatorProposal(lowestStoredSlot+1, 0 /* proposer index */)
-			if err != nil {
-				return err
-			}
+			key := keyForValidatorProposal(lowestStoredSlot+1, 0 /* proposer index */)
 			return bkt.Put(key, []byte("hi"))
 		})
 		require.NoError(t, err)
@@ -93,14 +93,8 @@ func TestStore_PruneProposalsAtEpoch(t *testing.T) {
 				endSlot, err := slots.EpochStart(i + 1)
 				require.NoError(t, err)
 				for j := startSlot; j < endSlot; j++ {
-					prop1Key, err := keyForValidatorProposal(j, 0)
-					if err != nil {
-						return err
-					}
-					prop2Key, err := keyForValidatorProposal(j, 1)
-					if err != nil {
-						return err
-					}
+					prop1Key := keyForValidatorProposal(j, 0)
+					prop2Key := keyForValidatorProposal(j, 1)
 					if bkt.Get(prop1Key) != nil {
 						return fmt.Errorf("proposal still exists for epoch %d, validator 0", j)
 					}
@@ -215,4 +209,102 @@ func TestStore_PruneAttestations_OK(t *testing.T) {
 			require.NoError(t, err)
 		}
 	})
+}
+
+func TestPruneAttestationsAtEpoch_CancelledContextCommitsProgress(t *testing.T) {
+	ctx := context.Background()
+	db := setupDB(t)
+
+	atts := make([]*slashertypes.IndexedAttestationWrapper, 0, 5)
+	for i := uint64(0); i < 5; i++ {
+		root := bytesutil.PadTo([]byte{byte(i + 1)}, 32)
+		atts = append(atts, createAttestationWrapper(primitives.Epoch(i), primitives.Epoch(i+1), []uint64{i}, root))
+	}
+	require.NoError(t, db.SaveAttestationRecordsForValidators(ctx, atts))
+
+	// A deadline that has already passed deletes nothing, reports the timeout
+	// and, above all, does not fail the transaction.
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	numPruned, err := db.PruneAttestationsAtEpoch(cancelled, 10)
+	require.ErrorIs(t, err, errTimeOut)
+	require.Equal(t, uint(0), numPruned)
+	for i := uint64(0); i < 5; i++ {
+		record, err := db.AttestationRecordForValidator(ctx, primitives.ValidatorIndex(i), primitives.Epoch(i+1))
+		require.NoError(t, err)
+		require.NotNil(t, record)
+	}
+
+	// Without a deadline everything at or below the epoch is pruned.
+	numPruned, err = db.PruneAttestationsAtEpoch(ctx, 3)
+	require.NoError(t, err)
+	require.Equal(t, uint(3), numPruned)
+	record, err := db.AttestationRecordForValidator(ctx, 4, 5)
+	require.NoError(t, err)
+	require.NotNil(t, record)
+}
+
+func TestPruneProposalsAtEpoch_CancelledContextCommitsNothing(t *testing.T) {
+	ctx := context.Background()
+	db := setupDB(t)
+	proposals := []*slashertypes.SignedBlockHeaderWrapper{
+		{
+			SignedBeaconBlockHeader: &qrysmpb.SignedBeaconBlockHeader{
+				Header: &qrysmpb.BeaconBlockHeader{
+					Slot:          2,
+					ProposerIndex: 1,
+					ParentRoot:    make([]byte, 32),
+					StateRoot:     make([]byte, 32),
+					BodyRoot:      make([]byte, 32),
+				},
+				Signature: make([]byte, fieldparams.MLDSA87SignatureLength),
+			},
+			SigningRoot: [32]byte{1},
+		},
+	}
+	require.NoError(t, db.SaveBlockProposals(ctx, proposals))
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	numPruned, err := db.PruneProposalsAtEpoch(cancelled, 10)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Equal(t, uint(0), numPruned)
+	record, err := db.BlockProposalForValidator(ctx, 1, 2)
+	require.NoError(t, err)
+	require.NotNil(t, record)
+}
+
+// A validator that votes twice at the same target keeps only the latest data
+// root in its index entry. The record of the first vote must still be pruned
+// with its epoch rather than stay on disk forever.
+func TestPruneAttestationsAtEpoch_RemovesSupersededRecords(t *testing.T) {
+	ctx := context.Background()
+	db := setupDB(t)
+
+	first := createAttestationWrapper(2, 3, []uint64{1}, bytesutil.PadTo([]byte("data-D"), 32))
+	second := createAttestationWrapper(2, 3, []uint64{1}, bytesutil.PadTo([]byte("data-E"), 32))
+	require.NoError(t, db.SaveAttestationRecordsForValidators(ctx, []*slashertypes.IndexedAttestationWrapper{first}))
+	require.NoError(t, db.SaveAttestationRecordsForValidators(ctx, []*slashertypes.IndexedAttestationWrapper{second}))
+	// A record of a later epoch that must survive.
+	later := createAttestationWrapper(8, 9, []uint64{1}, bytesutil.PadTo([]byte("data-F"), 32))
+	require.NoError(t, db.SaveAttestationRecordsForValidators(ctx, []*slashertypes.IndexedAttestationWrapper{later}))
+
+	countRecords := func() int {
+		n := 0
+		require.NoError(t, db.db.View(func(tx *bolt.Tx) error {
+			return tx.Bucket(attestationRecordsBucket).ForEach(func(_, _ []byte) error {
+				n++
+				return nil
+			})
+		}))
+		return n
+	}
+	require.Equal(t, 3, countRecords())
+
+	numPruned, err := db.PruneAttestationsAtEpoch(ctx, 3)
+	require.NoError(t, err)
+	require.Equal(t, uint(1), numPruned)
+	require.Equal(t, 1, countRecords(), "the superseded record of the first vote was not pruned")
+	record, err := db.AttestationRecordForValidator(ctx, 1, 9)
+	require.NoError(t, err)
+	require.NotNil(t, record)
 }

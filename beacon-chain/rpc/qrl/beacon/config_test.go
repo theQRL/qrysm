@@ -18,7 +18,7 @@ import (
 func TestGetSpec(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	config := params.BeaconConfig().Copy()
-	defaultFeeRecipient, err := common.NewAddressFromString("Q0000000000000000000000000000000000000001")
+	defaultFeeRecipient, err := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
 	require.NoError(t, err)
 
 	config.ConfigName = "ConfigName"
@@ -47,7 +47,6 @@ func TestGetSpec(t *testing.T) {
 	config.EjectionBalance = 22
 	config.EffectiveBalanceIncrement = 23
 	config.GenesisForkVersion = []byte("GenesisForkVersion")
-	config.ExecutionAddressWithdrawalPrefixByte = byte('c')
 	config.GenesisDelay = 24
 	config.SecondsPerSlot = 25
 	config.MinAttestationInclusionDelay = 26
@@ -124,7 +123,7 @@ func TestGetSpec(t *testing.T) {
 	resp, err := server.GetSpec(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
 
-	assert.Equal(t, 89, len(resp.Data))
+	assert.Equal(t, 88, len(resp.Data))
 	for k, v := range resp.Data {
 		switch k {
 		case "CONFIG_NAME":
@@ -181,8 +180,6 @@ func TestGetSpec(t *testing.T) {
 			assert.Equal(t, "23", v)
 		case "GENESIS_FORK_VERSION":
 			assert.Equal(t, "0x"+hex.EncodeToString([]byte("GenesisForkVersion")), v)
-		case "EXECUTION_ADDRESS_WITHDRAWAL_PREFIX":
-			assert.Equal(t, "0x63", v)
 		case "GENESIS_DELAY":
 			assert.Equal(t, "24", v)
 		case "SECONDS_PER_SLOT":
@@ -313,7 +310,7 @@ func TestGetSpec(t *testing.T) {
 			assert.Equal(t, "75", v)
 		case "REORG_MAX_EPOCHS_SINCE_FINALIZATION":
 			assert.Equal(t, "2", v)
-		case "REORG_WEIGHT_THRESHOLD":
+		case "REORG_HEAD_WEIGHT_THRESHOLD":
 			assert.Equal(t, "20", v)
 		case "REORG_PARENT_WEIGHT_THRESHOLD":
 			assert.Equal(t, "160", v)

@@ -87,7 +87,7 @@ func TestStore_ImportInterchangeData_BadFormat_PreventsDBWrites(t *testing.T) {
 					},
 				},
 			}
-			slashingKind, err := validatorDB.CheckSlashableAttestation(ctx, publicKeys[i], [32]byte{}, indexedAtt)
+			slashingKind, err := validatorDB.CheckSlashableAttestation(ctx, publicKeys[i], []byte{}, indexedAtt)
 			// We expect we do not have an attesting history for each attestation
 			require.NoError(t, err)
 			require.Equal(t, kv.NotSlashable, slashingKind)
@@ -139,7 +139,7 @@ func TestStore_ImportInterchangeData_OK(t *testing.T) {
 					},
 				},
 			}
-			slashingKind, err := validatorDB.CheckSlashableAttestation(ctx, publicKeys[i], [32]byte{}, indexedAtt)
+			slashingKind, err := validatorDB.CheckSlashableAttestation(ctx, publicKeys[i], []byte{}, indexedAtt)
 			// We expect we have an attesting history for the attestation and when
 			// attempting to verify the same att is slashable with a different signing root,
 			// we expect to receive a double vote slashing kind.
@@ -908,14 +908,33 @@ func Test_filterSlashablePubKeysFromBlocks(t *testing.T) {
 			wantedPubKeys := make(map[[field_params.MLDSA87PubkeyLength]byte]bool)
 			for _, pk := range tt.expected {
 				wantedPubKeys[pk] = true
-				wantedPubKeys[pk] = true
 			}
+			require.Equal(t, len(tt.expected), len(slashablePubKeys))
 			for _, pk := range slashablePubKeys {
 				ok := wantedPubKeys[pk]
 				require.Equal(t, true, ok)
 			}
 		})
 	}
+}
+
+func TestTransformSignedBlocks_PreservesMissingSigningRoot(t *testing.T) {
+	ctx := context.Background()
+	proposals, err := transformSignedBlocks(ctx, []*format.SignedBlock{
+		{
+			Slot: "7",
+		},
+		{
+			Slot:        "8",
+			SigningRoot: fmt.Sprintf("%#x", [32]byte{8}),
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(proposals.Proposals))
+	require.Equal(t, 0, len(proposals.Proposals[0].SigningRoot))
+
+	expectedRoot := [32]byte{8}
+	require.Equal(t, true, bytes.Equal(expectedRoot[:], proposals.Proposals[1].SigningRoot))
 }
 
 func Test_filterSlashablePubKeysFromAttestations(t *testing.T) {
@@ -1050,8 +1069,11 @@ func Test_filterSlashablePubKeysFromAttestations(t *testing.T) {
 				attestingHistory, err := transformSignedAttestations(pubKey, signedAtts)
 				require.NoError(t, err)
 				for _, att := range attestingHistory {
+					var signingRoot [32]byte
+					copy(signingRoot[:], att.SigningRoot)
+
 					indexedAtt := createAttestation(att.Source, att.Target)
-					err := validatorDB.SaveAttestationForPubKey(ctx, pubKey, att.SigningRoot, indexedAtt)
+					err := validatorDB.SaveAttestationForPubKey(ctx, pubKey, signingRoot, indexedAtt)
 					require.NoError(t, err)
 				}
 			}

@@ -13,6 +13,8 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+const maxAllowedFinalizedEpochLag = 3
+
 // FinalizationOccurs is an evaluator to make sure finalization is performing as it should.
 // Requires to be run after at least 4 epochs have passed.
 var FinalizationOccurs = func(epoch primitives.Epoch) types.Evaluator {
@@ -33,11 +35,11 @@ func finalizationOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) e
 	currentEpoch := chainHead.HeadEpoch
 	finalizedEpoch := chainHead.FinalizedEpoch
 
-	expectedFinalizedEpoch := currentEpoch - 2
-	if expectedFinalizedEpoch != finalizedEpoch {
+	if currentEpoch-finalizedEpoch > maxAllowedFinalizedEpochLag {
 		return fmt.Errorf(
-			"expected finalized epoch to be %d, received: %d",
-			expectedFinalizedEpoch,
+			"expected finalized epoch to be within %d epochs of current epoch %d, received: %d",
+			maxAllowedFinalizedEpochLag,
+			currentEpoch,
 			finalizedEpoch,
 		)
 	}

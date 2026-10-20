@@ -39,7 +39,7 @@ func TestDepositTrieRoot_OK(t *testing.T) {
 		var dataRoot [32]byte
 		copy(dataRoot[:], depositDataRoots[i])
 
-		_, err := testAcc.Contract.Deposit(testAcc.TxOpts, data.PublicKey, data.WithdrawalCredentials, data.Signature, dataRoot)
+		_, err := testAcc.Contract.Deposit(testAcc.TxOpts, data.PublicKey, data.WithdrawalRecipient, data.RandaoCommitment, data.Signature, dataRoot)
 		require.NoError(t, err, "Could not deposit to deposit contract")
 
 		testAcc.Backend.Commit()
@@ -80,7 +80,7 @@ func TestDepositTrieRoot_Fail(t *testing.T) {
 		var dataRoot [32]byte
 		copy(dataRoot[:], depositDataRoots[i])
 
-		_, err := testAcc.Contract.Deposit(testAcc.TxOpts, data.PublicKey, data.WithdrawalCredentials, data.Signature, dataRoot)
+		_, err := testAcc.Contract.Deposit(testAcc.TxOpts, data.PublicKey, data.WithdrawalRecipient, data.RandaoCommitment, data.Signature, dataRoot)
 		require.NoError(t, err, "Could not deposit to deposit contract")
 
 		// Change an element in the data when storing locally

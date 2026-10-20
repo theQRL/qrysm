@@ -1,6 +1,7 @@
 package state_native
 
 import (
+	"fmt"
 	"reflect"
 	"runtime"
 	"runtime/debug"
@@ -9,11 +10,129 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
 	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
+
+func TestStateTrieReferences_Released(t *testing.T) {
+	for _, experimental := range []bool{false, true} {
+		t.Run(fmt.Sprintf("experimental=%v", experimental), func(t *testing.T) {
+			reset := features.InitWithReset(&features.Flags{EnableExperimentalState: experimental})
+			defer reset()
+			for _, operation := range []string{"finalize", "rebuild", "transferred"} {
+				t.Run(operation, func(t *testing.T) {
+					st, err := InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Balances: []uint64{1}})
+					require.NoError(t, err)
+					a := st.(*BeaconState)
+					_, err = a.balancesRootSelector(types.Balances)
+					require.NoError(t, err)
+					b := a.Copy().(*BeaconState)
+					shared := a.stateFieldLeaves[types.Balances]
+					require.Equal(t, uint(2), shared.FieldReference().Refs())
+					var c *BeaconState
+					switch operation {
+					case "finalize":
+						runtime.SetFinalizer(b, nil)
+						finalizerCleanup(b)
+						require.Equal(t, uint(1), a.valMapHandler.Refs())
+					case "rebuild":
+						require.NoError(t, b.SetBalances([]uint64{2}))
+						_, err = b.balancesRootSelector(types.Balances)
+						require.NoError(t, err)
+					case "transferred":
+						require.NoError(t, b.UpdateBalancesAtIndex(0, 2))
+						_, err = b.balancesRootSelector(types.Balances)
+						require.NoError(t, err)
+						c = a.Copy().(*BeaconState)
+						require.NoError(t, a.UpdateBalancesAtIndex(0, 3))
+						_, err = a.balancesRootSelector(types.Balances)
+						require.NoError(t, err)
+					}
+					require.Equal(t, uint(1), shared.FieldReference().Refs())
+					runtime.KeepAlive(a)
+					runtime.KeepAlive(b)
+					runtime.KeepAlive(c)
+				})
+			}
+		})
+	}
+}
+
+func TestMultiValueValidatorReferences_Released(t *testing.T) {
+	reset := features.InitWithReset(&features.Flags{EnableExperimentalState: true})
+	defer reset()
+	for _, appended := range []bool{false, true} {
+		for _, finalize := range []bool{false, true} {
+			t.Run(fmt.Sprintf("appended=%v/finalize=%v", appended, finalize), func(t *testing.T) {
+				st, err := InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+					Validators: []*qrysmpb.Validator{{PublicKey: []byte{1}}},
+				})
+				require.NoError(t, err)
+				original := st.(*BeaconState)
+				branch := original.Copy().(*BeaconState)
+				collected := make(chan struct{}, 1)
+				func() {
+					val, err := original.ValidatorAtIndex(0)
+					require.NoError(t, err)
+					val.EffectiveBalance = 2
+					runtime.SetFinalizer(val, func(*qrysmpb.Validator) { collected <- struct{}{} })
+					if appended {
+						val.PublicKey[0] = 2
+						require.NoError(t, branch.AppendValidator(val))
+					} else {
+						require.NoError(t, branch.UpdateValidatorAtIndex(0, val))
+					}
+				}()
+				snapshot := branch.Copy().(*BeaconState)
+				release := func(b *BeaconState) {
+					if finalize {
+						runtime.SetFinalizer(b, nil)
+						finalizerCleanup(b)
+					} else {
+						require.NoError(t, b.SetValidators(original.Validators()))
+					}
+				}
+				// The copied branch must keep the validator alive after its source releases it.
+				release(branch)
+				runtime.GC()
+				runtime.Gosched()
+				select {
+				case <-collected:
+					t.Fatal("validator was collected while a snapshot still owns it")
+				default:
+				}
+				wantCount := 1
+				if appended {
+					wantCount = 2
+				}
+				require.Equal(t, wantCount, snapshot.NumValidators())
+				val, err := snapshot.ValidatorAtIndex(primitives.ValidatorIndex(wantCount - 1))
+				require.NoError(t, err)
+				require.Equal(t, uint64(2), val.EffectiveBalance)
+				// The original state still keeps the shared container reachable.
+				release(snapshot)
+				wasCollected := false
+				for i := 0; i < 20 && !wasCollected; i++ {
+					runtime.GC()
+					runtime.Gosched()
+					select {
+					case <-collected:
+						wasCollected = true
+					default:
+					}
+				}
+				require.Equal(t, true, wasCollected, "released validator is retained by shared storage")
+				require.Equal(t, 1, original.NumValidators())
+				runtime.KeepAlive(original)
+				runtime.KeepAlive(branch)
+				runtime.KeepAlive(snapshot)
+			})
+		}
+	}
+}
 
 func TestStateReferenceSharing_Finalizer_Zond(t *testing.T) {
 	// This test showcases the logic on the RandaoMixes field with the GC finalizer.

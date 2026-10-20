@@ -32,7 +32,7 @@ func TestValidatorMap_DistinctCopy(t *testing.T) {
 		copy(someKey[:], strconv.Itoa(int(i)))
 		vals = append(vals, &qrysmpb.Validator{
 			PublicKey:                  someKey[:],
-			WithdrawalCredentials:      someRoot[:],
+			WithdrawalRecipient:        someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
 			Slashed:                    false,
 			ActivationEligibilityEpoch: 1,
@@ -60,7 +60,7 @@ func TestBeaconState_NoDeadlock_Zond(t *testing.T) {
 		copy(someKey[:], strconv.Itoa(int(i)))
 		vals = append(vals, &qrysmpb.Validator{
 			PublicKey:                  someKey[:],
-			WithdrawalCredentials:      someRoot[:],
+			WithdrawalRecipient:        someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
 			Slashed:                    false,
 			ActivationEligibilityEpoch: 1,
@@ -186,7 +186,7 @@ func generateState(t *testing.T) state.BeaconState {
 		copy(someKey[:], strconv.Itoa(int(i)))
 		vals = append(vals, &qrysmpb.Validator{
 			PublicKey:                  someKey[:],
-			WithdrawalCredentials:      someRoot[:],
+			WithdrawalRecipient:        someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
 			Slashed:                    false,
 			ActivationEligibilityEpoch: 1,
@@ -239,7 +239,7 @@ func generateState(t *testing.T) state.BeaconState {
 		Slashings:                   make([]uint64, params.BeaconConfig().EpochsPerSlashingsVector),
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       make([]byte, 32),
-			FeeRecipient:     make([]byte, 20),
+			FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:        make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:     make([]byte, fieldparams.RootLength),
 			LogsBloom:        make([]byte, 256),

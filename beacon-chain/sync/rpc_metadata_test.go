@@ -36,7 +36,7 @@ func TestMetaDataRPCHandler_ReceivesMetadata(t *testing.T) {
 	p1.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   bitfield[:],
-		Syncnets:  []byte{'A'},
+		Syncnets:  []byte{0x01},
 	})
 
 	// Set up a head state in the database with data we expect.
@@ -64,6 +64,10 @@ func TestMetaDataRPCHandler_ReceivesMetadata(t *testing.T) {
 		out := new(pb.MetaDataV1)
 		assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, out))
 		assert.DeepEqual(t, p1.LocalMetadata.InnerObject(), out, "MetadataV1 unequal")
+		// Close from the simulated requester side so the responder's
+		// closeStreamAndWait sees a clean EOF instead of hitting its
+		// read deadline.
+		assert.NoError(t, stream.Close())
 	})
 	stream1, err := p1.BHost.NewStream(context.Background(), p2.BHost.ID(), pcl)
 	require.NoError(t, err)
@@ -89,7 +93,7 @@ func TestMetadataRPCHandler_SendsMetadata(t *testing.T) {
 	p2.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   bitfield[:],
-		Syncnets:  []byte{'A'},
+		Syncnets:  []byte{0x01},
 	})
 
 	// Set up a head state in the database with data we expect.

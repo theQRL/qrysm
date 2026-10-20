@@ -37,7 +37,7 @@ var (
 type BeaconBlockBody struct {
 	version                int
 	isBlinded              bool
-	randaoReveal           [field_params.MLDSA87SignatureLength]byte
+	randaoReveal           [field_params.RandaoRevealLength]byte
 	executionData          *qrysmpb.ExecutionData
 	graffiti               [field_params.RootLength]byte
 	proposerSlashings      []*qrysmpb.ProposerSlashing

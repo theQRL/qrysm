@@ -5,10 +5,152 @@ import (
 	"sort"
 	"testing"
 
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
 	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/testing/require"
 )
+
+func TestSetOptimisticToInvalid_NoViableTips(t *testing.T) {
+	for _, tt := range []struct {
+		name             string
+		checkpointSource primitives.Epoch
+		remainingSources []primitives.Epoch
+		wantOptimistic   bool
+	}{
+		{name: "stale checkpoint alone", checkpointSource: 1, wantOptimistic: true},
+		{name: "stale remaining tip", checkpointSource: 1, remainingSources: []primitives.Epoch{1}, wantOptimistic: true},
+		{name: "viable internal node with stale tip", checkpointSource: 1, remainingSources: []primitives.Epoch{2, 1}, wantOptimistic: true},
+		{name: "viable sibling", checkpointSource: 1, remainingSources: []primitives.Epoch{2}},
+		{name: "viable checkpoint alone", checkpointSource: 2},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			f := setup(0, 0)
+			f.justifiedBalances = []uint64{100}
+			epochSlots := params.BeaconConfig().SlotsPerEpoch
+			driftGenesisTime(f, 4*epochSlots, 1)
+			insert := func(slot primitives.Slot, root, parent [32]byte, source primitives.Epoch) {
+				t.Helper()
+				_, block, err := prepareForkchoiceState(ctx, slot, root, parent, root, source, 0)
+				require.NoError(t, err)
+				_, err = f.store.insert(ctx, block, source, 0)
+				require.NoError(t, err)
+			}
+			checkpoint := indexToHash(1)
+			insert(2*epochSlots, checkpoint, params.BeaconConfig().ZeroHash, tt.checkpointSource)
+			require.NoError(t, f.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{Epoch: 2, Root: checkpoint}))
+			require.NoError(t, f.SetOptimisticToValid(ctx, checkpoint))
+			remaining := checkpoint
+			for i, source := range tt.remainingSources {
+				root := indexToHash(uint64(i + 2))
+				insert(3*epochSlots+primitives.Slot(i), root, remaining, source)
+				remaining = root
+			}
+			require.NoError(t, f.SetOptimisticToValid(ctx, remaining))
+			invalidRoot, invalidChild := indexToHash(90), indexToHash(91)
+			insert(3*epochSlots, invalidRoot, checkpoint, 2)
+			insert(3*epochSlots+1, invalidChild, invalidRoot, 2)
+			f.ProcessAttestation(ctx, []uint64{0}, invalidChild, 3)
+			head, err := f.Head(ctx)
+			require.NoError(t, err)
+			require.Equal(t, invalidChild, head)
+
+			removed, err := f.SetOptimisticToInvalid(ctx, invalidRoot, checkpoint, checkpoint)
+			require.NoError(t, err)
+			require.DeepEqual(t, [][32]byte{invalidChild, invalidRoot}, removed)
+			// Status must already be correct before Head recomputes cached
+			// best descendants that used to point into the invalid branch.
+			optimistic, err := f.IsOptimistic(checkpoint)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantOptimistic, optimistic)
+			head, err = f.Head(ctx)
+			require.NoError(t, err)
+			if tt.wantOptimistic {
+				require.Equal(t, checkpoint, head)
+			} else {
+				require.Equal(t, remaining, head)
+			}
+			optimistic, err = f.IsOptimistic(head)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantOptimistic, optimistic)
+			if !tt.wantOptimistic {
+				return
+			}
+
+			// Payload validation alone cannot recover an obsolete branch.
+			staleReplacement := indexToHash(100)
+			insert(3*epochSlots+2, staleReplacement, checkpoint, 1)
+			require.NoError(t, f.SetOptimisticToValid(ctx, staleReplacement))
+			head, err = f.Head(ctx)
+			require.NoError(t, err)
+			require.Equal(t, checkpoint, head)
+			optimistic, err = f.IsOptimistic(head)
+			require.NoError(t, err)
+			require.Equal(t, true, optimistic)
+
+			// A valid branch with the justified voting source ends recovery.
+			replacement := indexToHash(101)
+			insert(3*epochSlots+3, replacement, checkpoint, 2)
+			require.NoError(t, f.SetOptimisticToValid(ctx, replacement))
+			head, err = f.Head(ctx)
+			require.NoError(t, err)
+			require.Equal(t, replacement, head)
+			optimistic, err = f.IsOptimistic(head)
+			require.NoError(t, err)
+			require.Equal(t, false, optimistic)
+		})
+	}
+}
+
+func TestSetOptimisticToInvalid_JustifiedCheckpointRemoved(t *testing.T) {
+	ctx := context.Background()
+	f := setup(0, 0)
+	epochSlots := params.BeaconConfig().SlotsPerEpoch
+	driftGenesisTime(f, 4*epochSlots, 1)
+	checkpoint := indexToHash(1)
+	_, block, err := prepareForkchoiceState(ctx, 2*epochSlots, checkpoint, params.BeaconConfig().ZeroHash, checkpoint, 2, 0)
+	require.NoError(t, err)
+	_, err = f.store.insert(ctx, block, 2, 0)
+	require.NoError(t, err)
+	require.NoError(t, f.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{Epoch: 2, Root: checkpoint}))
+	require.NoError(t, f.SetOptimisticToValid(ctx, params.BeaconConfig().ZeroHash))
+	_, err = f.SetOptimisticToInvalid(ctx, checkpoint, params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash)
+	require.NoError(t, err)
+	_, err = f.Head(ctx)
+	require.ErrorContains(t, errUnknownJustifiedRoot.Error(), err)
+	optimistic, err := f.IsOptimistic(params.BeaconConfig().ZeroHash)
+	require.NoError(t, err)
+	require.Equal(t, true, optimistic)
+}
+
+func TestSetOptimisticToInvalid_GenesisRootAlias(t *testing.T) {
+	ctx := context.Background()
+	f := New()
+	driftGenesisTime(f, 2, 1)
+	genesis, invalid := indexToHash(1), indexToHash(2)
+	_, block, err := prepareForkchoiceState(ctx, 0, genesis, [32]byte{}, genesis, 0, 0)
+	require.NoError(t, err)
+	_, err = f.store.insert(ctx, block, 0, 0)
+	require.NoError(t, err)
+	require.NoError(t, f.SetOptimisticToValid(ctx, genesis))
+	_, block, err = prepareForkchoiceState(ctx, 1, invalid, genesis, invalid, 0, 0)
+	require.NoError(t, err)
+	_, err = f.store.insert(ctx, block, 0, 0)
+	require.NoError(t, err)
+	_, err = f.SetOptimisticToInvalid(ctx, invalid, genesis, genesis)
+	require.NoError(t, err)
+	// Genesis checkpoints may use a zero root even though the actual tree
+	// root is nonzero. Its validated, viable leaf must remain non-optimistic.
+	require.Equal(t, params.BeaconConfig().ZeroHash, f.JustifiedCheckpoint().Root)
+	optimistic, err := f.IsOptimistic(genesis)
+	require.NoError(t, err)
+	require.Equal(t, false, optimistic)
+	head, err := f.Head(ctx)
+	require.NoError(t, err)
+	require.Equal(t, genesis, head)
+}
 
 // We test the algorithm to update a node from SYNCING to INVALID
 // We start with the same diagram as above:
@@ -277,6 +419,28 @@ func TestSetOptimisticToInvalid_CorrectChildren(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, len(f.store.nodeByRoot[[32]byte{'a'}].children))
 
+}
+
+// Regression test for the upstream startup crash reported in #14892:
+// setOptimisticToInvalid must not panic when the looked-up node has no parent.
+func TestSetOptimisticToInvalid_NilParent(t *testing.T) {
+	f := setup(1, 1)
+	root := [32]byte{'n'}
+	parentRoot := [32]byte{'p'}
+
+	f.store.nodeByRoot[root] = &Node{
+		root:       root,
+		optimistic: true,
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("setOptimisticToInvalid panicked with nil parent: %v", r)
+		}
+	}()
+
+	_, err := f.store.setOptimisticToInvalid(context.Background(), root, parentRoot, [32]byte{'L'})
+	require.ErrorIs(t, err, errInvalidParentRoot)
 }
 
 // Pow       |      Pos

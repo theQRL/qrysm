@@ -1,6 +1,8 @@
 package ssz_test
 
 import (
+	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
@@ -19,6 +21,17 @@ func TestBitlistRoot(t *testing.T) {
 	result, err := ssz.BitlistRoot(bfield, capacity)
 	require.NoError(t, err)
 	assert.Equal(t, expected, result)
+}
+
+func TestBitlistRoot_ExactCapacity(t *testing.T) {
+	for _, capacity := range []uint64{0, 1, 32, 255, 256, 257} {
+		t.Run(fmt.Sprint(capacity), func(t *testing.T) {
+			_, err := ssz.BitlistRoot(bitfield.NewBitlist(capacity), capacity)
+			require.NoError(t, err)
+			_, err = ssz.BitlistRoot(bitfield.NewBitlist(capacity+1), capacity)
+			assert.ErrorContains(t, "bitlist exceeds maximum capacity", err)
+		})
+	}
 }
 
 func TestBitwiseMerkleizeOverLimit(t *testing.T) {
@@ -87,10 +100,79 @@ func TestPackByChunk(t *testing.T) {
 	}
 }
 
+func TestPackByChunk_MixedSizes(t *testing.T) {
+	for _, sizes := range [][]int{{32, 33}, {32, 1, 31}, {32, 0, 32}, {32, 32}} {
+		t.Run(fmt.Sprint(sizes), func(t *testing.T) {
+			items := make([][]byte, len(sizes))
+			var flat []byte
+			for i, size := range sizes {
+				items[i] = bytes.Repeat([]byte{byte(i + 1)}, size)
+				flat = append(flat, items[i]...)
+			}
+			chunks, err := ssz.PackByChunk(items)
+			require.NoError(t, err)
+			require.Equal(t, (len(flat)+31)/32, len(chunks))
+			var packed []byte
+			for _, chunk := range chunks {
+				packed = append(packed, chunk[:]...)
+			}
+			assert.DeepEqual(t, flat, packed[:len(flat)])
+			assert.DeepEqual(t, make([]byte, len(packed)-len(flat)), packed[len(flat):])
+		})
+	}
+}
+
 func TestMixInLength(t *testing.T) {
 	byteSlice := [32]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
 	length := []byte{1, 2, 3}
 	expected := [32]byte{105, 60, 167, 169, 197, 220, 122, 99, 59, 14, 250, 12, 251, 62, 135, 239, 29, 68, 140, 1, 6, 36, 207, 44, 64, 221, 76, 230, 237, 218, 150, 88}
 	result := ssz.MixInLength(byteSlice, length)
 	assert.Equal(t, expected, result)
+}
+
+func TestBitlistRoot_RejectsMalformed(t *testing.T) {
+	cases := map[string]bitfield.Bitlist{
+		"typed nil":           nil,
+		"empty":               {},
+		"zero final byte":     {0xff, 0x00},
+		"oversized zero tail": {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00},
+	}
+	for name, bl := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := ssz.BitlistRoot(bl, 32)
+			assert.ErrorContains(t, "bitlist has no length bit", err)
+		})
+	}
+	_, err := ssz.BitlistRoot(nil, 32)
+	assert.ErrorContains(t, "bitlist is nil", err)
+	_, err = ssz.BitlistRoot(bitfield.NewBitlist(0), 32)
+	require.NoError(t, err)
+
+	// Pointers satisfy the interface too and must get the same validation.
+	_, err = ssz.BitlistRoot((*bitfield.Bitlist)(nil), 32)
+	assert.ErrorContains(t, "bitlist is nil", err)
+	_, err = ssz.BitlistRoot(&bitfield.Bitlist{0xff, 0x00}, 32)
+	assert.ErrorContains(t, "bitlist has no length bit", err)
+	_, err = ssz.BitlistRoot(&bitfield.Bitlist{}, 32)
+	assert.ErrorContains(t, "bitlist has no length bit", err)
+	valid := bitfield.NewBitlist(5)
+	valid.SetBitAt(2, true)
+	wantRoot, err := ssz.BitlistRoot(valid, 32)
+	require.NoError(t, err)
+	gotRoot, err := ssz.BitlistRoot(&valid, 32)
+	require.NoError(t, err)
+	assert.Equal(t, wantRoot, gotRoot)
+}
+
+func TestBitwiseMerkleize_RejectsCountMismatch(t *testing.T) {
+	chunks := make([][32]byte, 5)
+	for i := range chunks {
+		chunks[i][0] = byte(i + 1)
+	}
+	_, err := ssz.BitwiseMerkleize(chunks, 3, 8)
+	assert.ErrorContains(t, "does not match", err)
+	_, err = ssz.BitwiseMerkleize(chunks, 4, 4)
+	assert.ErrorContains(t, "does not match", err)
+	_, err = ssz.BitwiseMerkleize(chunks, 5, 8)
+	require.NoError(t, err)
 }

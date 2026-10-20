@@ -41,6 +41,7 @@ var (
 	finalizedCheckpointKey     = []byte("finalized-checkpoint")
 	executionChainDataKey      = []byte("execution-chain-data")
 	lastValidatedCheckpointKey = []byte("last-validated-checkpoint")
+	metadataSequenceNumberKey  = []byte("metadata-seq-number")
 
 	// Below keys are used to identify objects are to be fork compatible.
 	// Objects that are only compatible with specific forks should be prefixed with such keys.

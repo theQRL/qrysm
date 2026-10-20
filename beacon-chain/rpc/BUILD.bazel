@@ -38,7 +38,6 @@ go_library(
         "//beacon-chain/rpc/qrysm/v1alpha1/node",
         "//beacon-chain/rpc/qrysm/v1alpha1/validator",
         "//beacon-chain/rpc/qrysm/validator",
-        "//beacon-chain/slasher",
         "//beacon-chain/startup",
         "//beacon-chain/state/stategen",
         "//beacon-chain/sync",

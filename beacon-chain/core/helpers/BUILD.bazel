@@ -3,9 +3,12 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "helpers",
     srcs = [
+        "active_validator_count.go",
+        "aggregator.go",
         "attestation.go",
         "beacon_committee.go",
         "block.go",
+        "checkpoint.go",
         "genesis.go",
         "metrics.go",
         "randao.go",
@@ -46,9 +49,14 @@ go_test(
     name = "helpers_test",
     size = "medium",
     srcs = [
+        "active_validator_capacity_test.go",
+        "aggregator_test.go",
         "attestation_test.go",
         "beacon_committee_test.go",
         "block_test.go",
+        "checkpoint_test.go",
+        "committee_cache_test.go",
+        "genesis_test.go",
         "main_test.go",
         "randao_test.go",
         "rewards_penalties_test.go",
@@ -62,6 +70,7 @@ go_test(
     shard_count = 2,
     deps = [
         "//beacon-chain/cache",
+        "//beacon-chain/core/altair",
         "//beacon-chain/core/time",
         "//beacon-chain/state",
         "//beacon-chain/state/state-native",
@@ -77,6 +86,29 @@ go_test(
         "//testing/util",
         "//time",
         "//time/slots",
+        "@com_github_theqrl_go_bitfield//:go-bitfield",
+    ],
+)
+
+go_test(
+    name = "active_validator_capacity_minimal_test",
+    size = "small",
+    srcs = [
+        "active_validator_capacity_test.go",
+        "checkpoint_test.go",
+        "genesis_test.go",
+    ],
+    qrl_network = "minimal",
+    tags = ["minimal"],
+    deps = [
+        ":helpers",
+        "//beacon-chain/state/state-native",
+        "//config/fieldparams",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "//testing/require",
+        "//testing/util",
         "@com_github_theqrl_go_bitfield//:go-bitfield",
     ],
 )

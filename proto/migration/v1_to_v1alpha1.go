@@ -17,6 +17,11 @@ func ZondToV1Alpha1SignedBlock(zondBlk *qrlpb.SignedBeaconBlockZond) (*qrysmpb.S
 	if err := proto.Unmarshal(marshaledBlk, v1alpha1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
+	// Proposer slashing headers have different protobuf field numbers in v1alpha1.
+	// Map them explicitly and preserve the independent storage of the conversion.
+	for i, slashing := range zondBlk.GetMessage().GetBody().GetProposerSlashings() {
+		v1alpha1Block.Block.Body.ProposerSlashings[i] = proto.Clone(V1ProposerSlashingToV1Alpha1(slashing)).(*qrysmpb.ProposerSlashing)
+	}
 	return v1alpha1Block, nil
 }
 
@@ -29,6 +34,10 @@ func BlindedZondToV1Alpha1SignedBlock(zondBlk *qrlpb.SignedBlindedBeaconBlockZon
 	v1alpha1Block := &qrysmpb.SignedBlindedBeaconBlockZond{}
 	if err := proto.Unmarshal(marshaledBlk, v1alpha1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
+	}
+	// Proposer slashing headers have different protobuf field numbers in v1alpha1.
+	for i, slashing := range zondBlk.GetMessage().GetBody().GetProposerSlashings() {
+		v1alpha1Block.Block.Body.ProposerSlashings[i] = proto.Clone(V1ProposerSlashingToV1Alpha1(slashing)).(*qrysmpb.ProposerSlashing)
 	}
 	return v1alpha1Block, nil
 }

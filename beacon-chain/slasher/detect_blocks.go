@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
-	"github.com/theQRL/qrysm/consensus-types/primitives"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
@@ -13,80 +12,97 @@ import (
 // detectProposerSlashings takes in signed block header wrappers and returns a list of proposer slashings detected.
 func (s *Service) detectProposerSlashings(
 	ctx context.Context,
-	proposedBlocks []*slashertypes.SignedBlockHeaderWrapper,
+	incomingProposals []*slashertypes.SignedBlockHeaderWrapper,
 ) ([]*qrysmpb.ProposerSlashing, error) {
 	ctx, span := trace.StartSpan(ctx, "slasher.detectProposerSlashings")
 	defer span.End()
+
+	// internalSlashings will contain any slashable double proposals in the input list
+	// of proposals with respect to each other.
+	internalSlashings := []*qrysmpb.ProposerSlashing{}
+
+	existingProposals := make(map[string]*slashertypes.SignedBlockHeaderWrapper)
+	// conflictingKeys holds every (slot, proposer) for which more than one
+	// distinct header is known, in this batch or on disk.
+	conflictingKeys := make(map[string]bool)
+
 	// We check if there are any slashable double proposals in the input list
 	// of proposals with respect to each other.
-	slashings := make([]*qrysmpb.ProposerSlashing, 0)
-	existingProposals := make(map[string]*slashertypes.SignedBlockHeaderWrapper)
-	for i, proposal := range proposedBlocks {
-		key := proposalKey(proposal)
+	for _, incomingProposal := range incomingProposals {
+		key := proposalKey(incomingProposal)
 		existingProposal, ok := existingProposals[key]
+
+		// If we have not seen this proposal before, we add it to our map of existing proposals
+		// and we continue to the next proposal.
 		if !ok {
-			existingProposals[key] = proposal
+			existingProposals[key] = incomingProposal
 			continue
 		}
-		if isDoubleProposal(proposedBlocks[i].SigningRoot, existingProposal.SigningRoot) {
+
+		// If we have seen this proposal before, we check if it is a double proposal.
+		if isDoubleProposal(incomingProposal.SigningRoot, existingProposal.SigningRoot) {
 			doubleProposalsTotal.Inc()
+
 			slashing := &qrysmpb.ProposerSlashing{
 				Header_1: existingProposal.SignedBeaconBlockHeader,
-				Header_2: proposedBlocks[i].SignedBeaconBlockHeader,
+				Header_2: incomingProposal.SignedBeaconBlockHeader,
 			}
-			slashings = append(slashings, slashing)
+
+			internalSlashings = append(internalSlashings, slashing)
+			conflictingKeys[key] = true
 		}
 	}
 
-	proposerSlashings, err := s.serviceCfg.Database.CheckDoubleBlockProposals(ctx, proposedBlocks)
+	// We check if there are any slashable double proposals in the input list
+	// of proposals with respect to the slasher database.
+	databaseSlashings, err := s.serviceCfg.Database.CheckDoubleBlockProposals(ctx, incomingProposals)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not check for double proposals on disk")
 	}
-	if err := s.saveSafeProposals(ctx, proposedBlocks, proposerSlashings); err != nil {
+	for _, slashing := range databaseSlashings {
+		conflictingKeys[headerKey(slashing.Header_2.Header)] = true
+	}
+
+	// Proposals that conflict with nothing are saved as they are. Headers reach
+	// the slasher before the sync layer has verified them, so a (slot, proposer)
+	// with conflicting headers is resolved by signature verification below: an
+	// unverifiable header must never replace a verified record, or the real
+	// double proposal would only ever be compared against junk.
+	safeProposals := make([]*slashertypes.SignedBlockHeaderWrapper, 0, len(incomingProposals))
+	conflictingProposals := make([]*slashertypes.SignedBlockHeaderWrapper, 0)
+	for _, incomingProposal := range incomingProposals {
+		if conflictingKeys[proposalKey(incomingProposal)] {
+			conflictingProposals = append(conflictingProposals, incomingProposal)
+			continue
+		}
+		safeProposals = append(safeProposals, incomingProposal)
+	}
+	if err := s.serviceCfg.Database.SaveBlockProposals(ctx, safeProposals); err != nil {
 		return nil, errors.Wrap(err, "could not save safe proposals")
 	}
-	slashings = append(slashings, proposerSlashings...)
-	return slashings, nil
+	// A proposal queued again for an unverifiable conflict can come back
+	// without one (its counterpart was pruned meanwhile); its retry
+	// bookkeeping must not outlive it.
+	s.forgetProposalRetries(safeProposals)
+	unresolved, err := s.resolveConflictingProposals(ctx, conflictingProposals)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not resolve conflicting proposals")
+	}
+	s.requeueUnresolvedProposals(unresolved)
+
+	// totalSlashings contain all slashings we have detected.
+	totalSlashings := append(internalSlashings, databaseSlashings...)
+	return totalSlashings, nil
 }
 
-// Check for double proposals in our database given a list of incoming block proposals.
-// For the proposals that were not slashable, we save them to the database.
-func (s *Service) saveSafeProposals(
-	ctx context.Context,
-	proposedBlocks []*slashertypes.SignedBlockHeaderWrapper,
-	proposerSlashings []*qrysmpb.ProposerSlashing,
-) error {
-	ctx, span := trace.StartSpan(ctx, "slasher.saveSafeProposals")
-	defer span.End()
-	return s.serviceCfg.Database.SaveBlockProposals(
-		ctx,
-		filterSafeProposals(proposedBlocks, proposerSlashings),
-	)
-}
-
-func filterSafeProposals(
-	proposedBlocks []*slashertypes.SignedBlockHeaderWrapper,
-	proposerSlashings []*qrysmpb.ProposerSlashing,
-) []*slashertypes.SignedBlockHeaderWrapper {
-	// We initialize a map of proposers that are safe from slashing.
-	safeProposers := make(map[primitives.ValidatorIndex]*slashertypes.SignedBlockHeaderWrapper, len(proposedBlocks))
-	for _, proposal := range proposedBlocks {
-		safeProposers[proposal.SignedBeaconBlockHeader.Header.ProposerIndex] = proposal
-	}
-	for _, doubleProposal := range proposerSlashings {
-		// If a proposer is found to have committed a slashable offense, we delete
-		// them from the safe proposers map.
-		delete(safeProposers, doubleProposal.Header_1.Header.ProposerIndex)
-	}
-	// We save all the proposals that are determined "safe" and not-slashable to our database.
-	safeProposals := make([]*slashertypes.SignedBlockHeaderWrapper, 0, len(safeProposers))
-	for _, proposal := range safeProposers {
-		safeProposals = append(safeProposals, proposal)
-	}
-	return safeProposals
-}
-
+// proposalKey build a key which is a combination of the slot and the proposer index.
+// If a validator proposes several blocks for the same slot, then several (potentially slashable)
+// proposals will correspond to the same key.
 func proposalKey(proposal *slashertypes.SignedBlockHeaderWrapper) string {
 	header := proposal.SignedBeaconBlockHeader.Header
-	return uintToString(uint64(header.Slot)) + ":" + uintToString(uint64(header.ProposerIndex))
+
+	slotKey := uintToString(uint64(header.Slot))
+	proposerIndexKey := uintToString(uint64(header.ProposerIndex))
+
+	return slotKey + ":" + proposerIndexKey
 }

@@ -25,7 +25,7 @@ message Fork {
 message PendingAttestation {
   // Bitfield representation of validator indices that have voted exactly
   // the same vote and have been aggregated into this attestation.
-  bytes aggregation_bits = 1 [(theqrl.qrl.ext.ssz_max) = "128", (theqrl.qrl.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
+  bytes aggregation_bits = 1 [(theqrl.qrl.ext.ssz_max) = "32", (theqrl.qrl.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
   AttestationData data = 2;
   // The difference of when attestation gets created and get included on chain.
   uint64 inclusion_delay = 3 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
@@ -81,11 +81,14 @@ message DepositMessage {
   // 2592 byte ML-DSA-87 public key of the validator.
   bytes public_key = 1 [(theqrl.qrl.ext.ssz_size) = "2592", (theqrl.qrl.ext.spec_name) = "pubkey"];
 
-  // A 32 byte hash of the withdrawal address public key.
-  bytes withdrawal_credentials = 2 [(theqrl.qrl.ext.ssz_size) = "32"];
+  // QRL address that receives withdrawals.
+  bytes withdrawal_recipient = 2 [(theqrl.qrl.ext.ssz_size) = "64"];
 
   // Deposit amount in shor.
   uint64 amount = 3;
+
+  // 32 byte RANDAO hash-onion commitment (top layer of the validator's onion).
+  bytes randao_commitment = 4 [(theqrl.qrl.ext.ssz_size) = "32"];
 }
 
 // SyncCommittee serves as committees to facilitate light client syncing to beacon chain.

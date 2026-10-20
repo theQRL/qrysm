@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
@@ -50,7 +51,7 @@ func TestProposeBeaconBlock_BlindedZond(t *testing.T) {
 					BlockHash:        hexutil.Encode(blindedZondBlock.BlindedZond.Block.Body.ExecutionPayloadHeader.BlockHash),
 					BlockNumber:      uint64ToString(blindedZondBlock.BlindedZond.Block.Body.ExecutionPayloadHeader.BlockNumber),
 					ExtraData:        hexutil.Encode(blindedZondBlock.BlindedZond.Block.Body.ExecutionPayloadHeader.ExtraData),
-					FeeRecipient:     hexutil.Encode(blindedZondBlock.BlindedZond.Block.Body.ExecutionPayloadHeader.FeeRecipient),
+					FeeRecipient:     hexutil.EncodeQ(blindedZondBlock.BlindedZond.Block.Body.ExecutionPayloadHeader.FeeRecipient),
 					GasLimit:         uint64ToString(blindedZondBlock.BlindedZond.Block.Body.ExecutionPayloadHeader.GasLimit),
 					GasUsed:          uint64ToString(blindedZondBlock.BlindedZond.Block.Body.ExecutionPayloadHeader.GasUsed),
 					LogsBloom:        hexutil.Encode(blindedZondBlock.BlindedZond.Block.Body.ExecutionPayloadHeader.LogsBloom),
@@ -102,7 +103,7 @@ func generateSignedBlindedZondBlock() *qrysmpb.GenericSignedBeaconBlock_BlindedZ
 				ParentRoot:    test_helpers.FillByteSlice(32, 3),
 				StateRoot:     test_helpers.FillByteSlice(32, 4),
 				Body: &qrysmpb.BlindedBeaconBlockBodyZond{
-					RandaoReveal: test_helpers.FillByteSlice(4627, 5),
+					RandaoReveal: test_helpers.FillByteSlice(32, 5),
 					ExecutionData: &qrysmpb.ExecutionData{
 						DepositRoot:  test_helpers.FillByteSlice(32, 6),
 						DepositCount: 7,
@@ -269,19 +270,23 @@ func generateSignedBlindedZondBlock() *qrysmpb.GenericSignedBeaconBlock_BlindedZ
 						{
 							Proof: test_helpers.FillByteArraySlice(33, test_helpers.FillByteSlice(32, 92)),
 							Data: &qrysmpb.Deposit_Data{
-								PublicKey:             test_helpers.FillByteSlice(2592, 94),
-								WithdrawalCredentials: test_helpers.FillByteSlice(32, 95),
-								Amount:                96,
-								Signature:             test_helpers.FillByteSlice(4627, 97),
+								PublicKey:           test_helpers.FillByteSlice(2592, 94),
+								WithdrawalRecipient: test_helpers.FillByteSlice(64, 95),
+								Amount:              96,
+								Signature:           test_helpers.FillByteSlice(4627, 97),
+
+								RandaoCommitment: make([]byte, 32),
 							},
 						},
 						{
 							Proof: test_helpers.FillByteArraySlice(33, test_helpers.FillByteSlice(32, 98)),
 							Data: &qrysmpb.Deposit_Data{
-								PublicKey:             test_helpers.FillByteSlice(2592, 100),
-								WithdrawalCredentials: test_helpers.FillByteSlice(32, 101),
-								Amount:                102,
-								Signature:             test_helpers.FillByteSlice(4627, 103),
+								PublicKey:           test_helpers.FillByteSlice(2592, 100),
+								WithdrawalRecipient: test_helpers.FillByteSlice(64, 101),
+								Amount:              102,
+								Signature:           test_helpers.FillByteSlice(4627, 103),
+
+								RandaoCommitment: make([]byte, 32),
 							},
 						},
 					},
@@ -307,7 +312,7 @@ func generateSignedBlindedZondBlock() *qrysmpb.GenericSignedBeaconBlock_BlindedZ
 					},
 					ExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderZond{
 						ParentHash:       test_helpers.FillByteSlice(32, 112),
-						FeeRecipient:     test_helpers.FillByteSlice(20, 113),
+						FeeRecipient:     test_helpers.FillByteSlice(fieldparams.FeeRecipientLength, 113),
 						StateRoot:        test_helpers.FillByteSlice(32, 114),
 						ReceiptsRoot:     test_helpers.FillByteSlice(32, 115),
 						LogsBloom:        test_helpers.FillByteSlice(256, 116),

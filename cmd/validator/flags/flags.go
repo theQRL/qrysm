@@ -31,7 +31,7 @@ var (
 	// BeaconRPCProviderFlag defines a beacon node RPC endpoint.
 	BeaconRPCProviderFlag = &cli.StringFlag{
 		Name:  "beacon-rpc-provider",
-		Usage: "Beacon node RPC provider endpoint",
+		Usage: "Beacon node RPC provider endpoint(s). Use comma-separated endpoints for failover",
 		Value: "127.0.0.1:4000",
 	}
 	// BeaconRPCGatewayProviderFlag defines a beacon node JSON-RPC endpoint.
@@ -43,7 +43,7 @@ var (
 	// BeaconRESTApiProviderFlag defines a beacon node REST API endpoint.
 	BeaconRESTApiProviderFlag = &cli.StringFlag{
 		Name:  "beacon-rest-api-provider",
-		Usage: "Beacon node REST API provider endpoint",
+		Usage: "Beacon node REST API provider endpoint(s). Use comma-separated URLs for failover",
 		Value: "http://127.0.0.1:3500",
 	}
 	// CertFlag defines a flag for the node's TLS certificate.

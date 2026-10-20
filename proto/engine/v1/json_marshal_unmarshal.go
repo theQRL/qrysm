@@ -76,6 +76,9 @@ func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 	if err != nil {
 		return err
 	}
+	if len(decodedHash) != common.HashLength {
+		return errors.Errorf("invalid block hash length %d, expected %d", len(decodedHash), common.HashLength)
+	}
 	e.Hash = common.BytesToHash(decodedHash)
 
 	rawWithdrawals, ok := decoded["withdrawals"]
@@ -99,6 +102,7 @@ func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 	rawTxList, ok := decoded["transactions"]
 	if !ok || rawTxList == nil {
 		// Exit early if there are no transactions stored in the json payload.
+		e.Transactions = nil
 		return nil
 	}
 	txsList, ok := rawTxList.([]any)
@@ -109,6 +113,7 @@ func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 		// If the transaction is just a hex string, do not attempt to
 		// unmarshal into a full transaction object.
 		if txItem, ok := tx.(string); ok && strings.HasPrefix(txItem, "0x") {
+			e.Transactions = nil
 			return nil
 		}
 	}
@@ -231,8 +236,9 @@ func (e *ExecutionPayloadZond) MarshalJSON() ([]byte, error) {
 	timeStamp := hexutil.Uint64(e.Timestamp)
 	recipient := common.BytesToAddress(e.FeeRecipient)
 	logsBloom := hexutil.Bytes(e.LogsBloom)
-	if e.Withdrawals == nil {
-		e.Withdrawals = make([]*Withdrawal, 0)
+	withdrawals := e.Withdrawals
+	if withdrawals == nil {
+		withdrawals = make([]*Withdrawal, 0)
 	}
 	return json.Marshal(ExecutionPayloadZondJSON{
 		ParentHash:    &pHash,
@@ -249,7 +255,7 @@ func (e *ExecutionPayloadZond) MarshalJSON() ([]byte, error) {
 		BaseFeePerGas: baseFeeHex,
 		BlockHash:     &bHash,
 		Transactions:  transactions,
-		Withdrawals:   e.Withdrawals,
+		Withdrawals:   withdrawals,
 	})
 }
 
@@ -454,12 +460,13 @@ func (b *ExecutionPayloadBodyV1) MarshalJSON() ([]byte, error) {
 	for i, tx := range b.Transactions {
 		transactions[i] = tx
 	}
-	if len(b.Withdrawals) == 0 {
-		b.Withdrawals = make([]*Withdrawal, 0)
+	withdrawals := b.Withdrawals
+	if len(withdrawals) == 0 {
+		withdrawals = make([]*Withdrawal, 0)
 	}
 	return json.Marshal(executionPayloadBodyV1JSON{
 		Transactions: transactions,
-		Withdrawals:  b.Withdrawals,
+		Withdrawals:  withdrawals,
 	})
 }
 
@@ -468,6 +475,9 @@ func (b *ExecutionPayloadBodyV1) UnmarshalJSON(enc []byte) error {
 	err := json.Unmarshal(enc, &decoded)
 	if err != nil {
 		return err
+	}
+	if decoded == nil {
+		return errors.Wrap(errExecutionUnmarshal, "null execution payload body")
 	}
 	if len(decoded.Transactions) == 0 {
 		b.Transactions = make([][]byte, 0)

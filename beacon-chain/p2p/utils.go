@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/base64"
@@ -17,16 +18,16 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-qrl/p2p/qnr"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
 	"github.com/theQRL/qrysm/consensus-types/wrapper"
 	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
 	"github.com/theQRL/qrysm/io/file"
 	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
-	"google.golang.org/protobuf/proto"
 )
 
 const keyPath = "network-keys"
-const metaDataPath = "metaData"
 
 const dialTimeout = 1 * time.Second
 
@@ -107,46 +108,25 @@ func privKeyFromFile(path string) (*ecdsa.PrivateKey, error) {
 	return ecdsaqrysm.ConvertFromInterfacePrivKey(unmarshalledKey)
 }
 
-// Retrieves node p2p metadata from a set of configuration values
-// from the p2p service.
-// TODO: Figure out how to do a v1/v2 check.
-func metaDataFromConfig(cfg *Config) (metadata.Metadata, error) {
-	defaultKeyPath := path.Join(cfg.DataDir, metaDataPath)
-	metaDataPath := cfg.MetaDataDir
+// metaDataFromDB retrieves the p2p metadata sequence number from the database and returns
+// a Metadata(V1) object. RefreshPersistentSubnets repopulates the subnet bitfields shortly
+// after startup, so they're initialized empty here.
+func metaDataFromDB(ctx context.Context, d db.ReadOnlyDatabaseWithSeqNum) (metadata.Metadata, error) {
+	seqNum := uint64(0)
+	if d != nil {
+		s, err := d.MetadataSeqNum(ctx)
+		// Proceed if the key isn't found by using the default sequence number of 0.
+		if err != nil && !errors.Is(err, kv.ErrNotFoundMetadataSeqNum) {
+			return nil, err
+		}
+		seqNum = s
+	}
 
-	_, err := os.Stat(defaultKeyPath)
-	defaultMetadataExist := !os.IsNotExist(err)
-	if err != nil && defaultMetadataExist {
-		return nil, err
-	}
-	if metaDataPath == "" && !defaultMetadataExist {
-		metaData := &pb.MetaDataV1{
-			SeqNumber: 0,
-			Attnets:   bitfield.NewBitvector64(),
-			Syncnets:  bitfield.NewBitvector4(),
-		}
-		dst, err := proto.Marshal(metaData)
-		if err != nil {
-			return nil, err
-		}
-		if err := file.WriteFile(defaultKeyPath, dst); err != nil {
-			return nil, err
-		}
-		return wrapper.WrappedMetadataV1(metaData), nil
-	}
-	if defaultMetadataExist && metaDataPath == "" {
-		metaDataPath = defaultKeyPath
-	}
-	src, err := os.ReadFile(metaDataPath) // #nosec G304
-	if err != nil {
-		log.WithError(err).Error("Error reading metadata from file")
-		return nil, err
-	}
-	metaData := &pb.MetaDataV1{}
-	if err := proto.Unmarshal(src, metaData); err != nil {
-		return nil, err
-	}
-	return wrapper.WrappedMetadataV1(metaData), nil
+	return wrapper.WrappedMetadataV1(&pb.MetaDataV1{
+		SeqNumber: seqNum,
+		Attnets:   bitfield.NewBitvector64(),
+		Syncnets:  bitfield.NewBitvector4(),
+	}), nil
 }
 
 // Attempt to dial an address to verify its connectivity

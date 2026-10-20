@@ -219,6 +219,33 @@ func TestAddTrustedPeer_BadAddress(t *testing.T) {
 	assert.StringContains(t, "Could not derive peer info from multiaddress", e.Message)
 }
 
+// Regression test for the qrysm port of upstream PR #16757: a bare /p2p/<id>
+// multiaddr parses successfully with an empty Addrs slice, and the handler
+// used to panic on Addrs[0] instead of returning 400.
+func TestAddTrustedPeer_NoTransportAddress(t *testing.T) {
+	peerFetcher := &mockp2p.MockPeersProvider{}
+	peerFetcher.ClearPeers()
+	s := Server{PeersFetcher: peerFetcher}
+
+	url := "http://anything.is.fine"
+	addr := &AddrRequest{
+		Addr: "/p2p/16Uiu2HAm1n583t4huDMMqEUUBuQs6bLts21mxCfX3tiqu9JfHvRJ",
+	}
+	addrJson, err := json.Marshal(addr)
+	require.NoError(t, err)
+	var body bytes.Buffer
+	_, err = body.Write(addrJson)
+	require.NoError(t, err)
+	request := httptest.NewRequest("POST", url, &body)
+	writer := httptest.NewRecorder()
+	writer.Body = &bytes.Buffer{}
+	s.AddTrustedPeer(writer, request)
+	e := &http2.DefaultErrorJson{}
+	require.NoError(t, json.Unmarshal(writer.Body.Bytes(), e))
+	assert.Equal(t, http.StatusBadRequest, writer.Code)
+	assert.StringContains(t, "Multiaddress must include a transport address", e.Message)
+}
+
 func TestRemoveTrustedPeer(t *testing.T) {
 	peerFetcher := &mockp2p.MockPeersProvider{}
 	peerFetcher.ClearPeers()

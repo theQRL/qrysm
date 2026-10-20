@@ -1,6 +1,36 @@
 package journald
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/sirupsen/logrus"
+)
+
+func TestJournalHook_LevelsRespectsVerbosity(t *testing.T) {
+	cases := []struct {
+		name  string
+		level logrus.Level
+		want  []logrus.Level
+	}{
+		{"warn drops info+debug", logrus.WarnLevel, logrus.AllLevels[:logrus.WarnLevel+1]},
+		{"info drops debug", logrus.InfoLevel, logrus.AllLevels[:logrus.InfoLevel+1]},
+		{"debug emits all", logrus.DebugLevel, logrus.AllLevels[:logrus.DebugLevel+1]},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &JournalHook{level: tt.level}
+			got := h.Levels()
+			if len(got) != len(tt.want) {
+				t.Fatalf("len(Levels()) = %d, want %d (%v vs %v)", len(got), len(tt.want), got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Fatalf("Levels()[%d] = %v, want %v", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
 
 func TestStringifyEntries(t *testing.T) {
 	input := map[string]any{

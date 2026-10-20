@@ -2,10 +2,13 @@ package beacon
 
 import (
 	"context"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
 
 	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/proto/migration"
 	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
 	"go.opencensus.io/trace"
@@ -42,11 +45,15 @@ func (bs *Server) SubmitAttesterSlashing(ctx context.Context, req *qrlpb.Atteste
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitAttesterSlashing")
 	defer span.End()
 
+	if req == nil || req.Attestation_1 == nil || req.Attestation_1.Data == nil ||
+		req.Attestation_2 == nil || req.Attestation_2.Data == nil {
+		return nil, status.Error(codes.InvalidArgument, "Attester slashing must contain two attestations with data")
+	}
 	headState, err := bs.ChainInfoFetcher.HeadState(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get head state: %v", err)
 	}
-	headState, err = transition.ProcessSlotsIfPossible(ctx, headState, req.Attestation_1.Data.Slot)
+	headState, err = transition.ProcessSlotsIfPossible(ctx, headState, bs.boundedSlot(headState, req.Attestation_1.Data.Slot))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not process slots: %v", err)
 	}
@@ -98,11 +105,15 @@ func (bs *Server) SubmitProposerSlashing(ctx context.Context, req *qrlpb.Propose
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitProposerSlashing")
 	defer span.End()
 
+	if req == nil || req.SignedHeader_1 == nil || req.SignedHeader_1.Message == nil ||
+		req.SignedHeader_2 == nil || req.SignedHeader_2.Message == nil {
+		return nil, status.Error(codes.InvalidArgument, "Proposer slashing must contain two signed headers with messages")
+	}
 	headState, err := bs.ChainInfoFetcher.HeadState(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get head state: %v", err)
 	}
-	headState, err = transition.ProcessSlotsIfPossible(ctx, headState, req.SignedHeader_1.Message.Slot)
+	headState, err = transition.ProcessSlotsIfPossible(ctx, headState, bs.boundedSlot(headState, req.SignedHeader_1.Message.Slot))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not process slots: %v", err)
 	}
@@ -124,4 +135,17 @@ func (bs *Server) SubmitProposerSlashing(ctx context.Context, req *qrlpb.Propose
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+// boundedSlot caps a client-supplied slot so that advancing the head state to
+// it stays cheap: never past the current wall-clock slot, and never more than
+// two epochs past the head, which also covers a node whose head is far behind
+// the clock. The submit handlers advance a copy of the head state to the
+// slashing's slot before verifying it; without a cap, a request naming a slot
+// far in the future makes the node process slots for as long as the request
+// context lives, at tens of microseconds per slot. A slashing whose slot is
+// later than the cap is still evaluated against the capped state, which is what
+// gossip validation does with the head state.
+func (bs *Server) boundedSlot(headState state.ReadOnlyBeaconState, slot primitives.Slot) primitives.Slot {
+	return min(slot, bs.GenesisTimeFetcher.CurrentSlot(), headState.Slot()+2*params.BeaconConfig().SlotsPerEpoch)
 }

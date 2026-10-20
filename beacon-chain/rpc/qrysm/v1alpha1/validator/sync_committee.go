@@ -72,9 +72,9 @@ func (vs *Server) GetSyncCommitteeContribution(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get sync subcommittee messages: %v", err)
 	}
-	headRoot, err := vs.HeadFetcher.HeadRoot(ctx)
+	root, err := vs.aggregatorSyncMessageRoot(ctx, req.PublicKey, msgs)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not get head root: %v", err)
+		return nil, status.Errorf(codes.Internal, "Could not get aggregator sync message root: %v", err)
 	}
 	signatures, aggregatedBits, err := vs.CoreService.SignaturesAndAggregationBits(
 		ctx,
@@ -82,20 +82,39 @@ func (vs *Server) GetSyncCommitteeContribution(
 			Msgs:      msgs,
 			Slot:      req.Slot,
 			SubnetId:  req.SubnetId,
-			BlockRoot: headRoot,
+			BlockRoot: root,
 		})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get contribution data: %v", err)
 	}
 	contribution := &qrysmpb.SyncCommitteeContribution{
 		Slot:              req.Slot,
-		BlockRoot:         headRoot,
+		BlockRoot:         root,
 		SubcommitteeIndex: req.SubnetId,
 		AggregationBits:   aggregatedBits,
 		Signatures:        signatures,
 	}
 
 	return contribution, nil
+}
+
+// aggregatorSyncMessageRoot returns the block root the aggregating validator
+// itself voted for in this slot, falling back to the current head root when
+// its message is not in the pool. Pooled sync messages were signed against
+// the head as of the sync message deadline; filtering them by the head root
+// at aggregation time instead meant that a block arriving after the deadline
+// moved head, matched none of the messages and produced an empty
+// contribution. (upstream #17277)
+func (vs *Server) aggregatorSyncMessageRoot(ctx context.Context, pubkey []byte, msgs []*qrysmpb.SyncCommitteeMessage) ([]byte, error) {
+	index, exists := vs.HeadFetcher.HeadPublicKeyToValidatorIndex(bytesutil.ToBytes2592(pubkey))
+	if exists {
+		for _, msg := range msgs {
+			if msg.ValidatorIndex == index {
+				return msg.BlockRoot, nil
+			}
+		}
+	}
+	return vs.HeadFetcher.HeadRoot(ctx)
 }
 
 // SubmitSignedContributionAndProof is called by a sync committee aggregator

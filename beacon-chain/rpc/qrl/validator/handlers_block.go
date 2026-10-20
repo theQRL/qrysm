@@ -47,10 +47,11 @@ func (s *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 
 	var randaoReveal []byte
 	if rawSkipRandaoVerification == "true" {
-		// TODO(now.youtrack.cloud/issue/TQ-10)
-		randaoReveal = primitives.PointAtInfinity
+		// The returned block is not proposable: a zero reveal is never the
+		// pre-image of a commitment. The state root is still computed.
+		randaoReveal = make([]byte, field_params.RandaoRevealLength)
 	} else {
-		rr, err := shared.DecodeHexWithLength(rawRandaoReveal, field_params.MLDSA87SignatureLength)
+		rr, err := shared.DecodeHexWithLength(rawRandaoReveal, field_params.RandaoRevealLength)
 		if err != nil {
 			http2.HandleError(w, errors.Wrap(err, "unable to decode randao reveal").Error(), http.StatusBadRequest)
 			return
@@ -76,7 +77,7 @@ func (s *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) produceBlockV3(ctx context.Context, w http.ResponseWriter, r *http.Request, v1alpha1req *qrysmpb.BlockRequest) {
-	isSSZ := http2.SszRequested(r)
+	isSSZ := http2.RespondWithSsz(r)
 	if !isSSZ {
 		log.Error("Checking for SSZ failed, defaulting to JSON")
 	}

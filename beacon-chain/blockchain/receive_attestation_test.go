@@ -25,6 +25,30 @@ var (
 	_ = AttestationStateFetcher(&Service{})
 )
 
+func TestAttestationTargetState_InvalidCheckpoint(t *testing.T) {
+	tests := []struct {
+		name   string
+		target *qrysmpb.Checkpoint
+		want   string
+	}{
+		{name: "nil checkpoint", want: "nil target checkpoint"},
+		{name: "nil root", target: &qrysmpb.Checkpoint{}, want: "target checkpoint root must be 32 bytes"},
+		{name: "empty root", target: &qrysmpb.Checkpoint{Root: []byte{}}, want: "target checkpoint root must be 32 bytes"},
+		{name: "3 byte root", target: &qrysmpb.Checkpoint{Root: []byte{1, 2, 3}}, want: "target checkpoint root must be 32 bytes"},
+		{name: "31 byte root", target: &qrysmpb.Checkpoint{Root: make([]byte, 31)}, want: "target checkpoint root must be 32 bytes"},
+		{name: "33 byte root", target: &qrysmpb.Checkpoint{Root: make([]byte, 33)}, want: "target checkpoint root must be 32 bytes"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Invalid checkpoints must be rejected before accessing fork choice or caches.
+			service := &Service{}
+			st, err := service.AttestationTargetState(context.Background(), tt.target)
+			require.ErrorContains(t, tt.want, err)
+			require.Equal(t, true, st == nil)
+		})
+	}
+}
+
 func TestAttestationCheckPtState_FarFutureSlot(t *testing.T) {
 	helpers.ClearCache()
 	service, _ := minimalTestService(t)
@@ -32,56 +56,138 @@ func TestAttestationCheckPtState_FarFutureSlot(t *testing.T) {
 	service.genesisTime = time.Now()
 
 	e := primitives.Epoch(slots.MaxSlotBuffer/uint64(params.BeaconConfig().SlotsPerEpoch) + 1)
-	_, err := service.AttestationTargetState(context.Background(), &qrysmpb.Checkpoint{Epoch: e})
+	_, err := service.AttestationTargetState(context.Background(), &qrysmpb.Checkpoint{Epoch: e, Root: make([]byte, 32)})
 	require.ErrorContains(t, "exceeds max allowed value relative to the local clock", err)
 }
 
-func TestVerifyLMDFFGConsistent_NotOK(t *testing.T) {
+func TestVerifyLMDFFGConsistent(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx := tr.ctx
 
-	b128 := util.NewBeaconBlockZond()
-	b128.Block.Slot = 128
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b128)
-	r128, err := b128.Block.HashTreeRoot()
+	f := service.cfg.ForkChoiceStore
+	fc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	state, ro128, err := prepareForkchoiceState(ctx, 128, [32]byte{'a'}, params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, fc, fc)
 	require.NoError(t, err)
-	b129 := util.NewBeaconBlockZond()
-	b129.Block.Slot = 129
-	b129.Block.ParentRoot = r128[:]
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b129)
-	r129, err := b129.Block.HashTreeRoot()
-	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, ro128))
+	r128 := ro128.Root()
 
+	state, ro129, err := prepareForkchoiceState(ctx, 129, [32]byte{'b'}, r128, params.BeaconConfig().ZeroHash, fc, fc)
+	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, ro129))
+	r129 := ro129.Root()
+
+	// FFG/LMD mismatch: claimed target differs from canonical.
 	wanted := "FFG and LMD votes are not consistent"
 	a := util.NewAttestation()
 	a.Data.Target.Epoch = 1
-	a.Data.Target.Root = []byte{'a'}
+	a.Data.Target.Root = []byte{'c'}
 	a.Data.BeaconBlockRoot = r129[:]
 	require.ErrorContains(t, wanted, service.VerifyLmdFfgConsistency(context.Background(), a))
+
+	// Consistent: claimed target matches forkchoice TargetRootForEpoch.
+	a.Data.Target.Root = r128[:]
+	err = service.VerifyLmdFfgConsistency(context.Background(), a)
+	require.NoError(t, err, "Could not verify LMD and FFG votes to be consistent")
 }
 
-func TestVerifyLMDFFGConsistent_OK(t *testing.T) {
+// TestVerifyLMDFFGConsistent_ConcurrentForkchoiceMutation is a regression test
+// for the data race where VerifyLmdFfgConsistency read forkchoice's internal
+// nodeByRoot map without holding the forkchoice lock (it is called from gossip
+// attestation validation on pubsub goroutines, concurrently with block
+// processing that inserts/prunes forkchoice nodes under the write lock). Run
+// with -race: before the fix this reports a concurrent map read/write; after
+// the fix VerifyLmdFfgConsistency takes the forkchoice read lock via
+// Service.TargetRootForEpoch and the accesses are synchronized.
+func TestVerifyLMDFFGConsistent_ConcurrentForkchoiceMutation(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx := tr.ctx
+	f := service.cfg.ForkChoiceStore
+	fc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 
-	b128 := util.NewBeaconBlockZond()
-	b128.Block.Slot = 128
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b128)
-	r128, err := b128.Block.HashTreeRoot()
+	// Seed a base node the reader will look up.
+	state, roBase, err := prepareForkchoiceState(ctx, 128, [32]byte{'a'}, params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, fc, fc)
 	require.NoError(t, err)
-	b129 := util.NewBeaconBlockZond()
-	b129.Block.Slot = 129
-	b129.Block.ParentRoot = r128[:]
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b129)
-	r129, err := b129.Block.HashTreeRoot()
-	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, roBase))
+	rBase := roBase.Root()
 
 	a := util.NewAttestation()
 	a.Data.Target.Epoch = 1
-	a.Data.Target.Root = r128[:]
-	a.Data.BeaconBlockRoot = r129[:]
+	a.Data.Target.Root = rBase[:]
+	a.Data.BeaconBlockRoot = rBase[:]
+
+	done := make(chan struct{})
+	// Writer: mutate forkchoice's nodeByRoot map under the write lock, the same
+	// way block processing does.
+	go func() {
+		defer close(done)
+		parent := rBase
+		for i := 0; i < 300; i++ {
+			st, ro, err := prepareForkchoiceState(ctx, primitives.Slot(129+i), [32]byte{byte(i), byte(i >> 8), 'w'}, parent, params.BeaconConfig().ZeroHash, fc, fc)
+			if err != nil {
+				return
+			}
+			f.Lock()
+			err = f.InsertNode(ctx, st, ro)
+			f.Unlock()
+			if err != nil {
+				return
+			}
+			parent = ro.Root()
+		}
+	}()
+
+	// Reader: exercise the previously-unlocked forkchoice map read.
+	for {
+		select {
+		case <-done:
+			return
+		default:
+			_ = service.VerifyLmdFfgConsistency(context.Background(), a)
+		}
+	}
+}
+
+// TestVerifyLMDFFGConsistent_TargetEpochExceedsBlockSlot is a regression test
+// for the FFG/LMD consistency bug that affected Prysm before PRs #13257 / #13258.
+//
+// Scenario: an attester is asked to produce an attestation in a new epoch before
+// any block has been produced in that epoch. Per the Ethereum spec the attester
+// votes with BeaconBlockRoot == Target.Root == head_root, and Target.Epoch is the
+// current (new) epoch - so Target.Epoch's start slot is strictly greater than the
+// head block's slot.
+//
+// Prysm introduced a cached per-node target field that returned the head's own
+// target (pointing at an earlier epoch's checkpoint block), which spuriously
+// failed the consistency check in this edge case; #13258 fixed it by making the
+// lookup epoch-aware. qrysm never adopted that cache - it still walks the chain
+// via Ancestor(), which returns the input block when the requested slot is at or
+// after the block's own slot. This test locks that spec-correct behavior in so
+// any future refactor that caches per-block target roots will be caught.
+func TestVerifyLMDFFGConsistent_TargetEpochExceedsBlockSlot(t *testing.T) {
+	service, tr := minimalTestService(t)
+	ctx := tr.ctx
+
+	// Head block is the first block of epoch 1. Deliberately produce no
+	// block in epoch 2 so that the requested target epoch's start slot is
+	// strictly greater than the head block's slot.
+	f := service.cfg.ForkChoiceStore
+	fc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	state, roHead, err := prepareForkchoiceState(ctx, params.BeaconConfig().SlotsPerEpoch, [32]byte{'a'}, params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, fc, fc)
+	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, roHead))
+	headRoot := roHead.Root()
+
+	// Attestation produced during epoch 2 before any epoch-2 block exists:
+	// spec says vote with BeaconBlockRoot == Target.Root == head_root, with
+	// Target.Epoch being the current (new) epoch. TargetRootForEpoch should
+	// return the head root for this case (no later canonical block exists).
+	a := util.NewAttestation()
+	a.Data.Target.Epoch = 2
+	a.Data.Target.Root = headRoot[:]
+	a.Data.BeaconBlockRoot = headRoot[:]
+
 	err = service.VerifyLmdFfgConsistency(context.Background(), a)
-	require.NoError(t, err, "Could not verify LMD and FFG votes to be consistent")
+	require.NoError(t, err, "Could not verify LMD and FFG votes when target epoch start slot exceeds block slot")
 }
 
 func TestProcessAttestations_Ok(t *testing.T) {

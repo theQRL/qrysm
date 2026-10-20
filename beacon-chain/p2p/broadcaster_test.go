@@ -89,6 +89,37 @@ func TestService_Broadcast(t *testing.T) {
 	}
 }
 
+func TestFindPeersForBroadcast_UsesBoundedDiscoveryTimeout(t *testing.T) {
+	currentTimeout := broadcastSubnetSearchTimeout
+	broadcastSubnetSearchTimeout = 20 * time.Millisecond
+	defer func() {
+		broadcastSubnetSearchTimeout = currentTimeout
+	}()
+
+	parentCtx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+
+	searchDeadlines := make(chan time.Time, 1)
+	start := time.Now()
+	err := findPeersForBroadcast(parentCtx, func(ctx context.Context, topic string, subnet uint64, threshold int) (bool, error) {
+		require.Equal(t, "topic", topic)
+		require.Equal(t, uint64(3), subnet)
+		require.Equal(t, minimumPeersPerSubnetForBroadcast, threshold)
+
+		deadline, ok := ctx.Deadline()
+		require.Equal(t, true, ok)
+		searchDeadlines <- deadline
+
+		<-ctx.Done()
+		return false, ctx.Err()
+	}, "topic", 3)
+	require.ErrorContains(t, context.DeadlineExceeded.Error(), err)
+	require.Equal(t, true, time.Since(start) < 100*time.Millisecond)
+
+	searchDeadline := <-searchDeadlines
+	require.Equal(t, true, time.Until(searchDeadline) <= 50*time.Millisecond)
+}
+
 func TestService_Broadcast_ReturnsErr_TopicNotMapped(t *testing.T) {
 	p := Service{
 		genesisTime:           time.Now(),
@@ -122,7 +153,8 @@ func TestService_Attestation_Subnet(t *testing.T) {
 					Slot:           10,
 				},
 			},
-			topic: "/consensus/00000000/beacon_attestation_21",
+			// (10 slots since epoch start + committee 11) mod 4 subnets.
+			topic: "/consensus/00000000/beacon_attestation_1",
 		},
 		{
 			att: &qrysmpb.Attestation{
@@ -131,7 +163,8 @@ func TestService_Attestation_Subnet(t *testing.T) {
 					Slot:           529,
 				},
 			},
-			topic: "/consensus/00000000/beacon_attestation_8",
+			// (17 slots since epoch start + committee 55) mod 4 subnets.
+			topic: "/consensus/00000000/beacon_attestation_0",
 		},
 	}
 	for _, tt := range tests {
@@ -225,11 +258,11 @@ func TestService_BroadcastAttestationWithDiscoveryAttempts(t *testing.T) {
 	require.NoError(t, err)
 	defer bootListener.Close()
 
-	// Use shorter period for testing.
-	currentPeriod := pollingPeriod
-	pollingPeriod = 1 * time.Second
+	// Use smaller batch size for testing.
+	currentBatchSize := batchSize
+	batchSize = 2
 	defer func() {
-		pollingPeriod = currentPeriod
+		batchSize = currentBatchSize
 	}()
 
 	bootNode := bootListener.Self()
@@ -261,7 +294,7 @@ func TestService_BroadcastAttestationWithDiscoveryAttempts(t *testing.T) {
 			bitV := bitfield.NewBitvector64()
 			bitV.SetBitAt(subnet, true)
 			bitS := bitfield.NewBitvector4()
-			s.updateSubnetRecordWithMetadata(bitV, bitS)
+			require.NoError(t, s.updateSubnetRecordWithMetadata(bitV, bitS))
 		}
 		assert.NoError(t, err, "Could not start discovery for node")
 		listeners = append(listeners, listener)
@@ -283,9 +316,13 @@ func TestService_BroadcastAttestationWithDiscoveryAttempts(t *testing.T) {
 		}
 	}()
 
+	// Register a raw gossipsub tracer on the publisher so we can block on
+	// graft events instead of sleeping. (upstream PR #16395)
+	ps1Tracer := p2ptest.NewGossipTracer()
 	ps1, err := pubsub.NewGossipSub(context.Background(), hosts[0],
 		pubsub.WithMessageSigning(false),
 		pubsub.WithStrictSignatureVerification(false),
+		pubsub.WithRawTracer(ps1Tracer),
 	)
 	require.NoError(t, err)
 
@@ -349,7 +386,11 @@ func TestService_BroadcastAttestationWithDiscoveryAttempts(t *testing.T) {
 	_, err = tpHandle.Subscribe()
 	require.NoError(t, err)
 
-	time.Sleep(500 * time.Millisecond) // libp2p fails without this delay...
+	// Block until p2 has been grafted into our mesh for this topic, replacing
+	// the prior unreliable time.Sleep. (upstream PR #16395)
+	graftCtx, graftCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer graftCancel()
+	require.NoError(t, ps1Tracer.CanPublishToPeer(graftCtx, topic, hosts[1].ID()))
 
 	nodePeers := p.pubsub.ListPeers(topic)
 	nodePeers2 := p2.pubsub.ListPeers(topic)

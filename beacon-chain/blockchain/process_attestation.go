@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
@@ -15,7 +17,8 @@ import (
 
 // OnAttestation is called whenever an attestation is received, verifies the attestation is valid and saves
 // it to the DB. As a stateless function, this does not hold nor delay attestation based on the spec descriptions.
-// The delay is handled by the caller in `processAttestations`.
+// The delay is handled by the caller in `processAttestations`. The caller must
+// hold the forkchoice write lock.
 //
 // Spec pseudocode definition:
 //
@@ -37,6 +40,12 @@ import (
 //	 # Update latest messages for attesting indices
 //	 update_latest_messages(store, indexed_attestation.attesting_indices, attestation)
 func (s *Service) OnAttestation(ctx context.Context, a *qrysmpb.Attestation, disparity time.Duration) error {
+	return s.onAttestation(ctx, a, disparity, false)
+}
+
+// onAttestation retains the block-inclusion exemption from the gossip age
+// limit while checking the same ancestry and target-state signatures.
+func (s *Service) onAttestation(ctx context.Context, a *qrysmpb.Attestation, disparity time.Duration, fromBlock bool) error {
 	ctx, span := trace.StartSpan(ctx, "blockChain.onAttestation")
 	defer span.End()
 
@@ -47,23 +56,28 @@ func (s *Service) OnAttestation(ctx context.Context, a *qrysmpb.Attestation, dis
 		return err
 	}
 	tgt := qrysmpb.CopyCheckpoint(a.Data.Target)
-
-	// Note that target root check is ignored here because it was performed in sync's validation pipeline:
-	// validate_aggregate_proof.go and validate_beacon_attestation.go
-	// If missing target root were to fail in this method, it would have just failed in `getAttPreState`.
+	if fromBlock && (!s.cfg.ForkChoiceStore.HasNode(bytesutil.ToBytes32(tgt.Root)) ||
+		!s.cfg.ForkChoiceStore.HasNode(bytesutil.ToBytes32(a.Data.BeaconBlockRoot))) {
+		return attestationDependencyError{errors.New("included attestation blocks are unknown to forkchoice")}
+	}
 
 	// Retrieve attestation's data beacon block pre state. Advance pre state to latest epoch if necessary and
 	// save it to the cache.
 	baseState, err := s.getAttPreState(ctx, tgt)
 	if err != nil {
-		return err
+		if errors.Is(err, ErrNotCheckpoint) {
+			return err
+		}
+		return attestationDependencyError{err}
 	}
 
 	genesisTime := uint64(s.genesisTime.Unix())
 
-	// Verify attestation target is from current epoch or previous epoch.
-	if err := verifyAttTargetEpoch(ctx, genesisTime, uint64(time.Now().Add(disparity).Unix()), tgt); err != nil {
-		return err
+	// Only gossip attestations must target the current or previous epoch.
+	if !fromBlock {
+		if err := verifyAttTargetEpoch(ctx, genesisTime, uint64(time.Now().Add(disparity).Unix()), tgt); err != nil {
+			return err
+		}
 	}
 
 	// Verify attestation beacon block is known and not from the future.
@@ -71,33 +85,39 @@ func (s *Service) OnAttestation(ctx context.Context, a *qrysmpb.Attestation, dis
 		return errors.Wrap(err, "could not verify attestation beacon block")
 	}
 
-	// Note that LMD GHOST and FFG consistency check is ignored because it was performed in sync's validation pipeline:
-	// validate_aggregate_proof.go and validate_beacon_attestation.go
+	// The pool also contains deferred block attestations, which have not passed
+	// gossip's forkchoice checks. Validate them before applying their votes.
+	if err := s.verifyAttestationForkchoice(a); err != nil {
+		return err
+	}
 
 	// Verify attestations can only affect the fork choice of subsequent slots.
 	if err := slots.VerifyTime(genesisTime, a.Data.Slot+1, disparity); err != nil {
 		return err
 	}
 
-	// Use the target state to verify attesting indices are valid.
-	committee, err := helpers.BeaconCommitteeFromState(ctx, baseState, a.Data.Slot, a.Data.CommitteeIndex)
+	indices, err := verifiedAttestingIndices(ctx, baseState, a)
 	if err != nil {
 		return err
+	}
+	s.cfg.ForkChoiceStore.ProcessAttestation(ctx, indices, bytesutil.ToBytes32(a.Data.BeaconBlockRoot), a.Data.Target.Epoch)
+	return nil
+}
+
+// verifiedAttestingIndices authenticates the voters using the target state's
+// committee. Block inclusion and pool membership do not establish this: a valid
+// containing block can use a different committee on a competing branch.
+func verifiedAttestingIndices(ctx context.Context, targetState state.ReadOnlyBeaconState, a *qrysmpb.Attestation) ([]uint64, error) {
+	committee, err := helpers.BeaconCommitteeFromState(ctx, targetState, a.Data.Slot, a.Data.CommitteeIndex)
+	if err != nil {
+		return nil, err
 	}
 	indexedAtt, err := attestation.ConvertToIndexed(ctx, a, committee)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := attestation.IsValidAttestationIndices(ctx, indexedAtt); err != nil {
-		return err
+	if err := blocks.VerifyIndexedAttestation(ctx, targetState, indexedAtt); err != nil {
+		return nil, err
 	}
-
-	// Note that signature verification is ignored here because it was performed in sync's validation pipeline:
-	// validate_aggregate_proof.go and validate_beacon_attestation.go
-	// We assume trusted attestation in this function has verified signature.
-
-	// Update forkchoice store with the new attestation for updating weight.
-	s.cfg.ForkChoiceStore.ProcessAttestation(ctx, indexedAtt.AttestingIndices, bytesutil.ToBytes32(a.Data.BeaconBlockRoot), a.Data.Target.Epoch)
-
-	return nil
+	return indexedAtt.AttestingIndices, nil
 }

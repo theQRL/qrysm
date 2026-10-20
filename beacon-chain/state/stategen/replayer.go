@@ -30,6 +30,9 @@ type HistoryAccessor interface {
 	GenesisBlockRoot(ctx context.Context) ([32]byte, error)
 	Block(ctx context.Context, blockRoot [32]byte) (interfaces.ReadOnlySignedBeaconBlock, error)
 	StateOrError(ctx context.Context, blockRoot [32]byte) (state.BeaconState, error)
+	// Checkpoint sync bounds: the origin block and the backfill position.
+	OriginCheckpointBlockRoot(ctx context.Context) ([32]byte, error)
+	BackfillBlockRoot(ctx context.Context) ([32]byte, error)
 }
 
 // CanonicalChecker determines whether the given block root is canonical.
@@ -57,9 +60,10 @@ type Replayer interface {
 var _ Replayer = &stateReplayer{}
 
 // chainer is responsible for supplying the chain components necessary to rebuild a state,
-// namely a starting BeaconState and all available blocks from the starting state up to and including the target slot
+// namely a starting BeaconState and all available block roots from the starting state up to and including the target slot.
 type chainer interface {
-	chainForSlot(ctx context.Context, target primitives.Slot) (state.BeaconState, []interfaces.ReadOnlySignedBeaconBlock, error)
+	blockRootGetter
+	chainForSlot(ctx context.Context, target primitives.Slot) (state.BeaconState, [][32]byte, error)
 }
 
 type stateReplayer struct {
@@ -68,14 +72,14 @@ type stateReplayer struct {
 	chainer chainer
 }
 
-// ReplayBlocks applies all the blocks that were accumulated when building the Replayer.
+// ReplayBlocks applies the blocks identified by the roots accumulated when building the Replayer.
 // This method relies on the correctness of the code that constructed the Replayer data.
 func (rs *stateReplayer) ReplayBlocks(ctx context.Context) (state.BeaconState, error) {
 	ctx, span := trace.StartSpan(ctx, "stateGen.stateReplayer.ReplayBlocks")
 	defer span.End()
 
 	var s state.BeaconState
-	var descendants []interfaces.ReadOnlySignedBeaconBlock
+	var descendants [][32]byte
 	var err error
 	switch rs.method {
 	case forSlot:
@@ -99,20 +103,9 @@ func (rs *stateReplayer) ReplayBlocks(ctx context.Context) (state.BeaconState, e
 		"diff":      diff,
 	}).Debug("Replaying canonical blocks from most recent state")
 
-	for _, b := range descendants {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		s, err = executeStateTransitionStateGen(ctx, s, b)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if rs.target > s.Slot() {
-		s, err = ReplayProcessSlots(ctx, s, rs.target)
-		if err != nil {
-			return nil, err
-		}
+	s, err = replayBlockRootsWithGetter(ctx, s, descendants, rs.target, rs.chainer)
+	if err != nil {
+		return nil, err
 	}
 
 	duration := time.Since(start)

@@ -39,9 +39,10 @@ func TestServer_setExecutionData(t *testing.T) {
 	ctx := context.Background()
 	params.SetupTestConfigCleanup(t)
 
+	gasLimit := uint64(20000000) // matches go-qrl params.MaxGasLimit
 	beaconDB := dbTest.SetupDB(t)
 	zondTransitionState, _ := util.DeterministicGenesisStateZond(t, 1)
-	wrappedHeaderZond, err := blocks.WrappedExecutionPayloadHeaderZond(&v1.ExecutionPayloadHeaderZond{BlockNumber: 1}, 0)
+	wrappedHeaderZond, err := blocks.WrappedExecutionPayloadHeaderZond(&v1.ExecutionPayloadHeaderZond{BlockNumber: 1, GasLimit: gasLimit}, 0)
 	require.NoError(t, err)
 	require.NoError(t, zondTransitionState.SetLatestExecutionPayloadHeader(wrappedHeaderZond))
 	b2pbZond := util.NewBeaconBlockZond()
@@ -76,7 +77,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		b := blk.Block()
 		localPayload, _, err := vs.getLocalPayload(ctx, b, zondTransitionState)
 		require.NoError(t, err)
-		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex(), gasLimit)
 		require.NoError(t, err)
 		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
@@ -87,7 +88,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 		require.NoError(t, err)
 		require.NoError(t, vs.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{blk.Block().ProposerIndex()},
-			[]*qrysmpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Timestamp: uint64(time.Now().Unix()), Pubkey: make([]byte, field_params.MLDSA87PubkeyLength)}}))
+			[]*qrysmpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Timestamp: uint64(time.Now().Unix()), GasLimit: gasLimit, Pubkey: make([]byte, field_params.MLDSA87PubkeyLength)}}))
 		ti, err := slots.ToTime(uint64(time.Now().Unix()), 0)
 		require.NoError(t, err)
 		sk, err := ml_dsa_87.RandKey()
@@ -106,6 +107,7 @@ func TestServer_setExecutionData(t *testing.T) {
 				Timestamp:        uint64(ti.Unix()),
 				BlockNumber:      2,
 				WithdrawalsRoot:  make([]byte, fieldparams.RootLength),
+				GasLimit:         gasLimit,
 			},
 			Pubkey: sk.PublicKey().Marshal(),
 			Value:  bytesutil.PadTo([]byte{1}, 32),
@@ -115,9 +117,11 @@ func TestServer_setExecutionData(t *testing.T) {
 		require.NoError(t, err)
 		sr, err := signing.ComputeSigningRoot(bid, domain)
 		require.NoError(t, err)
+		lsig1, err := sk.Sign(sr[:])
+		require.NoError(t, err)
 		sBid := &qrysmpb.SignedBuilderBidZond{
 			Message:   bid,
-			Signature: sk.Sign(sr[:]).Marshal(),
+			Signature: lsig1.Marshal(),
 		}
 		vs.BlockBuilder = &builderTest.MockBuilderService{
 			BidZond:       sBid,
@@ -135,7 +139,7 @@ func TestServer_setExecutionData(t *testing.T) {
 
 		localPayload, _, err := vs.getLocalPayload(ctx, b, zondTransitionState)
 		require.NoError(t, err)
-		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex(), gasLimit)
 		require.NoError(t, err)
 		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
@@ -146,7 +150,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		blk, err := blocks.NewSignedBeaconBlock(util.NewBlindedBeaconBlockZond())
 		require.NoError(t, err)
 		require.NoError(t, vs.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{blk.Block().ProposerIndex()},
-			[]*qrysmpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Timestamp: uint64(time.Now().Unix()), Pubkey: make([]byte, field_params.MLDSA87PubkeyLength)}}))
+			[]*qrysmpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Timestamp: uint64(time.Now().Unix()), GasLimit: gasLimit, Pubkey: make([]byte, field_params.MLDSA87PubkeyLength)}}))
 		ti, err := slots.ToTime(uint64(time.Now().Unix()), 0)
 		require.NoError(t, err)
 		sk, err := ml_dsa_87.RandKey()
@@ -168,6 +172,7 @@ func TestServer_setExecutionData(t *testing.T) {
 				Timestamp:        uint64(ti.Unix()),
 				BlockNumber:      2,
 				WithdrawalsRoot:  wr[:],
+				GasLimit:         gasLimit,
 			},
 			Pubkey: sk.PublicKey().Marshal(),
 			Value:  bytesutil.PadTo(builderValue, 32),
@@ -177,9 +182,11 @@ func TestServer_setExecutionData(t *testing.T) {
 		require.NoError(t, err)
 		sr, err := signing.ComputeSigningRoot(bid, domain)
 		require.NoError(t, err)
+		lsig2, err := sk.Sign(sr[:])
+		require.NoError(t, err)
 		sBid := &qrysmpb.SignedBuilderBidZond{
 			Message:   bid,
-			Signature: sk.Sign(sr[:]).Marshal(),
+			Signature: lsig2.Marshal(),
 		}
 		vs.BlockBuilder = &builderTest.MockBuilderService{
 			BidZond:       sBid,
@@ -197,7 +204,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		b := blk.Block()
 		localPayload, _, err := vs.getLocalPayload(ctx, b, zondTransitionState)
 		require.NoError(t, err)
-		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex(), gasLimit)
 		require.NoError(t, err)
 		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
@@ -212,7 +219,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		localPayload, _, err := vs.getLocalPayload(ctx, b, zondTransitionState)
 		require.NoError(t, err)
 		require.NoError(t, err)
-		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex(), gasLimit)
 		require.NoError(t, err)
 		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
@@ -232,7 +239,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		b := blk.Block()
 		localPayload, _, err := vs.getLocalPayload(ctx, b, zondTransitionState)
 		require.NoError(t, err)
-		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex(), gasLimit)
 		require.NoError(t, err)
 		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
@@ -253,7 +260,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		b := blk.Block()
 		localPayload, _, err := vs.getLocalPayload(ctx, b, zondTransitionState)
 		require.NoError(t, err)
-		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex(), gasLimit)
 		require.ErrorIs(t, consensus_types.ErrNilObjectWrapped, err) // Builder returns fault. Use local block
 		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
@@ -304,9 +311,11 @@ func TestServer_getPayloadHeader(t *testing.T) {
 	}
 	srZond, err := signing.ComputeSigningRoot(bidZond, domain)
 	require.NoError(t, err)
+	lsig3, err := sk.Sign(srZond[:])
+	require.NoError(t, err)
 	sBidZond := &qrysmpb.SignedBuilderBidZond{
 		Message:   bidZond,
-		Signature: sk.Sign(srZond[:]).Marshal(),
+		Signature: lsig3.Marshal(),
 	}
 
 	require.NoError(t, err)
@@ -418,7 +427,7 @@ func TestServer_getPayloadHeader(t *testing.T) {
 			}}
 			hb, err := vs.HeadFetcher.HeadBlock(context.Background())
 			require.NoError(t, err)
-			h, err := vs.getPayloadHeaderFromBuilder(context.Background(), hb.Block().Slot(), 0)
+			h, err := vs.getPayloadHeaderFromBuilder(context.Background(), hb.Block().Slot(), 0, 0)
 			if tc.err != "" {
 				require.ErrorContains(t, tc.err, err)
 			} else {
@@ -429,6 +438,68 @@ func TestServer_getPayloadHeader(t *testing.T) {
 					require.DeepEqual(t, want, h)
 				}
 			}
+		})
+	}
+}
+
+func TestExpectedGasLimit(t *testing.T) {
+	const maxGas = uint64(20_000_000) // qrlparams.MaxGasLimit
+	const adj = uint64(1024)          // gasLimitAdjustmentFactor
+
+	tests := []struct {
+		name           string
+		parentGasLimit uint64
+		proposerGas    uint64
+		want           uint64
+	}{
+		{
+			name:           "proposer matches parent",
+			parentGasLimit: maxGas,
+			proposerGas:    maxGas,
+			want:           maxGas,
+		},
+		{
+			name:           "small upward step within bound",
+			parentGasLimit: 10_000_000,
+			proposerGas:    10_000_100,
+			want:           10_000_100,
+		},
+		{
+			name:           "upward step capped to parent + maxDiff",
+			parentGasLimit: 10_000_000,
+			proposerGas:    100_000_000,
+			want:           10_000_000 + (10_000_000/adj - 1),
+		},
+		{
+			name:           "downward step within bound",
+			parentGasLimit: 10_000_000,
+			proposerGas:    9_999_900,
+			want:           9_999_900,
+		},
+		{
+			name:           "downward step capped to parent - maxDiff",
+			parentGasLimit: 10_000_000,
+			proposerGas:    0,
+			want:           10_000_000 - (10_000_000/adj - 1),
+		},
+		{
+			name:           "proposer wants above MaxGasLimit, parent at cap: clamped to MaxGasLimit",
+			parentGasLimit: maxGas,
+			proposerGas:    maxGas * 10,
+			want:           maxGas,
+		},
+		{
+			name:           "proposer well above MaxGasLimit, parent below cap: clamped to MaxGasLimit",
+			parentGasLimit: maxGas - 1, // very close to cap; parent+maxDiff would exceed
+			proposerGas:    1 << 40,
+			want:           maxGas, // would be parent + maxDiff = ~20_019_528, clamped down
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := expectedGasLimit(tt.parentGasLimit, tt.proposerGas)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, true, got <= 20_000_000, "result must never exceed MaxGasLimit")
 		})
 	}
 }
@@ -458,9 +529,11 @@ func TestServer_validateBuilderSignature(t *testing.T) {
 	require.NoError(t, err)
 	sr, err := signing.ComputeSigningRoot(bid, domain)
 	require.NoError(t, err)
+	lsig4, err := sk.Sign(sr[:])
+	require.NoError(t, err)
 	pbBid := &qrysmpb.SignedBuilderBidZond{
 		Message:   bid,
-		Signature: sk.Sign(sr[:]).Marshal(),
+		Signature: lsig4.Marshal(),
 	}
 	sBid, err := builder.WrappedSignedBuilderBidZond(pbBid)
 	require.NoError(t, err)

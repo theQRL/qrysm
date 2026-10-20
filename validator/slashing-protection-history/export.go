@@ -1,7 +1,6 @@
 package history
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/progress"
 	"github.com/theQRL/qrysm/validator/db"
@@ -158,8 +156,8 @@ func signedAttestationsByPubKey(ctx context.Context, validatorDB db.Database, pu
 			}
 		}
 		var root string
-		if !bytes.Equal(att.SigningRoot[:], params.BeaconConfig().ZeroHash[:]) {
-			root, err = rootToHexString(att.SigningRoot[:])
+		if len(att.SigningRoot) != 0 {
+			root, err = rootToHexString(att.SigningRoot)
 			if err != nil {
 				return nil, errors.Wrap(err, "could not convert signing root to hex string")
 			}

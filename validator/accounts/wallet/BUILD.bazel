@@ -31,8 +31,12 @@ go_test(
     srcs = ["wallet_test.go"],
     deps = [
         ":wallet",
+        "//cmd/validator/flags",
         "//config/params",
+        "//testing/assert",
         "//testing/require",
+        "//validator/keymanager",
         "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_urfave_cli_v2//:cli",
     ],
 )

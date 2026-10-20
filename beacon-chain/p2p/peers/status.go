@@ -25,6 +25,7 @@ package peers
 import (
 	"context"
 	"math"
+	"net"
 	"slices"
 	"sort"
 	"time"
@@ -79,11 +80,12 @@ const (
 
 // Status is the structure holding the peer status information.
 type Status struct {
-	ctx       context.Context
-	scorers   *scorers.Service
-	store     *peerdata.Store
-	ipTracker map[string]uint64
-	rand      *rand.Rand
+	ctx                   context.Context
+	scorers               *scorers.Service
+	store                 *peerdata.Store
+	ipTracker             map[string]uint64
+	rand                  *rand.Rand
+	ipColocationWhitelist []*net.IPNet
 }
 
 // StatusConfig represents peer status service params.
@@ -92,6 +94,8 @@ type StatusConfig struct {
 	PeerLimit int
 	// ScorerParams holds peer scorer configuration params.
 	ScorerParams *scorers.Config
+	// IPColocationWhitelist contains CIDR ranges that are exempt from IP colocation limits.
+	IPColocationWhitelist []*net.IPNet
 }
 
 // NewStatus creates a new status entity.
@@ -104,6 +108,9 @@ func NewStatus(ctx context.Context, config *StatusConfig) *Status {
 		store:     store,
 		scorers:   scorers.NewService(ctx, store, config.ScorerParams),
 		ipTracker: map[string]uint64{},
+		// CIDR ranges exempt from the per-IP peer limit (e.g. several honest
+		// nodes behind one NAT).
+		ipColocationWhitelist: config.IPColocationWhitelist,
 		// Random generator used to calculate dial backoff period.
 		// It is ok to use deterministic generator, no need for true entropy.
 		rand: rand.NewDeterministicGenerator(),
@@ -120,6 +127,16 @@ func (p *Status) MaxPeerLimit() int {
 	return p.store.Config().MaxPeers
 }
 
+// UpdateENR updates the QNR record stored for a peer if one is already tracked.
+func (p *Status) UpdateENR(record *qnr.Record, pid peer.ID) {
+	p.store.Lock()
+	defer p.store.Unlock()
+
+	if peerData, ok := p.store.PeerData(pid); ok {
+		peerData.Qnr = record
+	}
+}
+
 // Add adds a peer.
 // If a peer already exists with this ID its address and direction are updated with the supplied data.
 func (p *Status) Add(record *qnr.Record, pid peer.ID, address ma.Multiaddr, direction network.Direction) {
@@ -134,8 +151,11 @@ func (p *Status) Add(record *qnr.Record, pid peer.ID, address ma.Multiaddr, dire
 		if record != nil {
 			peerData.Qnr = record
 		}
-		if !sameIP(prevAddress, address) {
-			p.addIpToTracker(pid)
+		// A peer that is counted toward the colocation tracker moved to
+		// another IP: move its count along with it.
+		if !sameIP(prevAddress, address) && countsTowardColocation(peerData.ConnState) {
+			p.removeIPFromTracker(prevAddress)
+			p.addIPToTracker(address)
 		}
 		return
 	}
@@ -149,7 +169,12 @@ func (p *Status) Add(record *qnr.Record, pid peer.ID, address ma.Multiaddr, dire
 		peerData.Qnr = record
 	}
 	p.store.SetPeerData(pid, peerData)
-	p.addIpToTracker(pid)
+	// The address is not counted toward the IP colocation tracker here: for
+	// a peer that has never connected it is an unverified claim (typically a
+	// discovered QNR), and counting it would let any node that answers
+	// FINDNODE with a handful of fresh identities claiming some IP get every
+	// honest peer at that IP banned. Peers are counted once a connection is
+	// actually being established (see SetConnectionState).
 }
 
 // Address returns the multiaddress of the given remote peer.
@@ -297,7 +322,15 @@ func (p *Status) SetConnectionState(pid peer.ID, state peerdata.PeerConnectionSt
 	defer p.store.Unlock()
 
 	peerData := p.store.PeerDataGetOrCreate(pid)
+	wasCounted := countsTowardColocation(peerData.ConnState)
 	peerData.ConnState = state
+	nowCounted := countsTowardColocation(state)
+	switch {
+	case nowCounted && !wasCounted:
+		p.addIPToTracker(peerData.Address)
+	case wasCounted && !nowCounted:
+		p.removeIPFromTracker(peerData.Address)
+	}
 }
 
 // ConnectionState gets the connection state of the given remote peer.
@@ -950,8 +983,14 @@ func (p *Status) isTrustedPeers(pid peer.ID) bool {
 	return p.store.IsTrustedPeer(pid)
 }
 
-// this method assumes the store lock is acquired before
-// executing the method.
+// isfromBadIP reports whether the peer's IP already hosts ColocationLimit
+// other peers with a live (or in-progress) connection. Only connected peers
+// count: a connection proves the peer really has that IP, whereas the address
+// in a discovered record is whatever the record claims. Because the tracker
+// follows connection state, the verdict lifts by itself once enough of those
+// connections go away.
+//
+// This method assumes the store lock is acquired before executing the method.
 func (p *Status) isfromBadIP(pid peer.ID) bool {
 	peerData, ok := p.store.PeerData(pid)
 	if !ok {
@@ -964,53 +1003,80 @@ func (p *Status) isfromBadIP(pid peer.ID) bool {
 	if err != nil {
 		return true
 	}
-	if val, ok := p.ipTracker[ip.String()]; ok {
-		if val > ColocationLimit {
-			return true
+	others := p.ipTracker[ip.String()]
+	// Do not count the peer against itself.
+	if others > 0 && countsTowardColocation(peerData.ConnState) {
+		others--
+	}
+	if others < ColocationLimit {
+		return false
+	}
+	// Whitelisted ranges are exempt from the limit.
+	for _, ipNet := range p.ipColocationWhitelist {
+		if ipNet.Contains(ip) {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
-func (p *Status) addIpToTracker(pid peer.ID) {
-	data, ok := p.store.PeerData(pid)
-	if !ok {
-		return
+// countsTowardColocation reports whether a peer in the given connection state
+// occupies its IP for colocation purposes: only peers with a live connection,
+// or one that is being established, do.
+func countsTowardColocation(state peerdata.PeerConnectionState) bool {
+	return state == PeerConnected || state == PeerConnecting
+}
+
+// trackedIP returns the key under which an address is counted in the IP
+// tracker, and false for addresses that are not counted (nil, unparseable or
+// loopback).
+func trackedIP(address ma.Multiaddr) (string, bool) {
+	if address == nil {
+		return "", false
 	}
-	if data.Address == nil {
-		return
-	}
-	ip, err := manet.ToIP(data.Address)
+	ip, err := manet.ToIP(address)
 	if err != nil {
 		// Should never happen, it is
 		// assumed every IP coming in
 		// is a valid ip.
-		return
+		return "", false
 	}
 	// Ignore loopback addresses.
 	if ip.IsLoopback() {
-		return
+		return "", false
 	}
-	stringIP := ip.String()
-	p.ipTracker[stringIP] += 1
+	return ip.String(), true
 }
 
+func (p *Status) addIPToTracker(address ma.Multiaddr) {
+	if stringIP, ok := trackedIP(address); ok {
+		p.ipTracker[stringIP] += 1
+	}
+}
+
+func (p *Status) removeIPFromTracker(address ma.Multiaddr) {
+	stringIP, ok := trackedIP(address)
+	if !ok {
+		return
+	}
+	if p.ipTracker[stringIP] <= 1 {
+		delete(p.ipTracker, stringIP)
+		return
+	}
+	p.ipTracker[stringIP] -= 1
+}
+
+// tallyIPTracker rebuilds the IP tracker from the peers that currently count
+// toward colocation.
 func (p *Status) tallyIPTracker() {
 	tracker := map[string]uint64{}
-	// Iterate through all peers.
 	for _, peerData := range p.store.Peers() {
-		if peerData.Address == nil {
+		if !countsTowardColocation(peerData.ConnState) {
 			continue
 		}
-		ip, err := manet.ToIP(peerData.Address)
-		if err != nil {
-			// Should never happen, it is
-			// assumed every IP coming in
-			// is a valid ip.
-			continue
+		if stringIP, ok := trackedIP(peerData.Address); ok {
+			tracker[stringIP] += 1
 		}
-		stringIP := ip.String()
-		tracker[stringIP] += 1
 	}
 	p.ipTracker = tracker
 }

@@ -3,7 +3,7 @@ package sync
 import (
 	"bytes"
 	"context"
-	"math/rand"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -44,8 +44,12 @@ func setupValidAttesterSlashing(t *testing.T) (*qrysmpb.AttesterSlashing, state.
 	require.NoError(t, err)
 	hashTreeRoot, err := signing.ComputeSigningRoot(att1.Data, domain)
 	assert.NoError(t, err)
-	sig0 := privKeys[0].Sign(hashTreeRoot[:]).Marshal()
-	sig1 := privKeys[1].Sign(hashTreeRoot[:]).Marshal()
+	lsig1, err := privKeys[0].Sign(hashTreeRoot[:])
+	require.NoError(t, err)
+	sig0 := lsig1.Marshal()
+	lsig2, err := privKeys[1].Sign(hashTreeRoot[:])
+	require.NoError(t, err)
+	sig1 := lsig2.Marshal()
 	att1.Signatures = [][]byte{sig0, sig1}
 
 	att2 := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
@@ -53,8 +57,12 @@ func setupValidAttesterSlashing(t *testing.T) (*qrysmpb.AttesterSlashing, state.
 	})
 	hashTreeRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
 	assert.NoError(t, err)
-	sig0 = privKeys[0].Sign(hashTreeRoot[:]).Marshal()
-	sig1 = privKeys[1].Sign(hashTreeRoot[:]).Marshal()
+	lsig3, err := privKeys[0].Sign(hashTreeRoot[:])
+	require.NoError(t, err)
+	sig0 = lsig3.Marshal()
+	lsig4, err := privKeys[1].Sign(hashTreeRoot[:])
+	require.NoError(t, err)
+	sig1 = lsig4.Marshal()
 	att2.Signatures = [][]byte{sig0, sig1}
 
 	slashing := &qrysmpb.AttesterSlashing{
@@ -64,10 +72,6 @@ func setupValidAttesterSlashing(t *testing.T) (*qrysmpb.AttesterSlashing, state.
 
 	currentSlot := 2 * params.BeaconConfig().SlotsPerEpoch
 	require.NoError(t, s.SetSlot(currentSlot))
-
-	b := make([]byte, 32)
-	_, err = rand.Read(b)
-	require.NoError(t, err)
 
 	return slashing, s
 }
@@ -110,6 +114,167 @@ func TestValidateAttesterSlashing_ValidSlashing(t *testing.T) {
 
 	assert.Equal(t, true, valid, "Failed Validation")
 	assert.NotNil(t, msg.ValidatorData, "Decoded message was not set on the message validator data")
+}
+
+func TestValidateAttesterSlashing_OutOfRangeIndex_Rejected(t *testing.T) {
+	p := p2ptest.NewTestP2P(t)
+	ctx := context.Background()
+
+	slashing, s := setupValidAttesterSlashing(t)
+	// Append an index one past the 5-validator registry to both attestations,
+	// with a garbage signature in that position. Under the old behaviour the
+	// slot was verified against an all-zero, universally forgeable key and the
+	// message ended up Ignored (no peer penalty) at the validator lookup.
+	outOfRange := uint64(s.NumValidators())
+	for _, att := range []*qrysmpb.IndexedAttestation{slashing.Attestation_1, slashing.Attestation_2} {
+		att.AttestingIndices = append(att.AttestingIndices, outOfRange)
+		att.Signatures = append(att.Signatures, make([]byte, len(att.Signatures[0])))
+	}
+
+	chain := &mock.ChainService{State: s, Genesis: time.Now()}
+	r := &Service{
+		cfg: &config{
+			p2p:         p,
+			chain:       chain,
+			clock:       startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
+			initialSync: &mockSync.Sync{IsSyncing: false},
+		},
+		seenAttesterSlashingCache: make(map[uint64]bool),
+		subHandler:                newSubTopicHandler(),
+	}
+
+	buf := new(bytes.Buffer)
+	_, err := p.Encoding().EncodeGossip(buf, slashing)
+	require.NoError(t, err)
+
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.AttesterSlashing]()]
+	d, err := r.currentForkDigest()
+	assert.NoError(t, err)
+	topic = r.addDigestToTopic(topic, d)
+	msg := &pubsub.Message{
+		Message: &pubsubpb.Message{
+			Data:  buf.Bytes(),
+			Topic: &topic,
+		},
+	}
+	res, err := r.validateAttesterSlashing(ctx, "foobar", msg)
+	assert.ErrorContains(t, "out of range", err)
+	assert.Equal(t, pubsub.ValidationReject, res, "out-of-registry attesting index must be rejected, not ignored")
+}
+
+func TestValidateAttesterSlashing_ValidOldSlashing(t *testing.T) {
+	p := p2ptest.NewTestP2P(t)
+	ctx := context.Background()
+
+	slashing, s := setupValidAttesterSlashing(t)
+	vals := s.Validators()
+	for _, v := range vals {
+		v.Slashed = true
+	}
+	require.NoError(t, s.SetValidators(vals))
+	chain := &mock.ChainService{State: s, Genesis: time.Now()}
+	r := &Service{
+		cfg: &config{
+			p2p:         p,
+			chain:       chain,
+			clock:       startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
+			initialSync: &mockSync.Sync{IsSyncing: false},
+		},
+		seenAttesterSlashingCache: make(map[uint64]bool),
+		subHandler:                newSubTopicHandler(),
+	}
+
+	buf := new(bytes.Buffer)
+	_, err := p.Encoding().EncodeGossip(buf, slashing)
+	require.NoError(t, err)
+
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.AttesterSlashing]()]
+	d, err := r.currentForkDigest()
+	assert.NoError(t, err)
+	topic = r.addDigestToTopic(topic, d)
+	msg := &pubsub.Message{
+		Message: &pubsubpb.Message{
+			Data:  buf.Bytes(),
+			Topic: &topic,
+		},
+	}
+	res, err := r.validateAttesterSlashing(ctx, "foobar", msg)
+	assert.ErrorContains(t, "validators were previously slashed", err)
+	valid := res == pubsub.ValidationIgnore
+
+	assert.Equal(t, true, valid, "Incorrect Validation")
+}
+
+func TestValidateAttesterSlashing_ChecksEligibilityBeforeSignatures(t *testing.T) {
+	p := p2ptest.NewTestP2P(t)
+	t.Cleanup(func() { require.NoError(t, p.BHost.Close()) })
+	slashing, beaconState := setupValidAttesterSlashing(t)
+
+	for _, tt := range []struct {
+		name                  string
+		slashed               bool
+		withdrawn             bool
+		invalidAttestation    int
+		outOfRangeAttestation int
+		wantResult            pubsub.ValidationResult
+		wantError             string
+		wantPubkeyLookups     int
+	}{
+		{name: "valid", wantResult: pubsub.ValidationAccept, wantPubkeyLookups: 4},
+		{name: "already slashed", slashed: true, wantResult: pubsub.ValidationIgnore, wantError: "validators were previously slashed"},
+		{name: "already slashed with invalid signatures", slashed: true, invalidAttestation: 1, wantResult: pubsub.ValidationIgnore, wantError: "validators were previously slashed"},
+		{name: "withdrawn with invalid signatures", withdrawn: true, invalidAttestation: 1, wantResult: pubsub.ValidationReject, wantError: "none of the validators are slashable"},
+		{name: "invalid first attestation", invalidAttestation: 1, wantResult: pubsub.ValidationReject, wantError: "signature did not verify", wantPubkeyLookups: 2},
+		{name: "invalid second attestation", invalidAttestation: 2, wantResult: pubsub.ValidationReject, wantError: "signature did not verify", wantPubkeyLookups: 4},
+		{name: "already slashed with first attestation out of range", slashed: true, outOfRangeAttestation: 1, wantResult: pubsub.ValidationReject, wantError: "out of range"},
+		{name: "already slashed with second attestation out of range", slashed: true, outOfRangeAttestation: 2, wantResult: pubsub.ValidationReject, wantError: "out of range"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			st := &pubkeyTrackingState{BeaconState: beaconState.Copy()}
+			vals := st.Validators()
+			for _, val := range vals {
+				val.Slashed = tt.slashed
+				if tt.withdrawn {
+					val.WithdrawableEpoch = 0
+				}
+			}
+			require.NoError(t, st.SetValidators(vals))
+			request := &qrysmpb.AttesterSlashing{
+				Attestation_1: qrysmpb.CopyIndexedAttestation(slashing.Attestation_1),
+				Attestation_2: qrysmpb.CopyIndexedAttestation(slashing.Attestation_2),
+			}
+			atts := []*qrysmpb.IndexedAttestation{request.Attestation_1, request.Attestation_2}
+			if tt.invalidAttestation != 0 {
+				atts[tt.invalidAttestation-1].Signatures[0][0] ^= 1
+			}
+			if tt.outOfRangeAttestation != 0 {
+				att := atts[tt.outOfRangeAttestation-1]
+				att.AttestingIndices = append(att.AttestingIndices, uint64(st.NumValidators()))
+				att.Signatures = append(att.Signatures, bytes.Clone(att.Signatures[0]))
+			}
+
+			s := &Service{cfg: &config{
+				p2p:         p,
+				chain:       &mock.ChainService{State: st},
+				initialSync: &mockSync.Sync{},
+			}}
+			buf := new(bytes.Buffer)
+			_, err := p.Encoding().EncodeGossip(buf, request)
+			require.NoError(t, err)
+			topic := fmt.Sprintf(p2p.AttesterSlashingSubnetTopicFormat, [4]byte{})
+			msg := &pubsub.Message{Message: &pubsubpb.Message{Data: buf.Bytes(), Topic: &topic}}
+			result, err := s.validateAttesterSlashing(t.Context(), "remote", msg)
+			assert.Equal(t, tt.wantResult, result)
+			if tt.wantError == "" {
+				assert.NoError(t, err)
+				assert.NotNil(t, msg.ValidatorData)
+			} else {
+				assert.ErrorContains(t, tt.wantError, err)
+				assert.Equal(t, nil, msg.ValidatorData)
+			}
+			assert.Equal(t, tt.wantPubkeyLookups, st.pubkeyLookups, "ineligible slashings must not trigger signature work")
+		})
+	}
 }
 
 func TestValidateAttesterSlashing_InvalidSlashing_WithdrawableEpoch(t *testing.T) {

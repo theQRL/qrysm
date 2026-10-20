@@ -19,7 +19,7 @@ TAG=$1
 bazel build --config=release \
   //cmd/beacon-chain:push_oci_image \
   //cmd/validator:push_oci_image \
-  //cmd/qrysmctl:push_oci_image
+  //cmd/alltools:push_oci_image
 
 # Push the images to the registry.
 ### Beacon chain
@@ -30,6 +30,6 @@ bazel run --config=release \
 bazel run --config=release \
   //cmd/validator:push_oci_image -- --tag=validator-$TAG
 
-### Qrysmctl
+### All tools
 bazel run --config=release \
-  //cmd/qrysmctl:push_oci_image -- --tag=qrysmctl-$TAG
+  //cmd/alltools:push_oci_image -- --tag=alltools-$TAG

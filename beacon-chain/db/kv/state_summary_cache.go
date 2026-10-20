@@ -3,6 +3,7 @@ package kv
 import (
 	"sync"
 
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
@@ -12,6 +13,11 @@ const stateSummaryCachePruneCount = 128
 type stateSummaryCache struct {
 	initSyncStateSummaries     map[[32]byte]*qrysmpb.StateSummary
 	initSyncStateSummariesLock sync.RWMutex
+	// flushLock serializes a flush of the cache to the database with any
+	// deletion of a summary. A flush writes a snapshot of the cache and must
+	// not race a delete (the snapshot would resurrect the deleted summary), and
+	// two flushes must not overlap.
+	flushLock sync.Mutex
 }
 
 // newStateSummaryCache creates a new state summary cache.
@@ -73,9 +79,21 @@ func (c *stateSummaryCache) getAll() []*qrysmpb.StateSummary {
 	return summaries
 }
 
-// Clear clears out the initial sync state summaries cache.
+// clear drops every cached summary. Only for tests; a flush must use deleteMany
+// so that summaries added during the flush survive.
 func (c *stateSummaryCache) clear() {
 	c.initSyncStateSummariesLock.Lock()
 	defer c.initSyncStateSummariesLock.Unlock()
 	c.initSyncStateSummaries = make(map[[32]byte]*qrysmpb.StateSummary)
+}
+
+// deleteMany removes the given summaries from the cache. Unlike dropping the
+// whole map, this keeps summaries that were added after the caller took its
+// snapshot, so a flush never discards a summary it did not write.
+func (c *stateSummaryCache) deleteMany(summaries []*qrysmpb.StateSummary) {
+	c.initSyncStateSummariesLock.Lock()
+	defer c.initSyncStateSummariesLock.Unlock()
+	for _, s := range summaries {
+		delete(c.initSyncStateSummaries, bytesutil.ToBytes32(s.Root))
+	}
 }

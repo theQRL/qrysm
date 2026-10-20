@@ -3,7 +3,6 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "ml_dsa_87t",
     srcs = [
-        "init.go",
         "ml_dsa_87_key.go",
         "public_key.go",
         "signature.go",
@@ -11,11 +10,12 @@ go_library(
     importpath = "github.com/theQRL/qrysm/crypto/ml_dsa_87/ml_dsa_87t",
     visibility = ["//visibility:public"],
     deps = [
-        "//cache/nonblocking",
         "//config/fieldparams",
         "//crypto/ml_dsa_87/common",
         "//crypto/rand",
         "@com_github_pkg_errors//:errors",
+        "@com_github_theqrl_go_qrllib//crypto/errors",
+        "@com_github_theqrl_go_qrllib//crypto/ml_dsa_87",
         "@com_github_theqrl_go_qrllib//wallet/ml_dsa_87",
         "@org_golang_x_sync//errgroup",
     ],
@@ -27,7 +27,6 @@ go_test(
         "ml_dsa_87_key_test.go",
         "public_key_test.go",
         "signature_test.go",
-        "test_helper_test.go",
     ],
     embed = [":ml_dsa_87t"],
     deps = [
@@ -36,5 +35,6 @@ go_test(
         "//testing/assert",
         "//testing/require",
         "@com_github_theqrl_go_qrl//common/hexutil",
+        "@com_github_theqrl_go_qrllib//crypto/ml_dsa_87",
     ],
 )

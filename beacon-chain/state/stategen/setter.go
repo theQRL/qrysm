@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"slices"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/db"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
@@ -62,7 +65,13 @@ func (s *State) saveStateByRoot(ctx context.Context, blockRoot [32]byte, st stat
 			s.saveHotStateDB.lock.Unlock()
 			return err
 		}
-		s.saveHotStateDB.blockRootsOfSavedStates = append(s.saveHotStateDB.blockRootsOfSavedStates, blockRoot)
+		// The same root can be saved more than once (a batch saves its boundary
+		// states and its last state, which may coincide). The list must hold it
+		// once: the migration removes a root it archived, and a leftover entry
+		// would have the hot-state cleanup delete the archived state.
+		if !slices.Contains(s.saveHotStateDB.blockRootsOfSavedStates, blockRoot) {
+			s.saveHotStateDB.blockRootsOfSavedStates = append(s.saveHotStateDB.blockRootsOfSavedStates, blockRoot)
+		}
 
 		log.WithFields(logrus.Fields{
 			"slot":                   st.Slot(),
@@ -103,14 +112,15 @@ func (s *State) saveStateByRoot(ctx context.Context, blockRoot [32]byte, st stat
 		// then recover by saving the state at that particular slot here.
 		if !ok {
 			// Only recover the state if it is in our hot state cache, otherwise we
-			// simply skip this step.
-			if s.hotStateCache.has([32]byte(bRoot)) {
+			// simply skip this step. A single lookup: a concurrent put can evict
+			// the entry between a has() and a get(), and the nil state would then
+			// be handed to the boundary cache and dereferenced.
+			if hState := s.hotStateCache.get([32]byte(bRoot)); hState != nil {
 				log.WithFields(logrus.Fields{
 					"slot": epochStart,
 					"root": fmt.Sprintf("%#x", bRoot),
 				}).Debug("Recovering state for epoch boundary cache")
 
-				hState := s.hotStateCache.get([32]byte(bRoot))
 				if err := s.epochBoundaryStateCache.put([32]byte(bRoot), hState); err != nil {
 					return err
 				}
@@ -154,21 +164,46 @@ func (s *State) EnableSaveHotStateToDB(_ context.Context) {
 func (s *State) DisableSaveHotStateToDB(ctx context.Context) error {
 	s.saveHotStateDB.lock.Lock()
 	defer s.saveHotStateDB.lock.Unlock()
-	if !s.saveHotStateDB.enabled {
+	if !s.saveHotStateDB.enabled && len(s.saveHotStateDB.blockRootsOfSavedStates) == 0 {
 		return nil
 	}
 
-	log.WithFields(logrus.Fields{
-		"enabled":          s.saveHotStateDB.enabled,
-		"deletedHotStates": len(s.saveHotStateDB.blockRootsOfSavedStates),
-	}).Warn("Exiting mode to save hot states in DB")
-
-	// Delete previous saved states in DB as we are turning this mode off.
-	s.saveHotStateDB.enabled = false
-	if err := s.beaconDB.DeleteStates(ctx, s.saveHotStateDB.blockRootsOfSavedStates); err != nil {
-		return err
+	if s.saveHotStateDB.enabled {
+		log.WithFields(logrus.Fields{
+			"enabled":          s.saveHotStateDB.enabled,
+			"deletedHotStates": len(s.saveHotStateDB.blockRootsOfSavedStates),
+		}).Warn("Exiting mode to save hot states in DB")
+		s.saveHotStateDB.enabled = false
 	}
-	s.saveHotStateDB.blockRootsOfSavedStates = nil
 
-	return nil
+	// Delete the previously saved states one by one. The database refuses to
+	// delete the state of the current justified or finalized checkpoint root,
+	// which a saved hot state can well be: keep such a root, and any root whose
+	// deletion failed, so a later call removes it once finality has moved on,
+	// instead of abandoning the rest of the list.
+	kept := make([][32]byte, 0)
+	var firstErr error
+	for i, r := range s.saveHotStateDB.blockRootsOfSavedStates {
+		if err := ctx.Err(); err != nil {
+			kept = append(kept, s.saveHotStateDB.blockRootsOfSavedStates[i:]...)
+			if firstErr == nil {
+				firstErr = err
+			}
+			break
+		}
+		err := s.beaconDB.DeleteState(ctx, r)
+		if err == nil {
+			continue
+		}
+		kept = append(kept, r)
+		if errors.Is(err, db.ErrDeleteJustifiedAndFinalized) {
+			continue
+		}
+		if firstErr == nil {
+			firstErr = err
+		}
+	}
+	s.saveHotStateDB.blockRootsOfSavedStates = kept
+
+	return firstErr
 }

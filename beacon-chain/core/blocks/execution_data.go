@@ -24,6 +24,9 @@ func ProcessExecutionDataInBlock(_ context.Context, beaconState state.BeaconStat
 	if beaconState == nil || beaconState.IsNil() {
 		return nil, errors.New("nil state")
 	}
+	if executionData == nil {
+		return nil, errors.New("nil execution data")
+	}
 	if err := beaconState.AppendExecutionDataVotes(executionData); err != nil {
 		return nil, err
 	}

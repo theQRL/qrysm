@@ -72,6 +72,7 @@ go_test(
         "//consensus-types/primitives",
         "//container/trie",
         "//crypto/ml_dsa_87",
+        "//crypto/rand",
         "//encoding/bytesutil",
         "//math",
         "//proto/qrysm/v1alpha1",

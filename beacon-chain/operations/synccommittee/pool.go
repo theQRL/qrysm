@@ -11,6 +11,8 @@ var _ = Pool(&Store{})
 // validators. In the current design, aggregated attestations
 // are used by proposers and sync committee messages are used by
 // sync aggregators.
+// Callers must validate messages and contributions before saving them. Proposer
+// state-root calculation relies on pool admission to verify sync signatures.
 type Pool interface {
 	// Methods for Sync Contributions.
 	SaveSyncCommitteeContribution(contr *qrysmpb.SyncCommitteeContribution) error

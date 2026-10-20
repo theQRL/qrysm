@@ -1,12 +1,15 @@
 package ml_dsa_87
 
 import (
+	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87/common"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87/ml_dsa_87t"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -26,9 +29,12 @@ func TestCopySignatureSet(t *testing.T) {
 		message2 := [32]byte{'E', 'F'}
 		message3 := [32]byte{'H', 'I'}
 
-		sig := key.Sign(message[:])
-		sig2 := key2.Sign(message2[:])
-		sig3 := key3.Sign(message3[:])
+		sig, err := key.Sign(message[:])
+		require.NoError(t, err)
+		sig2, err := key2.Sign(message2[:])
+		require.NoError(t, err)
+		sig3, err := key3.Sign(message3[:])
+		require.NoError(t, err)
 
 		set := &SignatureBatch{
 			Signatures:   [][][]byte{{sig.Marshal()}},
@@ -98,6 +104,288 @@ func TestVerifyVerbosely_VerificationThrowsError(t *testing.T) {
 	assert.StringNotContains(t, "signature 'signature of good0' is invalid", err.Error())
 }
 
+func TestVerifyVerbosely_RejectsNilPublicKey(t *testing.T) {
+	set := NewValidSignatureSet(t, "nil key", 1)
+	set.PublicKeys[0][0] = nil
+	valid, err := set.VerifyVerbosely()
+	require.ErrorContains(t, "invalid public key at batch 0, index 0", err)
+	require.Equal(t, false, valid)
+}
+
+func TestVerifyVerbosely_BoundedDiagnostics(t *testing.T) {
+	base := NewInvalidSignatureSet(t, "bad", 1, false)
+	for _, tc := range []struct {
+		name      string
+		count     int
+		longLabel bool
+		oversized bool
+	}{
+		{name: "single", count: 1},
+		{name: "sample_limit", count: 8},
+		{name: "many_failures", count: 64},
+		{name: "long_description", count: 64, longLabel: true},
+		{name: "oversized_signature", count: 64, longLabel: true, oversized: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			entry := base.Copy()
+			if tc.longLabel {
+				entry.Descriptions[0] = strings.Repeat("label", 1<<14)
+			}
+			if tc.oversized {
+				entry.Signatures[0][0] = make([]byte, 1<<16)
+			}
+			set := NewSet()
+			for range tc.count {
+				set.Join(entry)
+			}
+			valid, err := set.VerifyVerbosely()
+			require.Equal(t, false, valid)
+			require.ErrorContains(t, "some signatures are invalid", err)
+			diagnostic := err.Error()
+			if len(diagnostic) > 4096 {
+				t.Fatalf("diagnostics exceed 4 KiB: %d bytes", len(diagnostic))
+			}
+			reported := strings.Count(diagnostic, " is invalid.")
+			if reported < 1 || reported > min(tc.count, 8) {
+				t.Fatalf("unexpected number of diagnostic entries: %d", reported)
+			}
+			if reported < tc.count {
+				require.ErrorContains(t, fmt.Sprintf("%d additional invalid signatures omitted", tc.count-reported), err)
+			} else {
+				assert.StringNotContains(t, "omitted", diagnostic)
+			}
+			assert.StringNotContains(t, fmt.Sprintf("%x", entry.Signatures[0][0]), diagnostic)
+			assert.StringNotContains(t, fmt.Sprintf("%x", entry.PublicKeys[0][0].Marshal()), diagnostic)
+			assert.StringContains(t, "signature prefix:", diagnostic)
+			assert.StringContains(t, "public key prefix:", diagnostic)
+			if tc.longLabel {
+				assert.StringNotContains(t, entry.Descriptions[0], diagnostic)
+				assert.StringContains(t, "...", diagnostic)
+			}
+			if tc.oversized {
+				require.ErrorContains(t, "signature must be", err)
+			}
+		})
+	}
+}
+
+func TestVerifyVerbosely_EmptyAndNil(t *testing.T) {
+	valid, err := NewSet().VerifyVerbosely()
+	require.NoError(t, err)
+	require.Equal(t, false, valid)
+	valid, err = (*SignatureBatch)(nil).VerifyVerbosely()
+	require.ErrorContains(t, "nil signature set", err)
+	require.Equal(t, false, valid)
+}
+
+func TestSignatureBatch_RejectsInvalidDescriptions(t *testing.T) {
+	for _, num := range []int{1, 2} {
+		base := NewValidSignatureSet(t, "description", num)
+		for _, tc := range []struct {
+			name         string
+			descriptions []string
+		}{
+			{name: "nil"},
+			{name: "empty", descriptions: []string{}},
+			{name: "short", descriptions: createDescriptions(num - 1)},
+			{name: "extra", descriptions: createDescriptions(num + 1)},
+		} {
+			t.Run(fmt.Sprintf("%d_groups/%s", num, tc.name), func(t *testing.T) {
+				for _, invalidSignature := range []bool{false, true} {
+					t.Run(fmt.Sprintf("invalid_signature_%t", invalidSignature), func(t *testing.T) {
+						set := base.Copy()
+						set.Descriptions = tc.descriptions
+						if invalidSignature {
+							set.Messages[num-1][0] ^= 1
+						}
+						// Descriptions do not affect cryptographic verification.
+						valid, err := set.Verify()
+						require.NoError(t, err)
+						require.Equal(t, !invalidSignature, valid)
+						valid, err = set.VerifyVerbosely()
+						require.ErrorContains(t, "descriptions and messages have differing lengths", err)
+						require.Equal(t, false, valid)
+					})
+				}
+				set := base.Copy()
+				set.Descriptions = tc.descriptions
+				before := set.Copy()
+				// Preserve nil versus empty metadata when checking for mutation.
+				if tc.descriptions == nil {
+					before.Descriptions = nil
+				}
+				removed, result, err := set.RemoveDuplicates()
+				require.ErrorContains(t, "descriptions and messages have differing lengths", err)
+				require.Equal(t, 0, removed)
+				require.Equal(t, set, result)
+				require.DeepEqual(t, before, set)
+			})
+		}
+	}
+}
+
+func TestSignatureBatch_RejectsMalformedGroups(t *testing.T) {
+	base := NewValidSignatureSet(t, "shape", 2)
+	for _, tc := range []struct {
+		name   string
+		modify func(*SignatureBatch)
+		err    string
+	}{
+		{
+			name:   "missing_signature_groups",
+			modify: func(s *SignatureBatch) { s.Signatures = nil },
+			err:    "differing lengths",
+		},
+		{
+			name:   "missing_public_key_groups",
+			modify: func(s *SignatureBatch) { s.PublicKeys = nil },
+			err:    "differing lengths",
+		},
+		{
+			name: "missing_messages",
+			modify: func(s *SignatureBatch) {
+				s.Messages = nil
+				s.Descriptions = nil
+			},
+			err: "differing lengths",
+		},
+		{
+			name:   "short_signature_group",
+			modify: func(s *SignatureBatch) { s.Signatures[1] = nil },
+			err:    "differing lengths",
+		},
+		{
+			name: "empty_group",
+			modify: func(s *SignatureBatch) {
+				s.Signatures[1] = nil
+				s.PublicKeys[1] = nil
+			},
+			err: "signature group 1 is empty",
+		},
+		{
+			name: "duplicate_with_nil_public_key",
+			modify: func(s *SignatureBatch) {
+				s.Join(s.Copy())
+				s.PublicKeys[2][0] = nil
+			},
+			err: "invalid public key at batch 2, index 0",
+		},
+		{
+			name:   "typed_nil_public_key",
+			modify: func(s *SignatureBatch) { s.PublicKeys[1][0] = (*ml_dsa_87t.PublicKey)(nil) },
+			err:    "invalid public key at batch 1, index 0",
+		},
+		{
+			name:   "uninitialized_public_key",
+			modify: func(s *SignatureBatch) { s.PublicKeys[1][0] = &ml_dsa_87t.PublicKey{} },
+			err:    "invalid public key at batch 1, index 0",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			set, before := base.Copy(), base.Copy()
+			tc.modify(set)
+			tc.modify(before)
+			valid, err := set.Verify()
+			require.ErrorContains(t, tc.err, err)
+			require.Equal(t, false, valid)
+			valid, err = set.VerifySequential(t.Context())
+			require.ErrorContains(t, tc.err, err)
+			require.Equal(t, false, valid)
+			valid, err = set.VerifyVerbosely()
+			require.ErrorContains(t, tc.err, err)
+			require.Equal(t, false, valid)
+			removed, result, err := set.RemoveDuplicates()
+			require.ErrorContains(t, tc.err, err)
+			require.Equal(t, 0, removed)
+			require.Equal(t, set, result)
+			require.DeepEqual(t, before, set)
+		})
+	}
+}
+
+func TestSignatureBatch_VerifySequential(t *testing.T) {
+	base := NewValidSignatureSet(t, "sequential", 2)
+	// Cover multiple signatures within a group as well as multiple groups.
+	base.Signatures[0] = append(base.Signatures[0], base.Signatures[0][0])
+	base.PublicKeys[0] = append(base.PublicKeys[0], base.PublicKeys[0][0])
+	valid, err := base.VerifySequential(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, true, valid)
+	for i := range base.Signatures {
+		for j := range base.Signatures[i] {
+			set := base.Copy()
+			set.Signatures[i][j][0] ^= 1
+			valid, err := set.VerifySequential(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, false, valid, "every signature must verify")
+		}
+	}
+	t.Run("stops at first invalid signature", func(t *testing.T) {
+		set := base.Copy()
+		set.Signatures[0][0][0] ^= 1
+		// If verification continued after the first failure, parsing this later
+		// signature would produce an error instead of the first signature's verdict.
+		set.Signatures[1][0] = []byte{1}
+		valid, err := set.VerifySequential(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, false, valid)
+		set.Signatures[0][0][0] ^= 1
+		valid, err = set.VerifySequential(t.Context())
+		require.ErrorContains(t, "signature must be", err)
+		require.Equal(t, false, valid)
+	})
+	t.Run("canceled", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		valid, err := base.VerifySequential(ctx)
+		require.ErrorIs(t, err, context.Canceled)
+		require.Equal(t, false, valid)
+	})
+	t.Run("empty", func(t *testing.T) {
+		valid, err := NewSet().VerifySequential(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, false, valid)
+	})
+	t.Run("nil", func(t *testing.T) {
+		valid, err := (*SignatureBatch)(nil).VerifySequential(t.Context())
+		require.ErrorContains(t, "nil signature set", err)
+		require.Equal(t, false, valid)
+	})
+}
+
+func TestCopySignatureSet_InvalidPublicKeys(t *testing.T) {
+	base := NewValidSignatureSet(t, "copy", 2)
+	for _, tc := range []struct {
+		name string
+		key  PublicKey
+	}{
+		{name: "nil_interface"},
+		{name: "typed_nil", key: (*ml_dsa_87t.PublicKey)(nil)},
+		{name: "uninitialized", key: &ml_dsa_87t.PublicKey{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			set := base.Copy()
+			set.PublicKeys[1][0] = tc.key
+			copied := set.Copy()
+			require.Equal(t, nil, copied.PublicKeys[1][0])
+			require.DeepEqual(t, set.PublicKeys[0], copied.PublicKeys[0])
+			require.DeepEqual(t, set.Signatures, copied.Signatures)
+			valid, err := copied.Verify()
+			require.ErrorContains(t, "invalid public key at batch 1, index 0", err)
+			require.Equal(t, false, valid)
+		})
+	}
+}
+
+func TestSignatureBatch_RemoveDuplicates_PreservesDescriptions(t *testing.T) {
+	base := NewValidSignatureSet(t, "description", 2)
+	set := base.Copy().Join(base.Copy())
+	removed, result, err := set.RemoveDuplicates()
+	require.NoError(t, err)
+	require.Equal(t, 2, removed)
+	require.DeepEqual(t, base, result)
+}
+
 func TestSignatureBatch_RemoveDuplicates(t *testing.T) {
 	var keys []MLDSA87Key
 	for range 100 {
@@ -127,7 +415,8 @@ func TestSignatureBatch_RemoveDuplicates(t *testing.T) {
 				var pubs [][]PublicKey
 				var messages [][32]byte
 				for _, k := range chosenKeys {
-					s := k.Sign(msg[:])
+					s, err := k.Sign(msg[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
@@ -161,19 +450,22 @@ func TestSignatureBatch_RemoveDuplicates(t *testing.T) {
 				var messages [][32]byte
 				var pubs [][]PublicKey
 				for _, k := range chosenKeys[:10] {
-					s := k.Sign(msg[:])
+					s, err := k.Sign(msg[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
 				}
 				for _, k := range chosenKeys[10:20] {
-					s := k.Sign(msg1[:])
+					s, err := k.Sign(msg1[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg1)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
 				}
 				for _, k := range chosenKeys[20:30] {
-					s := k.Sign(msg2[:])
+					s, err := k.Sign(msg2[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg2)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
@@ -207,19 +499,22 @@ func TestSignatureBatch_RemoveDuplicates(t *testing.T) {
 				var messages [][32]byte
 				var pubs [][]PublicKey
 				for _, k := range chosenKeys[:10] {
-					s := k.Sign(msg[:])
+					s, err := k.Sign(msg[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
 				}
 				for _, k := range chosenKeys[10:20] {
-					s := k.Sign(msg1[:])
+					s, err := k.Sign(msg1[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg1)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
 				}
 				for _, k := range chosenKeys[20:30] {
-					s := k.Sign(msg2[:])
+					s, err := k.Sign(msg2[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg2)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
@@ -250,19 +545,22 @@ func TestSignatureBatch_RemoveDuplicates(t *testing.T) {
 				var messages [][32]byte
 				var pubs [][]PublicKey
 				for _, k := range chosenKeys[:10] {
-					s := k.Sign(msg[:])
+					s, err := k.Sign(msg[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
 				}
 				for _, k := range chosenKeys[10:20] {
-					s := k.Sign(msg1[:])
+					s, err := k.Sign(msg1[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg1)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
 				}
 				for _, k := range chosenKeys[20:30] {
-					s := k.Sign(msg2[:])
+					s, err := k.Sign(msg2[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg2)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
@@ -305,19 +603,22 @@ func TestSignatureBatch_RemoveDuplicates(t *testing.T) {
 				var messages [][32]byte
 				var pubs [][]PublicKey
 				for _, k := range chosenKeys[:10] {
-					s := k.Sign(msg[:])
+					s, err := k.Sign(msg[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
 				}
 				for _, k := range chosenKeys[10:20] {
-					s := k.Sign(msg1[:])
+					s, err := k.Sign(msg1[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg1)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
 				}
 				for _, k := range chosenKeys[20:30] {
-					s := k.Sign(msg2[:])
+					s, err := k.Sign(msg2[:])
+					require.NoError(t, err)
 					signatures = append(signatures, [][]byte{s.Marshal()})
 					messages = append(messages, msg2)
 					pubs = append(pubs, []PublicKey{k.PublicKey()})
@@ -401,7 +702,9 @@ func NewValidSignatureSet(t *testing.T, msgBody string, num int) *SignatureBatch
 		require.NoError(t, err)
 		pubkey := priv.PublicKey()
 		msg := messageBytes(fmt.Sprintf("%s%d", msgBody, i))
-		sig := priv.Sign(msg[:]).Marshal()
+		lsig1, err := priv.Sign(msg[:])
+		require.NoError(t, err)
+		sig := lsig1.Marshal()
 		desc := fmt.Sprintf("signature of %s%d", msgBody, i)
 
 		set.Signatures[i] = [][]byte{sig}
@@ -431,7 +734,9 @@ func NewInvalidSignatureSet(t *testing.T, msgBody string, num int, throwErr bool
 			sig = make([]byte, fieldparams.MLDSA87SignatureLength)
 		} else {
 			badMsg := messageBytes("badmsg")
-			sig = priv.Sign(badMsg[:]).Marshal()
+			lsig2, err := priv.Sign(badMsg[:])
+			require.NoError(t, err)
+			sig = lsig2.Marshal()
 		}
 		desc := fmt.Sprintf("signature of %s%d", msgBody, i)
 

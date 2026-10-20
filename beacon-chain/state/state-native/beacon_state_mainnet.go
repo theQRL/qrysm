@@ -100,6 +100,9 @@ type beaconStateMarshalable struct {
 }
 
 func (b *BeaconState) MarshalJSON() ([]byte, error) {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	var bRoots customtypes.BlockRoots
 	var sRoots customtypes.StateRoots
 	var mixes customtypes.RandaoMixes

@@ -61,21 +61,22 @@ func (p *Pool) PendingExits() ([]*qrysmpb.SignedVoluntaryExit, error) {
 
 // ExitsForInclusion returns objects that are ready for inclusion at the given slot. This method will not
 // return more than the block enforced MaxVoluntaryExits.
+// A caller can hold an old or competing head state, so selection only filters
+// exits. Canonical inclusion removes them through MarkIncluded.
 func (p *Pool) ExitsForInclusion(state state.ReadOnlyBeaconState, slot types.Slot) ([]*qrysmpb.SignedVoluntaryExit, error) {
 	p.lock.RLock()
+	defer p.lock.RUnlock()
 	length := int(math.Min(float64(params.BeaconConfig().MaxVoluntaryExits), float64(p.pending.Len())))
 	result := make([]*qrysmpb.SignedVoluntaryExit, 0, length)
 	node := p.pending.First()
 	for node != nil && len(result) < length {
 		exit, err := node.Value()
 		if err != nil {
-			p.lock.RUnlock()
 			return nil, err
 		}
 		if exit.Exit.Epoch > slots.ToEpoch(slot) {
 			node, err = node.Next()
 			if err != nil {
-				p.lock.RUnlock()
 				return nil, err
 			}
 			continue
@@ -85,27 +86,20 @@ func (p *Pool) ExitsForInclusion(state state.ReadOnlyBeaconState, slot types.Slo
 			logrus.WithError(err).Warningf("could not get validator at index %d", exit.Exit.ValidatorIndex)
 			node, err = node.Next()
 			if err != nil {
-				p.lock.RUnlock()
 				return nil, err
 			}
 			continue
 		}
 		if err = blocks.VerifyExitAndSignature(validator, state, exit); err != nil {
-			logrus.WithError(err).Warning("removing invalid exit from pool")
-			p.lock.RUnlock()
-			// MarkIncluded removes the invalid exit from the pool
-			p.MarkIncluded(exit)
-			p.lock.RLock()
+			logrus.WithError(err).Debug("Skipping exit ineligible for this state")
 		} else {
 			result = append(result, exit)
 		}
 		node, err = node.Next()
 		if err != nil {
-			p.lock.RUnlock()
 			return nil, err
 		}
 	}
-	p.lock.RUnlock()
 	return result, nil
 }
 

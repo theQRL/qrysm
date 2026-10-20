@@ -70,11 +70,27 @@ func (s *PremineGenesisConfig) prepare(ctx context.Context) (state.BeaconState, 
 		return nil, errors.Wrapf(errUnsupportedVersion, "version=%s", version.String(s.Version))
 	}
 
+	// Generated deposits are distinct, fully funded validators. Reject an
+	// oversized request before doing expensive key and RANDAO onion generation.
+	// Supplied deposit data must instead be checked after processing deposits.
+	if s.depositEntries == nil {
+		maxActiveValidators, err := params.BeaconConfig().MaxActiveValidators()
+		if err != nil {
+			return nil, errors.Wrap(err, "could not determine active validator capacity")
+		}
+		if s.NVals > maxActiveValidators {
+			return nil, errors.Errorf("genesis active validator count %d exceeds committee capacity %d", s.NVals, maxActiveValidators)
+		}
+	}
+
 	st, err := s.empty()
 	if err != nil {
 		return nil, err
 	}
 	if err = s.processDeposits(ctx, st); err != nil {
+		return nil, err
+	}
+	if err := helpers.ValidateGenesisActiveValidatorCount(st); err != nil {
 		return nil, err
 	}
 	if err = s.populate(st); err != nil {
@@ -349,7 +365,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 	switch s.Version {
 	case version.Zond:
 		body = &qrysmpb.BeaconBlockBodyZond{
-			RandaoReveal: make([]byte, fieldparams.MLDSA87SignatureLength),
+			RandaoReveal: make([]byte, fieldparams.RandaoRevealLength),
 			ExecutionData: &qrysmpb.ExecutionData{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),
@@ -361,7 +377,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 			},
 			ExecutionPayload: &enginev1.ExecutionPayloadZond{
 				ParentHash:    make([]byte, 32),
-				FeeRecipient:  make([]byte, 20),
+				FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 				StateRoot:     make([]byte, 32),
 				ReceiptsRoot:  make([]byte, 32),
 				LogsBloom:     make([]byte, 256),
@@ -390,6 +406,10 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 
 func (s *PremineGenesisConfig) setExecutionPayload(g state.BeaconState) error {
 	gb := s.GB
+	extraData := gb.Extra()
+	if len(extraData) > 32 {
+		extraData = extraData[:32]
+	}
 
 	var ed interfaces.ExecutionData
 	switch s.Version {
@@ -405,7 +425,7 @@ func (s *PremineGenesisConfig) setExecutionPayload(g state.BeaconState) error {
 			GasLimit:      gb.GasLimit(),
 			GasUsed:       gb.GasUsed(),
 			Timestamp:     gb.Time(),
-			ExtraData:     gb.Extra()[:32],
+			ExtraData:     extraData,
 			BaseFeePerGas: bytesutil.PadTo(bytesutil.ReverseByteOrder(gb.BaseFee().Bytes()), fieldparams.RootLength),
 			BlockHash:     gb.Hash().Bytes(),
 			Transactions:  make([][]byte, 0),

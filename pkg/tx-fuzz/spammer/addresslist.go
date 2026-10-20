@@ -127,7 +127,11 @@ func CreateAddresses(N int) ([]string, []string) {
 		if err != nil {
 			panic(err)
 		}
-		seeds = append(seeds, acc.GetHexSeed())
+		hexSeed, err := acc.GetHexSeed()
+		if err != nil {
+			panic(err)
+		}
+		seeds = append(seeds, hexSeed)
 		addrs = append(addrs, common.Address(acc.GetAddress()).Hex())
 	}
 	return seeds, addrs
@@ -160,7 +164,7 @@ func Airdrop(config *Config, value *big.Int) error {
 			GasTipCap: gasTipCap,
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx2, types.LatestSignerForChainID(chainid), config.faucetAcc)
+		signedTx, _ := types.SignTx(tx2, types.NewZondSigner(chainid), config.faucetAcc)
 		if err := backend.SendTransaction(context.Background(), signedTx); err != nil {
 			fmt.Printf("error sending transaction; could not airdrop: %v\n", err)
 			return err

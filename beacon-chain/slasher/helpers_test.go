@@ -75,68 +75,36 @@ func TestService_groupByValidatorChunkIndex(t *testing.T) {
 	}
 }
 
-func TestService_groupByChunkIndex(t *testing.T) {
-	tests := []struct {
-		name   string
-		params *Parameters
-		atts   []*slashertypes.IndexedAttestationWrapper
-		want   map[uint64][]*slashertypes.IndexedAttestationWrapper
-	}{
-		{
-			name:   "No attestations returns empty map",
-			params: DefaultParams(),
-			atts:   make([]*slashertypes.IndexedAttestationWrapper, 0),
-			want:   make(map[uint64][]*slashertypes.IndexedAttestationWrapper),
-		},
-		{
-			name: "Groups multiple attestations belonging to single chunk",
-			params: &Parameters{
-				chunkSize:     2,
-				historyLength: 3,
-			},
-			atts: []*slashertypes.IndexedAttestationWrapper{
-				createAttestationWrapper(t, 0, 0, nil, nil),
-				createAttestationWrapper(t, 1, 0, nil, nil),
-			},
-			want: map[uint64][]*slashertypes.IndexedAttestationWrapper{
-				0: {
-					createAttestationWrapper(t, 0, 0, nil, nil),
-					createAttestationWrapper(t, 1, 0, nil, nil),
-				},
-			},
-		},
-		{
-			name: "Groups multiple attestations belonging to multiple chunks",
-			params: &Parameters{
-				chunkSize:     2,
-				historyLength: 3,
-			},
-			atts: []*slashertypes.IndexedAttestationWrapper{
-				createAttestationWrapper(t, 0, 0, nil, nil),
-				createAttestationWrapper(t, 1, 0, nil, nil),
-				createAttestationWrapper(t, 2, 0, nil, nil),
-			},
-			want: map[uint64][]*slashertypes.IndexedAttestationWrapper{
-				0: {
-					createAttestationWrapper(t, 0, 0, nil, nil),
-					createAttestationWrapper(t, 1, 0, nil, nil),
-				},
-				1: {
-					createAttestationWrapper(t, 2, 0, nil, nil),
-				},
-			},
-		},
+func Test_sortBySourceEpoch(t *testing.T) {
+	atts := []*slashertypes.IndexedAttestationWrapper{
+		createAttestationWrapper(t, 50, 51, []uint64{0}, nil),
+		createAttestationWrapper(t, 0, 1000, []uint64{0}, nil),
+		createAttestationWrapper(t, 50, 60, []uint64{1}, nil),
+		createAttestationWrapper(t, 3, 4, []uint64{2}, nil),
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &Service{
-				params: tt.params,
-			}
-			if got := s.groupByChunkIndex(tt.atts); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("groupByChunkIndex() = %v, want %v", got, tt.want)
-			}
-		})
+	sources := func(in []*slashertypes.IndexedAttestationWrapper) []uint64 {
+		out := make([]uint64, len(in))
+		for i, a := range in {
+			out[i] = uint64(a.IndexedAttestation.Data.Source.Epoch)
+		}
+		return out
 	}
+
+	asc := sortBySourceEpoch(atts, false)
+	require.DeepEqual(t, []uint64{0, 3, 50, 50}, sources(asc))
+	// Stable: the two source-50 attestations keep their input order.
+	require.Equal(t, primitives.Epoch(51), asc[2].IndexedAttestation.Data.Target.Epoch)
+	require.Equal(t, primitives.Epoch(60), asc[3].IndexedAttestation.Data.Target.Epoch)
+
+	desc := sortBySourceEpoch(atts, true)
+	require.DeepEqual(t, []uint64{50, 50, 3, 0}, sources(desc))
+	require.Equal(t, primitives.Epoch(51), desc[0].IndexedAttestation.Data.Target.Epoch)
+	require.Equal(t, primitives.Epoch(60), desc[1].IndexedAttestation.Data.Target.Epoch)
+
+	// Input is left untouched.
+	require.DeepEqual(t, []uint64{50, 0, 50, 3}, sources(atts))
+
+	require.Equal(t, 0, len(sortBySourceEpoch(nil, true)))
 }
 
 func TestService_filterAttestations(t *testing.T) {

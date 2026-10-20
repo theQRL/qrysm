@@ -127,7 +127,7 @@ func aggregate(c1, c2 *v1alpha1.SyncCommitteeContribution) (*v1alpha1.SyncCommit
 		// than the ones in the base participation.
 		if insertIdx > (len(baseParticipants) - 1) {
 			for _, missingParticipant := range participantsToAdd[i:] {
-				baseContribution.Signatures = slices.Insert(baseContribution.Signatures, insertIdx, sigIndex[missingParticipant])
+				baseContribution.Signatures = append(baseContribution.Signatures, sigIndex[missingParticipant])
 			}
 			break
 		}

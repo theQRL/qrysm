@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/consensus-types/primitives"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/db/kv"
@@ -207,10 +208,14 @@ func TestImportInterchangeData_OK(t *testing.T) {
 
 		wantedAttsByRoot := make(map[[32]byte]*kv.AttestationRecord)
 		for _, att := range attestingHistory[i] {
-			wantedAttsByRoot[att.SigningRoot] = att
+			var signingRoot [32]byte
+			copy(signingRoot[:], att.SigningRoot)
+			wantedAttsByRoot[signingRoot] = att
 		}
 		for _, att := range receivedAttestingHistory {
-			wantedAtt, ok := wantedAttsByRoot[att.SigningRoot]
+			var signingRoot [32]byte
+			copy(signingRoot[:], att.SigningRoot)
+			wantedAtt, ok := wantedAttsByRoot[signingRoot]
 			require.Equal(t, true, ok)
 			require.DeepEqual(t, wantedAtt, att)
 		}
@@ -372,4 +377,63 @@ func TestStore_ImportInterchangeData_BadFormat_PreventsDBWrites(t *testing.T) {
 			"Imported proposal signing root is different than the empty default",
 		)
 	}
+}
+
+// Regression test for the qrysm port of upstream PR #13232: a public key that
+// is slashable with respect to attestations already in the database must be
+// blacklisted without aborting the whole import - other keys' histories must
+// still be imported. The import previously returned an error for the entire
+// file as soon as any key conflicted with the local database.
+func TestImportInterchangeData_ContinuesOnKeySlashableVersusDB(t *testing.T) {
+	ctx := context.Background()
+	numValidators := 2
+	publicKeys, err := slashtest.CreateRandomPubKeys(numValidators)
+	require.NoError(t, err)
+	validatorDB := dbtest.SetupDB(t, publicKeys)
+
+	// Build a deterministic protection JSON: each key attests (source 0,
+	// target 1) and proposes at slot 1 with its own signing root.
+	attestingHistory := make([][]*kv.AttestationRecord, numValidators)
+	proposalHistory := make([]kv.ProposalHistoryForPubkey, numValidators)
+	for v := range numValidators {
+		var signingRoot [32]byte
+		signingRoot[0] = byte(v + 1)
+		attestingHistory[v] = []*kv.AttestationRecord{
+			{Source: 0, Target: 1, SigningRoot: signingRoot[:], PubKey: publicKeys[v]},
+		}
+		proposalHistory[v] = kv.ProposalHistoryForPubkey{
+			Proposals: []kv.Proposal{{Slot: 1, SigningRoot: signingRoot[:]}},
+		}
+	}
+	standardProtectionFormat, err := slashtest.MockSlashingProtectionJSON(publicKeys, attestingHistory, proposalHistory)
+	require.NoError(t, err)
+
+	// Pre-populate the database with an attestation for key 0 at the same
+	// target epoch but a different signing root - a double vote with respect
+	// to the database.
+	existingAtt := &qrysmpb.IndexedAttestation{
+		Data: &qrysmpb.AttestationData{
+			Source: &qrysmpb.Checkpoint{Epoch: 0},
+			Target: &qrysmpb.Checkpoint{Epoch: 1},
+		},
+	}
+	require.NoError(t, validatorDB.SaveAttestationForPubKey(ctx, publicKeys[0], [32]byte{99}, existingAtt))
+
+	blob, err := json.Marshal(standardProtectionFormat)
+	require.NoError(t, err)
+	buf := bytes.NewBuffer(blob)
+
+	// The import must complete instead of aborting on the conflicting key.
+	require.NoError(t, history.ImportStandardProtectionJSON(ctx, validatorDB, buf))
+
+	// Key 0 is blacklisted, key 1 is not.
+	sKeys, err := validatorDB.EIPImportBlacklistedPublicKeys(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(sKeys))
+	require.DeepEqual(t, publicKeys[0], sKeys[0])
+
+	// Key 1's history was imported.
+	proposals, err := validatorDB.ProposalHistoryForPubKey(ctx, publicKeys[1])
+	require.NoError(t, err)
+	require.Equal(t, true, len(proposals) > 0, "expected key 1's proposal history to be imported")
 }

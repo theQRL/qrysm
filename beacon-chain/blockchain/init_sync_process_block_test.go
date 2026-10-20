@@ -34,11 +34,14 @@ func TestService_getBlock(t *testing.T) {
 	require.NoError(t, err)
 	require.DeepEqual(t, b, got)
 
-	// block in db
+	// block in db. Blocks are stored blinded at rest, so the block read back
+	// from the DB is the blinded form of the block that was saved.
 	b = util.SaveBlock(t, ctx, s.cfg.BeaconDB, b2)
+	blinded, err := b.ToBlinded()
+	require.NoError(t, err)
 	got, err = s.getBlock(ctx, r2)
 	require.NoError(t, err)
-	require.DeepEqual(t, b, got)
+	require.DeepEqual(t, blinded, got)
 }
 
 func TestService_hasBlockInInitSyncOrDB(t *testing.T) {

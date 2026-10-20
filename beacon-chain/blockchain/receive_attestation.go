@@ -11,6 +11,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/features"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
@@ -38,6 +39,12 @@ type AttestationReceiver interface {
 
 // AttestationTargetState returns the pre state of attestation.
 func (s *Service) AttestationTargetState(ctx context.Context, target *qrysmpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
+	if target == nil {
+		return nil, errors.New("nil target checkpoint")
+	}
+	if len(target.Root) != fieldparams.RootLength {
+		return nil, fmt.Errorf("target checkpoint root must be %d bytes, got %d", fieldparams.RootLength, len(target.Root))
+	}
 	ss, err := slots.EpochStart(target.Epoch)
 	if err != nil {
 		return nil, err
@@ -52,16 +59,28 @@ func (s *Service) AttestationTargetState(ctx context.Context, target *qrysmpb.Ch
 }
 
 // VerifyLmdFfgConsistency verifies that attestation's LMD and FFG votes are consistency to each other.
+//
+// Uses forkchoice's TargetRootForEpoch (which returns the canonical target
+// for the requested epoch on the requested block's chain) rather than an
+// Ancestor walk to the epoch-start slot. The Ancestor approach can return an
+// incorrect target near reorgs or on skip-slot sparse chains because the
+// epoch-start slot may not be a finalized point of reference; forkchoice's
+// per-epoch target is authoritative.
 func (s *Service) VerifyLmdFfgConsistency(ctx context.Context, a *qrysmpb.Attestation) error {
-	targetSlot, err := slots.EpochStart(a.Data.Target.Epoch)
+	// Gossip validation runs concurrently with block processing and needs a
+	// read lock. Block and pool processing use the helper under their own lock.
+	s.cfg.ForkChoiceStore.RLock()
+	defer s.cfg.ForkChoiceStore.RUnlock()
+	return s.verifyLmdFfgConsistency(a)
+}
+
+// verifyLmdFfgConsistency requires the caller to hold the forkchoice lock.
+func (s *Service) verifyLmdFfgConsistency(a *qrysmpb.Attestation) error {
+	r, err := s.cfg.ForkChoiceStore.TargetRootForEpoch(bytesutil.ToBytes32(a.Data.BeaconBlockRoot), a.Data.Target.Epoch)
 	if err != nil {
 		return err
 	}
-	r, err := s.Ancestor(ctx, a.Data.BeaconBlockRoot, targetSlot)
-	if err != nil {
-		return err
-	}
-	if !bytes.Equal(a.Data.Target.Root, r) {
+	if !bytes.Equal(a.Data.Target.Root, r[:]) {
 		return fmt.Errorf("FFG and LMD votes are not consistent, block root: %#x, target root: %#x, canonical target root: %#x", a.Data.BeaconBlockRoot, a.Data.Target.Root, r)
 	}
 	return nil
@@ -97,16 +116,15 @@ func (s *Service) spawnProcessAttestationsRoutine() {
 		for {
 			select {
 			case <-s.ctx.Done():
+				ticker.Done()
 				return
 			case slotInterval := <-ticker.C():
 				if slotInterval.Interval > 0 {
 					s.UpdateHead(s.ctx, slotInterval.Slot+1)
 				} else {
-					s.cfg.ForkChoiceStore.Lock()
-					if err := s.cfg.ForkChoiceStore.NewSlot(s.ctx, slotInterval.Slot); err != nil {
+					if err := s.NewSlot(s.ctx, slotInterval.Slot); err != nil {
 						log.WithError(err).Error("Could not process new slot")
 					}
-					s.cfg.ForkChoiceStore.Unlock()
 
 					s.UpdateHead(s.ctx, slotInterval.Slot)
 				}
@@ -116,7 +134,7 @@ func (s *Service) spawnProcessAttestationsRoutine() {
 }
 
 // UpdateHead updates the canonical head of the chain based on information from fork-choice attestations and votes.
-// The caller of this function MUST hold a lock in forkchoice
+// The caller of this function MUST NOT hold the forkchoice lock; it is acquired inside.
 func (s *Service) UpdateHead(ctx context.Context, proposingSlot primitives.Slot) {
 	ctx, span := trace.StartSpan(ctx, "beacon-chain.blockchain.UpdateHead")
 	defer span.End()
@@ -124,6 +142,9 @@ func (s *Service) UpdateHead(ctx context.Context, proposingSlot primitives.Slot)
 	start := time.Now()
 	s.cfg.ForkChoiceStore.Lock()
 	defer s.cfg.ForkChoiceStore.Unlock()
+	if err := s.retryInvalidBlockCleanup(ctx); err != nil {
+		log.WithError(err).Error("Could not finish invalid block cleanup")
+	}
 	// This function is only called at 10 seconds or 0 seconds into the slot
 	disparity := params.BeaconNetworkConfig().MaximumGossipClockDisparity
 	if !features.Get().DisableReorgLateBlocks {
@@ -160,8 +181,56 @@ func (s *Service) UpdateHead(ctx context.Context, proposingSlot primitives.Slot)
 
 // This processes fork choice attestations from the pool to account for validator votes and fork choice.
 func (s *Service) processAttestations(ctx context.Context, disparity time.Duration) {
-	atts := s.cfg.AttPool.ForkchoiceAttestations()
+	// Included votes keep their own queue: aggregation with gossip would
+	// otherwise either expire them or exempt unincluded participants from age checks.
+	s.processAttestationQueue(ctx, s.cfg.AttPool.BlockAttestations(), 0, true)
+	s.processAttestationQueue(ctx, s.cfg.AttPool.ForkchoiceAttestations(), disparity, false)
+}
+
+func (s *Service) processAttestationQueue(ctx context.Context, atts []*qrysmpb.Attestation, disparity time.Duration, fromBlock bool) {
+	// Gossip votes were marked seen when the pool prepared them. An included
+	// vote is marked seen only once it has been applied; one that is dropped
+	// unapplied must not shadow the genuine signatures another block or a
+	// gossip aggregate may carry for the same data and bits.
+	deleteAttestation := s.cfg.AttPool.DeleteForkchoiceAttestation
+	discardAttestation := s.cfg.AttPool.DeleteForkchoiceAttestation
+	if fromBlock {
+		deleteAttestation = s.cfg.AttPool.DeleteBlockAttestation
+		discardAttestation = s.cfg.AttPool.DiscardBlockAttestation
+	}
+	remove := func(a *qrysmpb.Attestation) {
+		if err := deleteAttestation(a); err != nil {
+			log.WithError(err).Error("Could not delete processed attestation from pool")
+		}
+	}
+	discard := func(a *qrysmpb.Attestation) {
+		if err := discardAttestation(a); err != nil {
+			log.WithError(err).Error("Could not discard unapplied attestation from pool")
+		}
+	}
 	for _, a := range atts {
+		if ctx.Err() != nil {
+			return
+		}
+		if err := helpers.ValidateNilAttestation(a); err != nil {
+			discard(a)
+			continue
+		}
+		if err := helpers.ValidateSlotTargetEpoch(a.Data); err != nil {
+			discard(a)
+			continue
+		}
+		// Included votes remain useful until finality makes their target
+		// obsolete. Gossip votes expire with the current/previous epoch window.
+		currentEpoch := slots.ToEpoch(s.CurrentSlot())
+		expired := currentEpoch > 1 && a.Data.Target.Epoch < currentEpoch-1
+		if fromBlock {
+			expired = a.Data.Target.Epoch < s.cfg.ForkChoiceStore.FinalizedCheckpoint().Epoch
+		}
+		if expired {
+			discard(a)
+			continue
+		}
 		// Based on the spec, don't process the attestation until the subsequent slot.
 		// This delays consideration in the fork choice until their slot is in the past.
 		// https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/fork-choice.md#validate_on_attestation
@@ -176,15 +245,14 @@ func (s *Service) processAttestations(ctx context.Context, disparity time.Durati
 			continue
 		}
 
-		if err := s.cfg.AttPool.DeleteForkchoiceAttestation(a); err != nil {
-			log.WithError(err).Error("Could not delete fork choice attestation in pool")
-		}
-
-		if !helpers.VerifyCheckpointEpoch(a.Data.Target, s.genesisTime) {
+		if !fromBlock && !helpers.VerifyCheckpointEpoch(a.Data.Target, s.genesisTime) {
 			continue
 		}
 
-		if err := s.receiveAttestationNoPubsub(ctx, a, disparity); err != nil {
+		if err := s.onAttestation(ctx, a, disparity, fromBlock); err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			log.WithFields(logrus.Fields{
 				"slot":             a.Data.Slot,
 				"committeeIndex":   a.Data.CommitteeIndex,
@@ -192,7 +260,16 @@ func (s *Service) processAttestations(ctx context.Context, disparity time.Durati
 				"targetRoot":       fmt.Sprintf("%#x", bytesutil.Trunc(a.Data.Target.Root)),
 				"aggregationCount": a.AggregationBits.Count(),
 			}).WithError(err).Warn("Could not process attestation for fork choice")
+			// Keep dependency failures queued so later head updates can
+			// retry them. Anything else was rejected and never applied.
+			var dependencyErr attestationDependencyError
+			if errors.As(err, &dependencyErr) {
+				continue
+			}
+			discard(a)
+			continue
 		}
+		remove(a)
 	}
 }
 

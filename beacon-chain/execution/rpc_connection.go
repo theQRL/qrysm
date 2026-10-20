@@ -22,17 +22,13 @@ func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpo
 	if err != nil {
 		return errors.Wrap(err, "could not dial execution node")
 	}
-	// Attach the clients to the service struct.
 	fetcher := qrlclient.NewClient(client)
-	s.rpcClient = client
-	s.httpLogger = fetcher
 
 	depositContractCaller, err := contracts.NewDepositContractCaller(s.cfg.depositContractAddr, fetcher)
 	if err != nil {
 		client.Close()
 		return errors.Wrap(err, "could not initialize deposit contract caller")
 	}
-	s.depositContractCaller = depositContractCaller
 
 	// Ensure we have the correct chain and deposit IDs.
 	if err := ensureCorrectExecutionChain(ctx, fetcher); err != nil {
@@ -46,8 +42,15 @@ func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpo
 		}
 		return errors.Wrap(err, errStr)
 	}
-	s.updateConnectedExecution(true)
+	// Publish only a validated client. Engine API calls may run concurrently with
+	// reconnection and must never observe an unverified or failed replacement.
+	s.httpLogger = fetcher
+	s.depositContractCaller = depositContractCaller
+	s.serviceLock.Lock()
+	s.rpcClient = client
 	s.runError = nil
+	s.serviceLock.Unlock()
+	s.updateConnectedExecution(true)
 	return nil
 }
 
@@ -69,7 +72,7 @@ func (s *Service) pollConnectionStatus(ctx context.Context) {
 		select {
 		case <-ticker.C:
 			log.Debugf("Trying to dial endpoint: %s", logs.MaskCredentialsLogging(s.cfg.currHttpEndpoint.Url))
-			currClient := s.rpcClient
+			currClient := s.executionClient()
 			if err := s.setupExecutionClientConnections(ctx, s.cfg.currHttpEndpoint); err != nil {
 				errorLogger(err, "Could not connect to execution client endpoint")
 				continue
@@ -89,13 +92,13 @@ func (s *Service) pollConnectionStatus(ctx context.Context) {
 
 // Forces to retry an execution client connection.
 func (s *Service) retryExecutionClientConnection(ctx context.Context, err error) {
-	s.runError = errors.Wrap(err, "retryExecutionClientConnection")
+	s.setRunError(errors.Wrap(err, "retryExecutionClientConnection"))
 	s.updateConnectedExecution(false)
 	// Back off for a while before redialing.
 	time.Sleep(backOffPeriod)
-	currClient := s.rpcClient
+	currClient := s.executionClient()
 	if err := s.setupExecutionClientConnections(ctx, s.cfg.currHttpEndpoint); err != nil {
-		s.runError = errors.Wrap(err, "setupExecutionClientConnections")
+		s.setRunError(errors.Wrap(err, "setupExecutionClientConnections"))
 		return
 	}
 	// Close previous client, if connection was successful.
@@ -103,7 +106,7 @@ func (s *Service) retryExecutionClientConnection(ctx context.Context, err error)
 		currClient.Close()
 	}
 	// Reset run error in the event of a successful connection.
-	s.runError = nil
+	s.setRunError(nil)
 }
 
 // Initializes an RPC connection with authentication headers.
@@ -138,8 +141,8 @@ func ensureCorrectExecutionChain(ctx context.Context, client *qrlclient.Client) 
 		return err
 	}
 	wantChainID := params.BeaconConfig().DepositChainID
-	if cID.Uint64() != wantChainID {
-		return fmt.Errorf("wanted chain ID %d, got %d", wantChainID, cID.Uint64())
+	if !cID.IsUint64() || cID.Uint64() != wantChainID {
+		return fmt.Errorf("wanted chain ID %d, got %s", wantChainID, cID)
 	}
 	return nil
 }

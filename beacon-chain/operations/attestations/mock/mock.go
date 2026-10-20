@@ -12,6 +12,11 @@ type PoolMock struct {
 	AggregatedAtts []*qrysmpb.Attestation
 }
 
+// RecoverAttestation --
+func (*PoolMock) RecoverAttestation(_ *qrysmpb.Attestation) error {
+	panic("implement me")
+}
+
 // AggregateUnaggregatedAttestations --
 func (*PoolMock) AggregateUnaggregatedAttestations(_ context.Context) error {
 	panic("implement me")
@@ -110,6 +115,16 @@ func (*PoolMock) BlockAttestations() []*qrysmpb.Attestation {
 
 // DeleteBlockAttestation --
 func (*PoolMock) DeleteBlockAttestation(_ *qrysmpb.Attestation) error {
+	panic("implement me")
+}
+
+// DiscardBlockAttestation --
+func (*PoolMock) DiscardBlockAttestation(_ *qrysmpb.Attestation) error {
+	panic("implement me")
+}
+
+// MarkAppliedAttestation --
+func (*PoolMock) MarkAppliedAttestation(_ *qrysmpb.Attestation) error {
 	panic("implement me")
 }
 

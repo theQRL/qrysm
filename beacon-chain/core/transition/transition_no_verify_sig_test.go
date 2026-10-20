@@ -16,6 +16,39 @@ import (
 	"github.com/theQRL/qrysm/testing/util"
 )
 
+func TestCalculateStateRoot_SkipsVerifiedSyncSignatures(t *testing.T) {
+	ctx := context.Background()
+	pre, keys := util.DeterministicGenesisStateZond(t, 32)
+	preRoot, err := pre.HashTreeRoot(ctx)
+	require.NoError(t, err)
+	block, err := util.GenerateFullBlockZond(pre, keys, &util.BlockGenConfig{FullSyncAggregate: true}, 1)
+	require.NoError(t, err)
+	signed, err := blocks.NewSignedBeaconBlock(block)
+	require.NoError(t, err)
+	post, err := transition.ExecuteStateTransition(ctx, pre.Copy(), signed)
+	require.NoError(t, err)
+	verifiedRoot, err := post.HashTreeRoot(ctx)
+	require.NoError(t, err)
+	calculatedRoot, err := transition.CalculateStateRoot(ctx, pre, signed)
+	require.NoError(t, err)
+	assert.Equal(t, verifiedRoot, calculatedRoot)
+
+	// Block construction trusts pool admission, but live validation, including
+	// the path deferring proposer/attestation signatures, must still reject this.
+	block.Block.Body.SyncAggregate.SyncCommitteeSignatures[0][0] ^= 1
+	signed, err = blocks.NewSignedBeaconBlock(block)
+	require.NoError(t, err)
+	_, err = transition.CalculateStateRoot(ctx, pre, signed)
+	require.NoError(t, err)
+	_, err = transition.ExecuteStateTransition(ctx, pre.Copy(), signed)
+	require.ErrorContains(t, "invalid sync committee signature[0]", err)
+	_, _, err = transition.ExecuteStateTransitionNoVerifyAnySig(ctx, pre.Copy(), signed)
+	require.ErrorContains(t, "invalid sync committee signature[0]", err)
+	unchangedRoot, err := pre.HashTreeRoot(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, preRoot, unchangedRoot)
+}
+
 func TestExecuteStateTransitionNoVerify_FullProcess(t *testing.T) {
 	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 100)
 

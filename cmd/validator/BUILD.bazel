@@ -38,6 +38,7 @@ go_binary(
     embed = [":validator_lib"],
     pure = "off",  # Enabled unless there is a valid reason to include cgo dep.
     visibility = [
+        "//cmd/alltools:__pkg__",
         "//testing/endtoend:__pkg__",
         "//validator:__subpackages__",
     ],

@@ -23,15 +23,13 @@ func TestProcessAttesterSlashings_RegressionSlashableIndices(t *testing.T) {
 	}
 	// This set of indices is very similar to the one from our sapphire testnet
 	// when close to 100 validators were incorrectly slashed. The set is from 0 -5500,
-	// instead of 55000 as it would take too long to generate a state.
-	setA := []uint64{21, 92, 236, 244, 281, 321, 510, 524,
-		538, 682, 828, 858, 913, 920, 922, 959, 1176, 1207,
-		1222, 1229, 1354, 1394, 1436, 1454, 1510, 1550,
-		1552, 1576, 1645, 1704, 1842, 1967, 2076, 2111, 2134, 2307,
-		2343, 2354, 2417, 2524, 2532, 2555, 2740, 2749, 2759, 2762,
-		2800, 2809, 2824, 2987, 3110, 3125, 3559, 3583, 3599, 3608,
-		3657, 3685, 3723, 3756, 3759, 3761, 3820, 3826, 3979, 4030,
-		4141, 4170, 4205, 4247, 4257, 4479, 4492, 4569, 5091,
+	// instead of 55000 as it would take too long to generate a state. It is capped
+	// at MAX_VALIDATORS_PER_COMMITTEE (32) sorted entries, still spanning the whole
+	// range and still sharing exactly one index (2800) with setB.
+	setA := []uint64{21, 236, 321, 524, 682, 858, 920, 959,
+		1207, 1354, 1436, 1510, 1576, 1704, 1967, 2111,
+		2307, 2417, 2532, 2740, 2762, 2800, 2824, 3110,
+		3559, 3608, 3723, 3761, 3979, 4170, 4479, 5091,
 	}
 	// Only 2800 is the slashable index.
 	setB := []uint64{1361, 1438, 2383, 2800}
@@ -49,7 +47,9 @@ func TestProcessAttesterSlashings_RegressionSlashableIndices(t *testing.T) {
 	require.NoError(t, err, "Could not get signing root of beacon block header")
 	var sigs [][]byte
 	for _, index := range setA {
-		sig := privKeys[index].Sign(signingRoot[:]).Marshal()
+		lsig1, err := privKeys[index].Sign(signingRoot[:])
+		require.NoError(t, err)
+		sig := lsig1.Marshal()
 		sigs = append(sigs, sig)
 	}
 	att1.Signatures = sigs
@@ -66,7 +66,9 @@ func TestProcessAttesterSlashings_RegressionSlashableIndices(t *testing.T) {
 	assert.NoError(t, err, "Could not get signing root of beacon block header")
 	sigs = [][]byte{}
 	for _, index := range setB {
-		sig := privKeys[index].Sign(signingRoot[:]).Marshal()
+		lsig2, err := privKeys[index].Sign(signingRoot[:])
+		require.NoError(t, err)
+		sig := lsig2.Marshal()
 		sigs = append(sigs, sig)
 	}
 	att2.Signatures = sigs

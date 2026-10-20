@@ -22,6 +22,7 @@ go_library(
         "//runtime/version",
         "@com_github_pkg_errors//:errors",
         "@com_github_r3labs_sse_v2//:sse",
+        "@com_github_sirupsen_logrus//:logrus",
     ],
 )
 

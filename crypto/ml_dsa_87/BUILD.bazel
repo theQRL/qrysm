@@ -24,6 +24,7 @@ go_test(
     deps = [
         "//config/fieldparams",
         "//crypto/ml_dsa_87/common",
+        "//crypto/ml_dsa_87/ml_dsa_87t",
         "//testing/assert",
         "//testing/require",
     ],

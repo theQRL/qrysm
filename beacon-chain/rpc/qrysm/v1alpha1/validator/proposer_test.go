@@ -3,7 +3,10 @@ package validator
 import (
 	"context"
 	"fmt"
+	"github.com/theQRL/qrysm/config/features"
+	payloadattribute "github.com/theQRL/qrysm/consensus-types/payload-attribute"
 	"math/big"
+	"sync"
 	"testing"
 	"time"
 
@@ -139,20 +142,25 @@ func TestServer_GetBeaconBlock_Zond(t *testing.T) {
 		ExecutionPayloadZond: payload,
 	}
 
-	randaoReveal, err := util.RandaoReveal(beaconState, 0, privKeys)
+	reqSlot := zondSlot + 1
+	// A proposer asks for the block of the current slot, so line the mocked
+	// clock up with the requested slot.
+	proposerServer.TimeFetcher = &testutil.MockGenesisTimeFetcher{
+		Genesis: time.Now().Add(-time.Duration(uint64(reqSlot)*params.BeaconConfig().SecondsPerSlot) * time.Second),
+	}
+	proposerIdx, err := helpers.BeaconProposerIndexAtSlot(ctx, beaconState, reqSlot)
+	require.NoError(t, err)
+	proposer, err := beaconState.ValidatorAtIndexReadOnly(proposerIdx)
+	require.NoError(t, err)
+	randaoReveal, err := util.RandaoRevealForKey(privKeys[proposerIdx], proposer.RandaoCommitment())
 	require.NoError(t, err)
 
 	graffiti := bytesutil.ToBytes32([]byte("qrl"))
-	require.NoError(t, err)
 	req := &qrysmpb.BlockRequest{
-		Slot:         zondSlot + 1,
+		Slot:         reqSlot,
 		RandaoReveal: randaoReveal,
 		Graffiti:     graffiti[:],
 	}
-
-	copiedState := beaconState.Copy()
-	_, err = transition.ProcessSlots(ctx, copiedState, zondSlot+1)
-	require.NoError(t, err)
 
 	_, err = proposerServer.GetBeaconBlock(ctx, req)
 	require.NoError(t, err)
@@ -309,7 +317,6 @@ func TestProposer_ComputeStateRoot_OK(t *testing.T) {
 		StateGen:              stategen.New(db, doublylinkedtree.New()),
 	}
 	req := util.NewBeaconBlockZond()
-	req.Block.ProposerIndex = 35
 	req.Block.ParentRoot = parentRoot[:]
 	req.Block.Slot = 1
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
@@ -318,6 +325,7 @@ func TestProposer_ComputeStateRoot_OK(t *testing.T) {
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, beaconState)
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()-1))
+	req.Block.ProposerIndex = proposerIdx
 	req.Block.Body.RandaoReveal = randaoReveal
 	currentEpoch := coretime.CurrentEpoch(beaconState)
 	req.Signature, err = signing.ComputeDomainAndSign(beaconState, currentEpoch, req.Block, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
@@ -430,7 +438,7 @@ func TestProposer_PendingDeposits_OutsideExecutionFollowWindow(t *testing.T) {
 	require.NoError(t, err)
 
 	var mockSig [field_params.MLDSA87SignatureLength]byte
-	var mockCreds [32]byte
+	var mockWithdrawalRecipient [field_params.WithdrawalRecipientLength]byte
 
 	// Using the merkleTreeIndex as the block number for this test...
 	readyDeposits := []*qrysmpb.DepositContainer{
@@ -439,9 +447,11 @@ func TestProposer_PendingDeposits_OutsideExecutionFollowWindow(t *testing.T) {
 			ExecutionBlockHeight: 2,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
@@ -449,9 +459,11 @@ func TestProposer_PendingDeposits_OutsideExecutionFollowWindow(t *testing.T) {
 			ExecutionBlockHeight: 8,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -462,9 +474,11 @@ func TestProposer_PendingDeposits_OutsideExecutionFollowWindow(t *testing.T) {
 			ExecutionBlockHeight: 400,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("c"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("c"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
@@ -472,9 +486,11 @@ func TestProposer_PendingDeposits_OutsideExecutionFollowWindow(t *testing.T) {
 			ExecutionBlockHeight: 600,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -569,7 +585,7 @@ func TestProposer_PendingDeposits_FollowsCorrectExecutionBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	var mockSig [field_params.MLDSA87SignatureLength]byte
-	var mockCreds [32]byte
+	var mockWithdrawalRecipient [field_params.WithdrawalRecipientLength]byte
 
 	// Using the merkleTreeIndex as the block number for this test...
 	readyDeposits := []*qrysmpb.DepositContainer{
@@ -578,9 +594,11 @@ func TestProposer_PendingDeposits_FollowsCorrectExecutionBlock(t *testing.T) {
 			ExecutionBlockHeight: 8,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
@@ -588,9 +606,11 @@ func TestProposer_PendingDeposits_FollowsCorrectExecutionBlock(t *testing.T) {
 			ExecutionBlockHeight: 14,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -601,9 +621,11 @@ func TestProposer_PendingDeposits_FollowsCorrectExecutionBlock(t *testing.T) {
 			ExecutionBlockHeight: 5000,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("c"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("c"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
@@ -611,9 +633,11 @@ func TestProposer_PendingDeposits_FollowsCorrectExecutionBlock(t *testing.T) {
 			ExecutionBlockHeight: 6000,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -685,25 +709,29 @@ func TestProposer_PendingDeposits_CantReturnBelowStateExecutionDepositIndex(t *t
 	require.NoError(t, err)
 
 	var mockSig [field_params.MLDSA87SignatureLength]byte
-	var mockCreds [32]byte
+	var mockWithdrawalRecipient [field_params.WithdrawalRecipientLength]byte
 
 	readyDeposits := []*qrysmpb.DepositContainer{
 		{
 			Index: 0,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
 			Index: 1,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -714,9 +742,11 @@ func TestProposer_PendingDeposits_CantReturnBelowStateExecutionDepositIndex(t *t
 			Index: i,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte{byte(i)}, field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		})
 	}
@@ -785,25 +815,29 @@ func TestProposer_PendingDeposits_CantReturnMoreThanMax(t *testing.T) {
 	blkRoot, err := blk.HashTreeRoot()
 	require.NoError(t, err)
 	var mockSig [field_params.MLDSA87SignatureLength]byte
-	var mockCreds [32]byte
+	var mockWithdrawalRecipient [field_params.WithdrawalRecipientLength]byte
 
 	readyDeposits := []*qrysmpb.DepositContainer{
 		{
 			Index: 0,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
 			Index: 1,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -814,9 +848,11 @@ func TestProposer_PendingDeposits_CantReturnMoreThanMax(t *testing.T) {
 			Index: i,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte{byte(i)}, field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		})
 	}
@@ -883,25 +919,29 @@ func TestProposer_PendingDeposits_CantReturnMoreThanDepositCount(t *testing.T) {
 	blkRoot, err := blk.HashTreeRoot()
 	require.NoError(t, err)
 	var mockSig [field_params.MLDSA87SignatureLength]byte
-	var mockCreds [32]byte
+	var mockWithdrawalRecipient [field_params.WithdrawalRecipientLength]byte
 
 	readyDeposits := []*qrysmpb.DepositContainer{
 		{
 			Index: 0,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
 			Index: 1,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -912,9 +952,11 @@ func TestProposer_PendingDeposits_CantReturnMoreThanDepositCount(t *testing.T) {
 			Index: i,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte{byte(i)}, field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		})
 	}
@@ -983,7 +1025,7 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 	require.NoError(t, err)
 
 	var mockSig [field_params.MLDSA87SignatureLength]byte
-	var mockCreds [32]byte
+	var mockWithdrawalRecipient [field_params.WithdrawalRecipientLength]byte
 
 	// Using the merkleTreeIndex as the block number for this test...
 	finalizedDeposits := []*qrysmpb.DepositContainer{
@@ -992,9 +1034,11 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
@@ -1002,9 +1046,11 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -1015,9 +1061,11 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 			ExecutionBlockHeight: 11,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("c"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("c"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
@@ -1025,9 +1073,11 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 			ExecutionBlockHeight: 11,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -1099,7 +1149,7 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 	require.NoError(t, err)
 
 	var mockSig [field_params.MLDSA87SignatureLength]byte
-	var mockCreds [32]byte
+	var mockWithdrawalRecipient [field_params.WithdrawalRecipientLength]byte
 
 	// Using the merkleTreeIndex as the block number for this test...
 	finalizedDeposits := []*qrysmpb.DepositContainer{
@@ -1108,9 +1158,11 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
@@ -1118,9 +1170,11 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -1131,9 +1185,11 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 			ExecutionBlockHeight: 11,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("c"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("c"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
@@ -1141,9 +1197,11 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 			ExecutionBlockHeight: 11,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -1170,10 +1228,10 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 	d := depositCache.AllDepositContainers(ctx)
 	origDeposit, ok := proto.Clone(d[0].Deposit).(*qrysmpb.Deposit)
 	assert.Equal(t, true, ok)
-	junkCreds := mockCreds
-	copy(junkCreds[:1], []byte{'A'})
+	invalidWithdrawalRecipient := mockWithdrawalRecipient
+	copy(invalidWithdrawalRecipient[:1], []byte{'A'})
 	// Mutate it since its a pointer
-	d[0].Deposit.Data.WithdrawalCredentials = junkCreds[:]
+	d[0].Deposit.Data.WithdrawalRecipient = invalidWithdrawalRecipient[:]
 	// Insert junk to corrupt trie.
 	err = depositCache.InsertFinalizedDeposits(ctx, 2, [32]byte{}, 0)
 	require.NoError(t, err)
@@ -1323,9 +1381,11 @@ func TestProposer_ExecutionData_MajorityVote(t *testing.T) {
 		ExecutionBlockHeight: 0,
 		Deposit: &qrysmpb.Deposit{
 			Data: &qrysmpb.Deposit_Data{
-				PublicKey:             bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
-				Signature:             make([]byte, field_params.MLDSA87SignatureLength),
-				WithdrawalCredentials: make([]byte, 32),
+				PublicKey:           bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
+				Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+				WithdrawalRecipient: make([]byte, 64),
+
+				RandaoCommitment: make([]byte, 32),
 			}},
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -1908,6 +1968,7 @@ func TestProposer_FilterAttestation(t *testing.T) {
 			name: "filter aggregates ok",
 			inputAtts: func() []*qrysmpb.Attestation {
 				atts := make([]*qrysmpb.Attestation, 10)
+				committeesPerSlot := helpers.SlotCommitteeCount(numValidators)
 				for i := range atts {
 					atts[i] = util.HydrateAttestation(&qrysmpb.Attestation{
 						Data: &qrysmpb.AttestationData{
@@ -1916,6 +1977,11 @@ func TestProposer_FilterAttestation(t *testing.T) {
 						},
 						AggregationBits: bitfield.Bitlist{0b00010010},
 					})
+					// Only committee indices below the per-slot count exist; the
+					// rest are rejected on the index before signatures are checked.
+					if uint64(i) >= committeesPerSlot {
+						continue
+					}
 					committee, err := helpers.BeaconCommitteeFromState(context.Background(), st, atts[i].Data.Slot, atts[i].Data.CommitteeIndex)
 					assert.NoError(t, err)
 					attestingIndices, err := attestation.AttestingIndices(atts[i].AggregationBits, committee)
@@ -1927,11 +1993,13 @@ func TestProposer_FilterAttestation(t *testing.T) {
 					var zeroSig [field_params.MLDSA87SignatureLength]byte
 					atts[i].Signatures = [][]byte{zeroSig[:]}
 
-					for i, indice := range attestingIndices {
+					for j, indice := range attestingIndices {
 						hashTreeRoot, err := signing.ComputeSigningRoot(atts[i].Data, domain)
 						require.NoError(t, err)
-						sig := privKeys[indice].Sign(hashTreeRoot[:]).Marshal()
-						sigs[i] = sig
+						lsig1, err := privKeys[indice].Sign(hashTreeRoot[:])
+						require.NoError(t, err)
+						sig := lsig1.Marshal()
+						sigs[j] = sig
 					}
 					atts[i].Signatures = sigs
 				}
@@ -1988,25 +2056,29 @@ func TestProposer_Deposits_ReturnsEmptyList_IfLatestExecutionDataEqGenesisExecut
 	require.NoError(t, err)
 
 	var mockSig [field_params.MLDSA87SignatureLength]byte
-	var mockCreds [32]byte
+	var mockWithdrawalRecipient [field_params.WithdrawalRecipientLength]byte
 
 	readyDeposits := []*qrysmpb.DepositContainer{
 		{
 			Index: 0,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("a"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 		{
 			Index: 1,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		},
 	}
@@ -2017,9 +2089,11 @@ func TestProposer_Deposits_ReturnsEmptyList_IfLatestExecutionDataEqGenesisExecut
 			Index: i,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, field_params.MLDSA87PubkeyLength),
-					Signature:             mockSig[:],
-					WithdrawalCredentials: mockCreds[:],
+					PublicKey:           bytesutil.PadTo([]byte{byte(i)}, field_params.MLDSA87PubkeyLength),
+					Signature:           mockSig[:],
+					WithdrawalRecipient: mockWithdrawalRecipient[:],
+
+					RandaoCommitment: make([]byte, 32),
 				}},
 		})
 	}
@@ -2067,7 +2141,9 @@ func TestProposer_DeleteAttsInPool_Aggregated(t *testing.T) {
 	}
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig := priv.Sign([]byte("foo")).Marshal()
+	lsig2, err := priv.Sign([]byte("foo"))
+	require.NoError(t, err)
+	sig := lsig2.Marshal()
 	aggregatedAtts := []*qrysmpb.Attestation{
 		util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b10101}, Signatures: [][]byte{sig, sig}}),
 		util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b11010}, Signatures: [][]byte{sig, sig}})}
@@ -2088,6 +2164,18 @@ func TestProposer_DeleteAttsInPool_Aggregated(t *testing.T) {
 }
 
 func TestProposer_GetSyncAggregate_OK(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	// TestMain selects minimal runtime settings, but plain go test uses the
+	// mainnet protobuf types. Match this test's committee size to the binary.
+	cfg := params.BeaconConfig().Copy()
+	cfg.SyncCommitteeSize = fieldparams.SyncCommitteeLength
+	params.OverrideBeaconConfig(cfg)
+	aggregationBits := func(mask byte) []byte {
+		bits := qrysmpb.NewSyncCommitteeAggregationBits()
+		bits[0] = mask
+		return bits
+	}
+
 	proposerServer := &Server{
 		SyncChecker:       &mockSync.Sync{IsSyncing: false},
 		SyncCommitteePool: synccommittee.NewStore(),
@@ -2098,33 +2186,45 @@ func TestProposer_GetSyncAggregate_OK(t *testing.T) {
 	sigsLen := 8
 	sigs := make([][]byte, 0, sigsLen)
 	for i := range sigsLen {
-		sigs = append(sigs, priv.Sign(fmt.Appendf(nil, "foo%d", i)).Marshal())
+		lsig3, err := priv.Sign(fmt.Appendf(nil, "foo%d", i))
+		require.NoError(t, err)
+		sigs = append(sigs, lsig3.Marshal())
 	}
 
 	r := params.BeaconConfig().ZeroHash
 
 	conts := []*qrysmpb.SyncCommitteeContribution{
-		{Slot: 1, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[0]}, AggregationBits: []byte{0b0001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[0], sigs[3]}, AggregationBits: []byte{0b1001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[1], sigs[2], sigs[3]}, AggregationBits: []byte{0b1110}, BlockRoot: r[:]},
-		{Slot: 2, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[1], sigs[3], sigs[5], sigs[7]}, AggregationBits: []byte{0b10101010}, BlockRoot: r[:]},
+		{Slot: 1, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[0]}, AggregationBits: aggregationBits(0b0001), BlockRoot: r[:]},
+		{Slot: 1, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[0], sigs[3]}, AggregationBits: aggregationBits(0b1001), BlockRoot: r[:]},
+		{Slot: 1, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[1], sigs[2], sigs[3]}, AggregationBits: aggregationBits(0b1110), BlockRoot: r[:]},
+		{Slot: 2, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[1], sigs[3], sigs[5], sigs[7]}, AggregationBits: aggregationBits(0b10101010), BlockRoot: r[:]},
 	}
 
 	for _, cont := range conts {
 		require.NoError(t, proposerServer.SyncCommitteePool.SaveSyncCommitteeContribution(cont))
 	}
 
-	aggregate, err := proposerServer.getSyncAggregate(context.Background(), 1, bytesutil.ToBytes32(conts[0].BlockRoot))
-	require.NoError(t, err)
-	require.DeepEqual(t, bitfield.Bitvector16{0xf}, aggregate.SyncCommitteeBits)
-
-	aggregate, err = proposerServer.getSyncAggregate(context.Background(), 2, bytesutil.ToBytes32(conts[0].BlockRoot))
-	require.NoError(t, err)
-	require.DeepEqual(t, bitfield.Bitvector16{0xaa}, aggregate.SyncCommitteeBits)
-
-	aggregate, err = proposerServer.getSyncAggregate(context.Background(), 3, bytesutil.ToBytes32(conts[0].BlockRoot))
-	require.NoError(t, err)
-	require.DeepEqual(t, bitfield.NewBitvector16(), aggregate.SyncCommitteeBits)
+	for _, tt := range []struct {
+		slot       primitives.Slot
+		mask       byte
+		signatures [][]byte
+	}{
+		{slot: 1, mask: 0xf, signatures: sigs[:4]},
+		{slot: 2, mask: 0xaa, signatures: [][]byte{sigs[1], sigs[3], sigs[5], sigs[7]}},
+		{slot: 3, mask: 0, signatures: [][]byte{}},
+	} {
+		t.Run(fmt.Sprintf("slot_%d", tt.slot), func(t *testing.T) {
+			aggregate, err := proposerServer.getSyncAggregate(context.Background(), tt.slot, r, nil)
+			require.NoError(t, err)
+			want := &qrysmpb.SyncAggregate{
+				SyncCommitteeBits:       aggregationBits(tt.mask),
+				SyncCommitteeSignatures: tt.signatures,
+			}
+			require.DeepEqual(t, want, aggregate)
+			_, err = aggregate.MarshalSSZ()
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestProposer_PrepareBeaconProposer(t *testing.T) {
@@ -2164,12 +2264,27 @@ func TestProposer_PrepareBeaconProposer(t *testing.T) {
 			},
 			wantErr: "Invalid fee recipient address",
 		},
+		{
+			name: "validator index not in the registry",
+			args: args{
+				request: &qrysmpb.PrepareBeaconProposerRequest{
+					Recipients: []*qrysmpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+						{
+							FeeRecipient:   make([]byte, fieldparams.FeeRecipientLength),
+							ValidatorIndex: 1 << 40,
+						},
+					},
+				},
+			},
+			wantErr: "is not in the registry",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := dbutil.SetupDB(t)
 			ctx := context.Background()
-			proposerServer := &Server{BeaconDB: db}
+			headState, _ := util.DeterministicGenesisStateZond(t, 4)
+			proposerServer := &Server{BeaconDB: db, HeadFetcher: &mock.ChainService{State: headState}}
 			_, err := proposerServer.PrepareBeaconProposer(ctx, tt.args.request)
 			if tt.wantErr != "" {
 				require.ErrorContains(t, tt.wantErr, err)
@@ -2188,7 +2303,8 @@ func TestProposer_PrepareBeaconProposerOverlapping(t *testing.T) {
 	hook := logTest.NewGlobal()
 	db := dbutil.SetupDB(t)
 	ctx := context.Background()
-	proposerServer := &Server{BeaconDB: db}
+	headState, _ := util.DeterministicGenesisStateZond(t, 4)
+	proposerServer := &Server{BeaconDB: db, HeadFetcher: &mock.ChainService{State: headState}}
 
 	// New validator
 	f := bytesutil.PadTo([]byte{0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF}, fieldparams.FeeRecipientLength)
@@ -2307,7 +2423,7 @@ func TestProposer_GetFeeRecipientByPubKey(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, params.BeaconConfig().DefaultFeeRecipient.Hex(), hexutil.EncodeQ(resp.FeeRecipient))
-	defaultFeeRecipient, err := common.NewAddressFromString("Q046Fb65722E7b2455012BFEBf6177F1D2e9728D9")
+	defaultFeeRecipient, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046Fb65722E7b2455012BFEBf6177F1D2e9728D9")
 	require.NoError(t, err)
 	params.BeaconConfig().DefaultFeeRecipient = defaultFeeRecipient
 	resp, err = proposerServer.GetFeeRecipientByPubKey(ctx, &qrysmpb.FeeRecipientByPubKeyRequest{
@@ -2320,7 +2436,7 @@ func TestProposer_GetFeeRecipientByPubKey(t *testing.T) {
 		PublicKey: beaconState.Validators()[0].PublicKey,
 	})
 	require.NoError(t, err)
-	feeRecipient, err := common.NewAddressFromString("Q055Fb65722E7b2455012BFEBf6177F1D2e9728D8")
+	feeRecipient, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000055Fb65722E7b2455012BFEBf6177F1D2e9728D8")
 	require.NoError(t, err)
 	err = proposerServer.BeaconDB.SaveFeeRecipientsByValidatorIDs(ctx, []primitives.ValidatorIndex{index.Index}, []common.Address{feeRecipient})
 	require.NoError(t, err)
@@ -2330,4 +2446,178 @@ func TestProposer_GetFeeRecipientByPubKey(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, feeRecipient.Hex(), common.BytesToAddress(resp.FeeRecipient).Hex())
+}
+
+func TestServer_GetBeaconBlock_FarFutureSlotRejected(t *testing.T) {
+	currentSlot := primitives.Slot(10)
+	maxSlot := currentSlot + 2*params.BeaconConfig().SlotsPerEpoch
+	proposerServer := &Server{
+		TimeFetcher: &mock.ChainService{Slot: &currentSlot},
+		SyncChecker: &mockSync.Sync{IsSyncing: true},
+	}
+
+	// Beyond the bound: rejected before any other dependency is consulted.
+	_, err := proposerServer.GetBeaconBlock(context.Background(), &qrysmpb.BlockRequest{Slot: maxSlot + 1})
+	require.NotNil(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+
+	// At the bound: passes the check and reaches the syncing check.
+	_, err = proposerServer.GetBeaconBlock(context.Background(), &qrysmpb.BlockRequest{Slot: maxSlot})
+	require.NotNil(t, err)
+	assert.Equal(t, codes.Unavailable, status.Code(err))
+}
+
+// exitPoolSignal closes done once exit selection has run. In BuildBlockParallel
+// exit selection follows slashing selection in the consensus-fields goroutine,
+// so this marks the point after which that goroutine's state mutations exist.
+type exitPoolSignal struct {
+	voluntaryexits.PoolManager
+	once sync.Once
+	done chan struct{}
+}
+
+func (p *exitPoolSignal) ExitsForInclusion(st state.ReadOnlyBeaconState, slot primitives.Slot) ([]*qrysmpb.SignedVoluntaryExit, error) {
+	defer p.once.Do(func() { close(p.done) })
+	return p.PoolManager.ExitsForInclusion(st, slot)
+}
+
+// feeRecipientGate parks getLocalPayload's fee-recipient lookup, which precedes
+// its withdrawal calculation, until wait is closed.
+type feeRecipientGate struct {
+	db.HeadAccessDatabase
+	wait   <-chan struct{}
+	waited bool
+}
+
+func (g *feeRecipientGate) FeeRecipientByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (common.Address, error) {
+	select {
+	case <-g.wait:
+		g.waited = true
+	case <-time.After(30 * time.Second):
+	}
+	return g.HeadAccessDatabase.FeeRecipientByValidatorID(ctx, id)
+}
+
+// recordingEngine keeps the withdrawals the proposer asked the execution
+// client to build the payload with.
+type recordingEngine struct {
+	*mockExecution.EngineClient
+	withdrawals []*enginev1.Withdrawal
+}
+
+func (e *recordingEngine) ForkchoiceUpdated(ctx context.Context, fcs *enginev1.ForkchoiceState, attr payloadattribute.Attributer) (*enginev1.PayloadIDBytes, []byte, error) {
+	w, err := attr.Withdrawals()
+	if err != nil {
+		return nil, nil, err
+	}
+	e.withdrawals = w
+	return e.EngineClient.ForkchoiceUpdated(ctx, fcs, attr)
+}
+
+func requireSameWithdrawals(t *testing.T, want, got []*enginev1.Withdrawal) {
+	t.Helper()
+	require.Equal(t, len(want), len(got), "withdrawal count")
+	for i := range want {
+		require.Equal(t, want[i].Index, got[i].Index)
+		require.Equal(t, want[i].ValidatorIndex, got[i].ValidatorIndex)
+		require.Equal(t, want[i].Amount, got[i].Amount)
+		require.DeepEqual(t, want[i].Address, got[i].Address)
+	}
+}
+
+// The consensus-fields goroutine applies pending slashings to the state it
+// selects from. The payload's withdrawals must still come from the state as it
+// was before this block's operations, even when slashing selection finishes
+// first, and exits conflicting with those slashings must still be excluded.
+func TestServer_BuildBlockParallel_PayloadWithdrawalsUnaffectedBySlashingSelection(t *testing.T) {
+	for _, experimental := range []bool{false, true} {
+		t.Run(fmt.Sprintf("experimental=%t", experimental), func(t *testing.T) {
+			reset := features.InitWithReset(&features.Flags{EnableExperimentalState: experimental})
+			t.Cleanup(reset)
+			ctx := context.Background()
+			beaconDB := dbutil.SetupDB(t)
+			cfg := params.BeaconConfig()
+
+			head, keys := util.DeterministicGenesisStateZond(t, 64)
+			// Old enough for the validators to exit.
+			require.NoError(t, head.SetSlot(cfg.SlotsPerEpoch.Mul(uint64(cfg.ShardCommitteePeriod))))
+			// Validator 0 is first in the withdrawal sweep with excess balance, so
+			// the payload must carry its partial withdrawal. Slashing it wipes the
+			// excess, so a payload built from a slashed state would omit it.
+			require.NoError(t, head.SetNextWithdrawalValidatorIndex(0))
+			require.NoError(t, head.UpdateBalancesAtIndex(0, cfg.MaxEffectiveBalance+cfg.EffectiveBalanceIncrement))
+			expected, err := head.ExpectedWithdrawals()
+			require.NoError(t, err)
+			require.Equal(t, 1, len(expected), "fixture: exactly validator 0 has a pending withdrawal")
+
+			parentRoot := bytesutil.PadTo([]byte("parent"), 32)
+			vs := getProposerServer(beaconDB, head, parentRoot)
+			ps0, err := util.GenerateProposerSlashingForValidator(head, keys[0], 0)
+			require.NoError(t, err)
+			require.NoError(t, vs.SlashingsPool.InsertProposerSlashing(ctx, head, ps0))
+			exit0, err := util.GenerateVoluntaryExits(head, keys[0], 0)
+			require.NoError(t, err)
+			exit1, err := util.GenerateVoluntaryExits(head, keys[1], 1)
+			require.NoError(t, err)
+			vs.ExitPool.InsertVoluntaryExit(exit0)
+			vs.ExitPool.InsertVoluntaryExit(exit1)
+
+			// Deterministic ordering: the payload's withdrawal calculation waits
+			// until slashing and exit selection have finished.
+			consensusDone := make(chan struct{})
+			vs.ExitPool = &exitPoolSignal{PoolManager: vs.ExitPool, done: consensusDone}
+			gate := &feeRecipientGate{HeadAccessDatabase: beaconDB, wait: consensusDone}
+			vs.BeaconDB = gate
+
+			random, err := helpers.RandaoMix(head, slots.ToEpoch(head.Slot()))
+			require.NoError(t, err)
+			blockSlot := head.Slot() + 1
+			timeStamp, err := slots.ToTime(head.GenesisTime(), blockSlot)
+			require.NoError(t, err)
+			engine := &recordingEngine{EngineClient: &mockExecution.EngineClient{
+				PayloadIDBytes: &enginev1.PayloadIDBytes{1},
+				ExecutionPayloadZond: &enginev1.ExecutionPayloadZond{
+					ParentHash:    make([]byte, fieldparams.RootLength),
+					FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
+					StateRoot:     make([]byte, fieldparams.RootLength),
+					ReceiptsRoot:  make([]byte, fieldparams.RootLength),
+					LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
+					PrevRandao:    random,
+					BaseFeePerGas: make([]byte, fieldparams.RootLength),
+					BlockHash:     make([]byte, fieldparams.RootLength),
+					Transactions:  make([][]byte, 0),
+					ExtraData:     make([]byte, 0),
+					BlockNumber:   1,
+					GasLimit:      2,
+					GasUsed:       3,
+					Timestamp:     uint64(timeStamp.Unix()),
+				},
+			}}
+			vs.ExecutionEngineCaller = engine
+
+			sBlk, err := getEmptyBlock(blockSlot)
+			require.NoError(t, err)
+			sBlk.SetSlot(blockSlot)
+			sBlk.SetParentRoot(parentRoot)
+			idx, err := helpers.BeaconProposerIndex(ctx, head)
+			require.NoError(t, err)
+			sBlk.SetProposerIndex(idx)
+
+			// Payload-cache miss: the proposer payload ID cache is empty.
+			require.NoError(t, vs.BuildBlockParallel(ctx, sBlk, head, true /* skipMevBoost */))
+			require.Equal(t, true, gate.waited, "ordering hook did not fire: slashing selection was not forced first")
+
+			// Payload withdrawals match the state before this block's operations.
+			requireSameWithdrawals(t, expected, engine.withdrawals)
+			// The state handed to payload construction was never mutated.
+			after, err := head.ExpectedWithdrawals()
+			require.NoError(t, err)
+			requireSameWithdrawals(t, expected, after)
+			// The slashing was packed and the conflicting exit excluded.
+			require.Equal(t, 1, len(sBlk.Block().Body().ProposerSlashings()))
+			exits := sBlk.Block().Body().VoluntaryExits()
+			require.Equal(t, 1, len(exits))
+			require.Equal(t, primitives.ValidatorIndex(1), exits[0].Exit.ValidatorIndex)
+		})
+	}
 }

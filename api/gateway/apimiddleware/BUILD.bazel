@@ -28,6 +28,7 @@ go_library(
 go_test(
     name = "apimiddleware_test",
     srcs = [
+        "api_middleware_test.go",
         "param_handling_test.go",
         "process_request_test.go",
     ],

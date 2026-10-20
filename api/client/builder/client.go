@@ -14,6 +14,8 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/client"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
@@ -33,6 +35,13 @@ const (
 	getStatus                  = "/qrl/v1/builder/status"
 	postBlindedBeaconBlockPath = "/qrl/v1/builder/blinded_blocks"
 	postRegisterValidatorPath  = "/qrl/v1/builder/validators"
+
+	// Full execution payloads hex-encode transaction bytes in JSON. With
+	// ML-DSA-87 signatures, even 600 simple transfers (12.6M gas, below the
+	// 20M execution gas cap) exceed the default 8 MiB response limit. Allow
+	// 32 MiB for this endpoint, covering twice the 10 MiB gossip payload
+	// limit plus JSON overhead, without enlarging other response limits.
+	maxExecutionPayloadResponseSize int64 = 32 << 20
 )
 
 var errMalformedHostname = errors.New("hostname must include port, separated by one colon, like example.com:3500")
@@ -142,6 +151,12 @@ type reqOption func(*http.Request)
 
 // do is a generic, opinionated request function to reduce boilerplate amongst the methods in this package api/client/builder/types.go.
 func (c *Client) do(ctx context.Context, method string, path string, body io.Reader, opts ...reqOption) (res []byte, err error) {
+	return c.doWithMaxBodySize(ctx, method, path, body, client.MaxBodySize, opts...)
+}
+
+// doWithMaxBodySize overrides the successful-response limit for endpoints that
+// return full payloads. Non-200 responses retain the smaller error-body limit.
+func (c *Client) doWithMaxBodySize(ctx context.Context, method string, path string, body io.Reader, maxBodySize int64, opts ...reqOption) (res []byte, err error) {
 	ctx, span := trace.StartSpan(ctx, "builder.client.do")
 	defer func() {
 		tracing.AnnotateError(span, err)
@@ -157,6 +172,10 @@ func (c *Client) do(ctx context.Context, method string, path string, body io.Rea
 	if err != nil {
 		return
 	}
+	if method == http.MethodPost {
+		req.Header.Set("Content-Type", api.JsonMediaType)
+	}
+	req.Header.Set("Accept", api.JsonMediaType)
 	req.Header.Add("User-Agent", version.BuildData())
 	for _, o := range opts {
 		o(req)
@@ -180,10 +199,18 @@ func (c *Client) do(ctx context.Context, method string, path string, body io.Rea
 		err = non200Err(r)
 		return
 	}
-	res, err = io.ReadAll(r.Body)
+	if r.ContentLength > maxBodySize {
+		return nil, errors.Errorf("builder response body exceeds size limit of %d bytes", maxBodySize)
+	}
+	// Read one extra byte to distinguish a response exactly at the limit from
+	// a truncated one, including chunked responses without Content-Length.
+	res, err = io.ReadAll(io.LimitReader(r.Body, maxBodySize+1))
 	if err != nil {
 		err = errors.Wrap(err, "error reading http response body from builder server")
 		return
+	}
+	if int64(len(res)) > maxBodySize {
+		return nil, errors.Errorf("builder response body exceeds size limit of %d bytes", maxBodySize)
 	}
 	return
 }
@@ -291,8 +318,10 @@ func (c *Client) SubmitBlindedBlock(ctx context.Context, sb interfaces.ReadOnlyS
 		}
 		versionOpt := func(r *http.Request) {
 			r.Header.Add("Qrl-Consensus-Version", version.String(version.Zond))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("Accept", "application/json")
 		}
-		rb, err := c.do(ctx, http.MethodPost, postBlindedBeaconBlockPath, bytes.NewBuffer(body), versionOpt)
+		rb, err := c.doWithMaxBodySize(ctx, http.MethodPost, postBlindedBeaconBlockPath, bytes.NewBuffer(body), maxExecutionPayloadResponseSize, versionOpt)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "error posting the SignedBlindedBeaconBlockZond to the builder api")
@@ -327,7 +356,7 @@ func (c *Client) Status(ctx context.Context) error {
 }
 
 func non200Err(response *http.Response) error {
-	bodyBytes, err := io.ReadAll(response.Body)
+	bodyBytes, err := io.ReadAll(io.LimitReader(response.Body, client.MaxErrBodySize))
 	var errMessage ErrorMessage
 	var body string
 	if err != nil {

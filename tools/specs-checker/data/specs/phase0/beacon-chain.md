@@ -971,7 +971,7 @@ def get_validator_from_deposit(state: BeaconState, deposit: Deposit) -> Validato
 
     return Validator(
         pubkey=deposit.data.pubkey,
-        withdrawal_credentials=deposit.data.withdrawal_credentials,
+        withdrawal_recipient=deposit.data.withdrawal_recipient,
         activation_eligibility_epoch=FAR_FUTURE_EPOCH,
         activation_epoch=FAR_FUTURE_EPOCH,
         exit_epoch=FAR_FUTURE_EPOCH,
@@ -1000,7 +1000,7 @@ def process_deposit(state: BeaconState, deposit: Deposit) -> None:
         # Verify the deposit signature (proof of possession) which is not checked by the deposit contract
         deposit_message = DepositMessage(
             pubkey=deposit.data.pubkey,
-            withdrawal_credentials=deposit.data.withdrawal_credentials,
+            withdrawal_recipient=deposit.data.withdrawal_recipient,
             amount=deposit.data.amount,
         )
         domain = compute_domain(DOMAIN_DEPOSIT)  # Fork-agnostic domain since deposits are valid across forks

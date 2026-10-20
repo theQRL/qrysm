@@ -1,4 +1,4 @@
-load("@qrysm//tools/go:def.bzl", "go_library")
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "keyderivation",
@@ -11,8 +11,20 @@ go_library(
     deps = [
         "//cmd/staking-deposit-cli/misc",
         "//config/fieldparams",
-        "@com_github_theqrl_go_qrllib//qrl",
+        "//crypto/rand",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_theqrl_go_qrllib//wallet/misc",
         "@com_github_theqrl_go_qrllib//wallet/ml_dsa_87",
         "@org_golang_x_crypto//sha3",
+    ],
+)
+
+go_test(
+    name = "keyderivation_test",
+    srcs = ["mnemonic_test.go"],
+    embed = [":keyderivation"],
+    deps = [
+        "//testing/require",
+        "@com_github_theqrl_go_qrllib//wallet/misc",
     ],
 )

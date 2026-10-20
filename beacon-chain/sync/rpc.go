@@ -7,6 +7,7 @@ import (
 
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
@@ -105,7 +106,7 @@ func (s *Service) registerRPC(baseTopic string, handle rpcHandler) {
 			return
 		}
 		// Validate request according to peer limits.
-		if err := s.rateLimiter.validateRawRpcRequest(stream); err != nil {
+		if err := s.rateLimiter.validateRawRpcRequest(stream, 1); err != nil {
 			log.WithError(err).Debug("Could not validate rpc request from peer")
 			return
 		}
@@ -153,11 +154,7 @@ func (s *Service) registerRPC(baseTopic string, handle rpcHandler) {
 			if err := s.cfg.p2p.Encoding().DecodeWithMaxLength(stream, msg); err != nil {
 				log.WithError(err).WithField("topic", topic).Debug("Could not decode stream message")
 				tracing.AnnotateError(span, err)
-				s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-				log.WithFields(logrus.Fields{
-					"pid":   pid,
-					"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-				}).Debug("Peer is penalized for decoding error")
+				s.downscorePeer(pid, "registerRpcDecodeError")
 				return
 			}
 			if err := handle(ctx, msg, stream); err != nil {
@@ -177,11 +174,7 @@ func (s *Service) registerRPC(baseTopic string, handle rpcHandler) {
 			if err := s.cfg.p2p.Encoding().DecodeWithMaxLength(stream, msg); err != nil {
 				log.WithError(err).WithField("topic", topic).Debug("Could not decode stream message")
 				tracing.AnnotateError(span, err)
-				s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-				log.WithFields(logrus.Fields{
-					"pid":   pid,
-					"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-				}).Debug("Peer is penalized for decoding error")
+				s.downscorePeer(pid, "registerRpcDecodeError")
 				return
 			}
 			if err := handle(ctx, nTyp.Elem().Interface(), stream); err != nil {
@@ -193,4 +186,15 @@ func (s *Service) registerRPC(baseTopic string, handle rpcHandler) {
 			}
 		}
 	})
+}
+
+// downscorePeer increments the bad-responses counter for the peer and emits a single
+// debug log carrying the new score. Reasons should be stable identifiers so logs are greppable.
+func (s *Service) downscorePeer(peerID peer.ID, reason string) {
+	newScore := s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(peerID)
+	log.WithFields(logrus.Fields{
+		"peerID":   peerID,
+		"reason":   reason,
+		"newScore": newScore,
+	}).Debug("Downscore peer")
 }

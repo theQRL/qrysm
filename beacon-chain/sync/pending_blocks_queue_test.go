@@ -50,6 +50,7 @@ func TestRegularSyncBeaconBlockSubscriber_ProcessPendingBlocks1(t *testing.T) {
 			p2p:      p1,
 			beaconDB: db,
 			chain: &mock.ChainService{
+				DB: db,
 				FinalizedCheckPoint: &qrysmpb.Checkpoint{
 					Epoch: 0,
 				},
@@ -122,6 +123,7 @@ func TestRegularSyncBeaconBlockSubscriber_OptimisticStatus(t *testing.T) {
 			p2p:      p1,
 			beaconDB: db,
 			chain: &mock.ChainService{
+				DB:         db,
 				Optimistic: true,
 				FinalizedCheckPoint: &qrysmpb.Checkpoint{
 					Epoch: 0,
@@ -196,6 +198,7 @@ func TestRegularSyncBeaconBlockSubscriber_ExecutionEngineTimesOut(t *testing.T) 
 			p2p:      p1,
 			beaconDB: db,
 			chain: &mock.ChainService{
+				DB: db,
 				FinalizedCheckPoint: &qrysmpb.Checkpoint{
 					Epoch: 0,
 				},
@@ -325,6 +328,7 @@ func TestRegularSyncBeaconBlockSubscriber_DoNotReprocessBlock(t *testing.T) {
 			p2p:      p1,
 			beaconDB: db,
 			chain: &mock.ChainService{
+				DB: db,
 				FinalizedCheckPoint: &qrysmpb.Checkpoint{
 					Epoch: 0,
 				},
@@ -393,6 +397,7 @@ func TestRegularSyncBeaconBlockSubscriber_ProcessPendingBlocks_2Chains(t *testin
 			p2p:      p1,
 			beaconDB: db,
 			chain: &mock.ChainService{
+				DB: db,
 				FinalizedCheckPoint: &qrysmpb.Checkpoint{
 					Epoch: 0,
 					Root:  make([]byte, 32),
@@ -591,7 +596,9 @@ func TestService_BatchRootRequest(t *testing.T) {
 	p1.Connect(p2)
 	assert.Equal(t, 1, len(p1.BHost.Network().Peers()), "Expected peers to be connected")
 
+	st, keys := util.DeterministicGenesisStateZond(t, 64)
 	chain := &mock.ChainService{
+		State: st,
 		FinalizedCheckPoint: &qrysmpb.Checkpoint{
 			Epoch: 1,
 			Root:  make([]byte, 32),
@@ -646,6 +653,12 @@ func TestService_BatchRootRequest(t *testing.T) {
 	b4.Block.ParentRoot = b3Root[:]
 	b4Root, err := b4.Block.HashTreeRoot()
 	require.NoError(t, err)
+
+	// The by-root path verifies block signatures before queueing.
+	for _, blk := range []*qrysmpb.SignedBeaconBlockZond{b2, b3, b4, b5} {
+		blk.Signature, err = signing.ComputeDomainAndSign(st, 0, blk.Block, params.BeaconConfig().DomainBeaconProposer, keys[0])
+		require.NoError(t, err)
+	}
 
 	// Send in duplicated roots to also test deduplicaton.
 	sentRoots := p2ptypes.BeaconBlockByRootsReq{b2Root, b2Root, b3Root, b3Root, b4Root, b5Root}
@@ -718,6 +731,7 @@ func TestService_ProcessPendingBlockOnCorrectSlot(t *testing.T) {
 	p1 := p2ptest.NewTestP2P(t)
 	fcs := doublylinkedtree.New()
 	mockChain := mock.ChainService{
+		DB:      db,
 		Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		FinalizedCheckPoint: &qrysmpb.Checkpoint{
 			Epoch: 0,
@@ -888,4 +902,62 @@ func TestAlreadySyncingBlock(t *testing.T) {
 	mockChain.SyncingRoot = bRoot
 	require.NoError(t, r.processPendingBlocks(ctx))
 	require.LogsContain(t, hook, "Skipping pending block already being processed")
+}
+
+func TestExpirationCache_PruneOldBlocksCorrectly(t *testing.T) {
+	ctx := context.Background()
+	db := dbtest.SetupDB(t)
+
+	mockChain := &mock.ChainService{
+		FinalizedCheckPoint: &qrysmpb.Checkpoint{
+			Epoch: 0,
+		},
+	}
+
+	p1 := p2ptest.NewTestP2P(t)
+	// Reset expiration time
+	currExpTime := pendingBlockExpTime
+	defer func() {
+		pendingBlockExpTime = currExpTime
+	}()
+	pendingBlockExpTime = 500 * time.Millisecond
+
+	r := NewService(ctx,
+		WithStateGen(stategen.New(db, doublylinkedtree.New())),
+		WithDatabase(db),
+		WithChainService(mockChain),
+		WithP2P(p1),
+	)
+	b1 := util.NewBeaconBlockZond()
+	b1.Block.Slot = 1
+	b1.Block.ProposerIndex = 10
+	b1Root, err := b1.Block.HashTreeRoot()
+	require.NoError(t, err)
+	wsb, err := blocks.NewSignedBeaconBlock(b1)
+	require.NoError(t, err)
+	require.NoError(t, r.insertBlockToPendingQueue(1, wsb, b1Root))
+
+	// Add new block with the same slot.
+	b2 := util.NewBeaconBlockZond()
+	b2.Block.Slot = 1
+	b2.Block.ProposerIndex = 11
+	b2Root, err := b2.Block.HashTreeRoot()
+	require.NoError(t, err)
+	wsb, err = blocks.NewSignedBeaconBlock(b2)
+	require.NoError(t, err)
+	require.NoError(t, r.insertBlockToPendingQueue(1, wsb, b2Root))
+
+	require.Equal(t, true, r.seenPendingBlocks[b1Root])
+	require.Equal(t, true, r.seenPendingBlocks[b2Root])
+	require.Equal(t, 2, len(r.pendingBlocksInCache(1)))
+
+	// Wait for expiration cache to cleanup and remove old block.
+	time.Sleep(2 * pendingBlockExpTime)
+
+	// Run pending queue with expired blocks.
+	require.NoError(t, r.processPendingBlocks(ctx))
+
+	assert.Equal(t, false, r.seenPendingBlocks[b1Root])
+	assert.Equal(t, false, r.seenPendingBlocks[b2Root])
+	assert.Equal(t, 0, len(r.pendingBlocksInCache(1)))
 }

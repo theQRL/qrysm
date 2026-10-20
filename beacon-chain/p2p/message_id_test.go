@@ -8,6 +8,7 @@ import (
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/crypto/hash"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
@@ -42,6 +43,23 @@ func TestMessageIDFunction_HashesCorrectlyZond(t *testing.T) {
 	hashedData = hash.Hash(combinedObj)
 	msgID = string(hashedData[:20])
 	assert.Equal(t, msgID, p2p.MsgID(genesisValidatorsRoot, nMsg), "Got incorrect msg id")
+}
+
+func TestMsgID_OversizedCompressedFrame(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	genesisValidatorsRoot := bytesutil.PadTo([]byte{'A'}, 32)
+	d, err := signing.ComputeForkDigest(params.BeaconConfig().GenesisForkVersion, genesisValidatorsRoot)
+	assert.NoError(t, err)
+	tpc := fmt.Sprintf(p2p.BlockSubnetTopicFormat, d)
+
+	// Pre-empt snappy work for frames larger than the worst-case compressed
+	// bound: must short-circuit to the invalid-msg sentinel.
+	oversized := make([]byte, encoder.MaxGossipCompressedSize+1)
+	pMsg := &pubsubpb.Message{Data: oversized, Topic: &tpc}
+
+	invalid := make([]byte, 20)
+	copy(invalid, "invalid")
+	assert.Equal(t, string(invalid), p2p.MsgID(genesisValidatorsRoot, pMsg))
 }
 
 func TestMsgID_WithNilTopic(t *testing.T) {

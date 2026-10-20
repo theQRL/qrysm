@@ -426,3 +426,8 @@ func TestHasReadWritePermissions(t *testing.T) {
 		})
 	}
 }
+
+func TestSyncDir(t *testing.T) {
+	require.NoError(t, file.SyncDir(t.TempDir()))
+	require.NotNil(t, file.SyncDir(filepath.Join(t.TempDir(), "missing")))
+}

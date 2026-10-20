@@ -17,21 +17,24 @@ interface IDepositContract {
     /// @notice A processed deposit event.
     event DepositEvent(
         bytes pubkey,
-        bytes withdrawal_credentials,
+        bytes withdrawal_recipient,
         bytes amount,
+        bytes randao_commitment,
         bytes signature,
         bytes index
     );
 
     /// @notice Submit a Phase 0 DepositData object.
     /// @param pubkey A ML-DSA-87 public key.
-    /// @param withdrawal_credentials Commitment to a public key for withdrawals.
+    /// @param withdrawal_recipient QRL address that receives withdrawals.
+    /// @param randao_commitment The 32 byte top layer of the validator's RANDAO hash onion.
     /// @param signature A ML-DSA-87 signature.
     /// @param deposit_data_root The SHA-256 hash of the SSZ-encoded DepositData object.
     /// Used as a protection against malformed input.
     function deposit(
         bytes calldata pubkey,
-        bytes calldata withdrawal_credentials,
+        bytes calldata withdrawal_recipient,
+        bytes calldata randao_commitment,
         bytes calldata signature,
         bytes32 deposit_data_root
     ) external payable;
@@ -70,6 +73,9 @@ contract DepositContract is IDepositContract, ERC165 {
 
     bytes32[DEPOSIT_CONTRACT_TREE_DEPTH] zero_hashes;
 
+    // QRVM precompile computing the SSZ hash tree root of DepositData.
+    address constant DEPOSITROOT_PRECOMPILE = address(0x01);
+
     constructor() public {
         // Compute hashes in empty sparse Merkle tree
         for (uint height = 0; height < DEPOSIT_CONTRACT_TREE_DEPTH - 1; height++)
@@ -99,17 +105,19 @@ contract DepositContract is IDepositContract, ERC165 {
 
     function deposit(
         bytes calldata pubkey,
-        bytes calldata withdrawal_credentials,
+        bytes calldata withdrawal_recipient,
+        bytes calldata randao_commitment,
         bytes calldata signature,
         bytes32 deposit_data_root
     ) override external payable {
         // Extended ABI length checks since dynamic types are used.
         require(pubkey.length == 2592, "DepositContract: invalid pubkey length");
-        require(withdrawal_credentials.length == 32, "DepositContract: invalid withdrawal_credentials length");
+        require(withdrawal_recipient.length == 64, "DepositContract: invalid withdrawal_recipient length");
+        require(randao_commitment.length == 32, "DepositContract: invalid randao_commitment length");
         require(signature.length == 4627, "DepositContract: invalid signature length");
 
         // Check deposit amount
-        require(msg.value >= 1 quanta, "DepositContract: deposit value too low");
+        require(msg.value >= 2000 quanta, "DepositContract: deposit value too low");
         require(msg.value % 1 shor == 0, "DepositContract: deposit value not multiple of shor");
         uint deposit_amount = msg.value / 1 shor;
         require(deposit_amount <= type(uint64).max, "DepositContract: deposit value too high");
@@ -118,13 +126,27 @@ contract DepositContract is IDepositContract, ERC165 {
         bytes memory amount = to_little_endian_64(uint64(deposit_amount));
         emit DepositEvent(
             pubkey,
-            withdrawal_credentials,
+            withdrawal_recipient,
             amount,
+            randao_commitment,
             signature,
             to_little_endian_64(uint64(deposit_count))
         );
 
-        bytes32 node = depositroot(pubkey, withdrawal_credentials, amount, signature);
+        // Compute the SSZ hash tree root of the DepositData container
+        // {pubkey, withdrawal_recipient, amount, randao_commitment, signature}
+        // with the QRVM `depositroot` precompile (go-qrl core/vm, address 0x01).
+        // The precompile takes the five fields concatenated without padding.
+        // This is exactly the call the compiler builtin `depositroot(...)`
+        // emits, spelled out because the builtin's fixed signature predates
+        // randao_commitment.
+        (bool ok, bytes memory ret) = DEPOSITROOT_PRECOMPILE.staticcall(
+            abi.encodePacked(pubkey, withdrawal_recipient, amount, randao_commitment, signature)
+        );
+        require(ok && ret.length == 32, "DepositContract: depositroot precompile failed");
+        // The precompile returns the raw 32-byte root (not ABI-encoded), so take
+        // it with a bytes -> bytes32 conversion rather than abi.decode.
+        bytes32 node = bytes32(ret);
 
         // Verify computed and expected deposit data roots match
         require(node == deposit_data_root, "DepositContract: reconstructed DepositData does not match supplied deposit_data_root");

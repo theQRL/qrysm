@@ -89,7 +89,9 @@ func TestProcessPendingAtts_HasBlockSaveUnAggregatedAtt(t *testing.T) {
 	hashTreeRoot, err := signing.ComputeSigningRoot(att.Data, attesterDomain)
 	assert.NoError(t, err)
 	for _, i := range attestingIndices {
-		att.Signatures = [][]byte{privKeys[i].Sign(hashTreeRoot[:]).Marshal()}
+		lsig1, err := privKeys[i].Sign(hashTreeRoot[:])
+		require.NoError(t, err)
+		att.Signatures = [][]byte{lsig1.Marshal()}
 	}
 
 	// Arbitrary aggregator index for testing purposes.
@@ -167,9 +169,11 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 
 	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
+	fooSig, err := priv.Sign([]byte("foo"))
+	require.NoError(t, err)
 	a := &qrysmpb.AggregateAttestationAndProof{
 		Aggregate: &qrysmpb.Attestation{
-			Signatures:      [][]byte{priv.Sign([]byte("foo")).Marshal()},
+			Signatures:      [][]byte{fooSig.Marshal()},
 			AggregationBits: bitfield.Bitlist{0x02},
 			Data:            util.HydrateAttestationData(&qrysmpb.AttestationData{}),
 		},
@@ -185,7 +189,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	r.blkRootToPendingAtts[r32] = []*qrysmpb.SignedAggregateAttestationAndProof{{Message: a, Signature: make([]byte, field_params.MLDSA87SignatureLength)}}
 	require.NoError(t, r.processPendingAtts(context.Background()))
 
-	assert.Equal(t, false, p1.BroadcastCalled, "Broadcasted bad aggregate")
+	assert.Equal(t, false, p1.BroadcastCalled.Load(), "Broadcasted bad aggregate")
 	// Clear pool.
 	err = r.cfg.attPool.DeleteUnaggregatedAttestation(a.Aggregate)
 	require.NoError(t, err)
@@ -212,7 +216,9 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	hashTreeRoot, err := signing.ComputeSigningRoot(att.Data, attesterDomain)
 	assert.NoError(t, err)
 	for _, i := range attestingIndices {
-		att.Signatures = [][]byte{privKeys[i].Sign(hashTreeRoot[:]).Marshal()}
+		lsig3, err := privKeys[i].Sign(hashTreeRoot[:])
+		require.NoError(t, err)
+		att.Signatures = [][]byte{lsig3.Marshal()}
 	}
 
 	// Arbitrary aggregator index for testing purposes.
@@ -254,7 +260,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	r.blkRootToPendingAtts[r32] = []*qrysmpb.SignedAggregateAttestationAndProof{{Message: aggregateAndProof, Signature: aggreSig}}
 	require.NoError(t, r.processPendingAtts(context.Background()))
 
-	assert.Equal(t, true, p1.BroadcastCalled, "Could not broadcast the good aggregate")
+	assert.Equal(t, true, p1.BroadcastCalled.Load(), "Could not broadcast the good aggregate")
 	cancel()
 }
 
@@ -293,7 +299,9 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 	assert.NoError(t, err)
 	sigs := make([][]byte, len(attestingIndices))
 	for i, indice := range attestingIndices {
-		sig := privKeys[indice].Sign(hashTreeRoot[:]).Marshal()
+		lsig4, err := privKeys[indice].Sign(hashTreeRoot[:])
+		require.NoError(t, err)
+		sig := lsig4.Marshal()
 		sigs[i] = sig
 	}
 	att.Signatures = sigs
@@ -330,10 +338,10 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 			clock:    startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
 			attPool:  attestations.NewPool(),
 		},
-		blkRootToPendingAtts:           make(map[[32]byte][]*qrysmpb.SignedAggregateAttestationAndProof),
-		seenAggregatedAttestationCache: lruwrpr.New(10),
-		signatureChan:                  make(chan *signatureVerifier, verifierLimit),
+		blkRootToPendingAtts: make(map[[32]byte][]*qrysmpb.SignedAggregateAttestationAndProof),
+		signatureChan:        make(chan *signatureVerifier, verifierLimit),
 	}
+	r.initCaches()
 	go r.verifierRoutine()
 	s, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
@@ -399,7 +407,7 @@ func TestValidatePendingAtts_CanPruneOldAtts(t *testing.T) {
 	assert.Equal(t, 0, len(s.blkRootToPendingAtts), "Did not delete block keys")
 }
 
-func TestValidatePendingAtts_NoDuplicatingAggregatorIndex(t *testing.T) {
+func TestValidatePendingAtts_NoDuplicatingAtts(t *testing.T) {
 	s := &Service{
 		blkRootToPendingAtts: make(map[[32]byte][]*qrysmpb.SignedAggregateAttestationAndProof),
 	}
@@ -420,7 +428,7 @@ func TestValidatePendingAtts_NoDuplicatingAggregatorIndex(t *testing.T) {
 		Message: &qrysmpb.AggregateAttestationAndProof{
 			AggregatorIndex: 2,
 			Aggregate: &qrysmpb.Attestation{
-				Data: &qrysmpb.AttestationData{Slot: 3, BeaconBlockRoot: r2[:]}}}})
+				Data: &qrysmpb.AttestationData{Slot: 2, BeaconBlockRoot: r2[:]}}}})
 
 	assert.Equal(t, 1, len(s.blkRootToPendingAtts[r1]), "Did not save pending atts")
 	assert.Equal(t, 1, len(s.blkRootToPendingAtts[r2]), "Did not save pending atts")
@@ -458,4 +466,59 @@ func TestSavePendingAtts_BeyondLimit(t *testing.T) {
 	assert.Equal(t, 0, len(s.blkRootToPendingAtts[r1]), "Saved pending atts")
 	assert.Equal(t, 0, len(s.blkRootToPendingAtts[r2]), "Saved pending atts")
 
+}
+
+// Regression tests for upstream prysm#16153: ignoreAggregatorIndex must collapse
+// aggregates that differ only by aggregator index, while includeAggregatorIndex
+// must keep the existing save-time behaviour.
+func Test_pendingAggregatesAreEqual(t *testing.T) {
+	mkAgg := func(aggregatorIndex primitives.ValidatorIndex, slot primitives.Slot, committeeIndex primitives.CommitteeIndex, bits bitfield.Bitlist, withSig bool) *qrysmpb.SignedAggregateAttestationAndProof {
+		agg := &qrysmpb.SignedAggregateAttestationAndProof{
+			Message: &qrysmpb.AggregateAttestationAndProof{
+				AggregatorIndex: aggregatorIndex,
+				Aggregate: &qrysmpb.Attestation{
+					Data: &qrysmpb.AttestationData{
+						Slot:           slot,
+						CommitteeIndex: committeeIndex,
+					},
+					AggregationBits: bits,
+				},
+			},
+		}
+		if withSig {
+			agg.Signature = []byte{0x01}
+		}
+		return agg
+	}
+
+	t.Run("same aggregator with sigs is equal under includeAggregatorIndex", func(t *testing.T) {
+		a := mkAgg(1, 1, 1, bitfield.Bitlist{0b1111}, true)
+		b := mkAgg(1, 1, 1, bitfield.Bitlist{0b1111}, true)
+		assert.Equal(t, true, pendingAggregatesAreEqual(a, b, includeAggregatorIndex))
+	})
+	t.Run("different aggregator with sigs is not equal under includeAggregatorIndex", func(t *testing.T) {
+		a := mkAgg(1, 1, 1, bitfield.Bitlist{0b1111}, true)
+		b := mkAgg(2, 1, 1, bitfield.Bitlist{0b1111}, true)
+		assert.Equal(t, false, pendingAggregatesAreEqual(a, b, includeAggregatorIndex))
+	})
+	t.Run("different aggregator is equal under ignoreAggregatorIndex when data matches", func(t *testing.T) {
+		a := mkAgg(1, 1, 1, bitfield.Bitlist{0b1111}, true)
+		b := mkAgg(2, 1, 1, bitfield.Bitlist{0b1111}, true)
+		assert.Equal(t, true, pendingAggregatesAreEqual(a, b, ignoreAggregatorIndex))
+	})
+	t.Run("different slot is not equal under ignoreAggregatorIndex", func(t *testing.T) {
+		a := mkAgg(1, 1, 1, bitfield.Bitlist{0b1111}, true)
+		b := mkAgg(2, 2, 1, bitfield.Bitlist{0b1111}, true)
+		assert.Equal(t, false, pendingAggregatesAreEqual(a, b, ignoreAggregatorIndex))
+	})
+	t.Run("different committee index is not equal under ignoreAggregatorIndex", func(t *testing.T) {
+		a := mkAgg(1, 1, 1, bitfield.Bitlist{0b1111}, true)
+		b := mkAgg(2, 1, 2, bitfield.Bitlist{0b1111}, true)
+		assert.Equal(t, false, pendingAggregatesAreEqual(a, b, ignoreAggregatorIndex))
+	})
+	t.Run("different aggregation bits is not equal under ignoreAggregatorIndex", func(t *testing.T) {
+		a := mkAgg(1, 1, 1, bitfield.Bitlist{0b1111}, true)
+		b := mkAgg(2, 1, 1, bitfield.Bitlist{0b1000}, true)
+		assert.Equal(t, false, pendingAggregatesAreEqual(a, b, ignoreAggregatorIndex))
+	})
 }

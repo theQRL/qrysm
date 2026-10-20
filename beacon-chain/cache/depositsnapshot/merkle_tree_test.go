@@ -153,3 +153,22 @@ func Test_generateProof(t *testing.T) {
 	}
 }
 */
+
+// TestGetProof_Index0_NoFinalizedDeposits is a regression test for an off-by-one in
+// getProof: with nothing finalized (finalized count == 0), deposit index 0 must still
+// be provable. The previous decrement-then-`<=` form returned ErrInvalidIndex for
+// index 0, which under --enable-eip-4881 permanently broke packing of the first deposit.
+func TestGetProof_Index0_NoFinalizedDeposits(t *testing.T) {
+	tree := NewDepositTree()
+	var leaves [][32]byte
+	for i := 0; i < 4; i++ {
+		l := hexString(t, fmt.Sprintf("%064d", i+1))
+		leaves = append(leaves, l)
+		require.NoError(t, tree.pushLeaf(l))
+	}
+	// No Finalize has been called, so the finalized deposit count is 0.
+	leaf, proof, err := tree.getProof(0)
+	require.NoError(t, err)
+	require.Equal(t, leaves[0], leaf)
+	require.NotEqual(t, 0, len(proof))
+}

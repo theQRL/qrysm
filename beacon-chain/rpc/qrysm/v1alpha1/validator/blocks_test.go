@@ -11,6 +11,7 @@ import (
 	blockfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/block"
 	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
 	dbTest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
@@ -19,6 +20,16 @@ import (
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
+
+func setupBlockStreamTest(t *testing.T) {
+	t.Helper()
+	params.SetupTestConfigCleanup(t)
+	cfg := params.BeaconConfig().Copy()
+	// TestMain selects minimal runtime settings, but plain go test can use
+	// mainnet SSZ types. Keep generated sync aggregates and committees aligned.
+	cfg.SyncCommitteeSize = fieldparams.SyncCommitteeLength
+	params.OverrideBeaconConfig(cfg)
+}
 
 func TestServer_StreamAltairBlocksVerified_ContextCanceled(t *testing.T) {
 	ctx := context.Background()
@@ -71,8 +82,7 @@ func TestServer_StreamAltairBlocks_ContextCanceled(t *testing.T) {
 }
 
 func TestServer_StreamAltairBlocks_OnHeadUpdated(t *testing.T) {
-	params.SetupTestConfigCleanup(t)
-	params.OverrideBeaconConfig(params.BeaconConfig())
+	setupBlockStreamTest(t)
 	ctx := context.Background()
 	beaconState, privs := util.DeterministicGenesisStateZond(t, 64)
 	c, err := altair.NextSyncCommittee(ctx, beaconState)
@@ -113,8 +123,7 @@ func TestServer_StreamAltairBlocks_OnHeadUpdated(t *testing.T) {
 }
 
 func TestServer_StreamZondBlocks_OnHeadUpdated(t *testing.T) {
-	params.SetupTestConfigCleanup(t)
-	params.OverrideBeaconConfig(params.BeaconConfig())
+	setupBlockStreamTest(t)
 	ctx := context.Background()
 	beaconState, privs := util.DeterministicGenesisStateZond(t, 64)
 	c, err := altair.NextSyncCommittee(ctx, beaconState)
@@ -155,6 +164,7 @@ func TestServer_StreamZondBlocks_OnHeadUpdated(t *testing.T) {
 }
 
 func TestServer_StreamAltairBlocksVerified_OnHeadUpdated(t *testing.T) {
+	setupBlockStreamTest(t)
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
 	beaconState, privs := util.DeterministicGenesisStateZond(t, 32)
@@ -198,6 +208,7 @@ func TestServer_StreamAltairBlocksVerified_OnHeadUpdated(t *testing.T) {
 }
 
 func TestServer_StreamZondBlocksVerified_OnHeadUpdated(t *testing.T) {
+	setupBlockStreamTest(t)
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
 	beaconState, privs := util.DeterministicGenesisStateZond(t, 32)

@@ -246,7 +246,7 @@ func initBlockBodyFromProtoZond(pb *qrysmpb.BeaconBlockBodyZond) (*BeaconBlockBo
 	b := &BeaconBlockBody{
 		version:           version.Zond,
 		isBlinded:         false,
-		randaoReveal:      bytesutil.ToBytes4627(pb.RandaoReveal),
+		randaoReveal:      bytesutil.ToBytes32(pb.RandaoReveal),
 		executionData:     pb.ExecutionData,
 		graffiti:          bytesutil.ToBytes32(pb.Graffiti),
 		proposerSlashings: pb.ProposerSlashings,
@@ -273,7 +273,7 @@ func initBlindedBlockBodyFromProtoZond(pb *qrysmpb.BlindedBeaconBlockBodyZond) (
 	b := &BeaconBlockBody{
 		version:                version.Zond,
 		isBlinded:              true,
-		randaoReveal:           bytesutil.ToBytes4627(pb.RandaoReveal),
+		randaoReveal:           bytesutil.ToBytes32(pb.RandaoReveal),
 		executionData:          pb.ExecutionData,
 		graffiti:               bytesutil.ToBytes32(pb.Graffiti),
 		proposerSlashings:      pb.ProposerSlashings,

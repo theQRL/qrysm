@@ -28,8 +28,8 @@ import (
 	"strings"
 
 	"github.com/golang/snappy"
-	"github.com/holiman/uint256"
 	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/uint512"
 	"github.com/theQRL/go-qrl/core/vm"
 	"github.com/theQRL/go-qrl/qrl/tracers/logger"
 	"github.com/theQRL/qrysm/pkg/goqrvmlab/ops"
@@ -101,7 +101,7 @@ func (t *TraceLine) Get(title string) string {
 	return "NA"
 }
 
-func (t *TraceLine) Stack() []uint256.Int {
+func (t *TraceLine) Stack() []uint512.Int {
 	return t.log.Stack
 }
 
@@ -230,10 +230,10 @@ type traceTxRPCResponse struct {
 	// + some other fields we don't particularly care about
 }
 
-// ParseHex parses s as a 256 bit integer in hexadecimal syntax.
+// ParseHex parses s as a 512 bit integer in hexadecimal syntax.
 // Leading zeros are accepted. The empty string parses as zero.
-func ParseHex(s string) (uint256.Int, error) {
-	var n uint256.Int
+func ParseHex(s string) (uint512.Int, error) {
+	var n uint512.Int
 	if s == "" {
 		return n, nil
 	}
@@ -248,15 +248,15 @@ func ParseHex(s string) (uint256.Int, error) {
 		return n, fmt.Errorf("could not convert %v to bigint", s)
 	}
 	if overflow := n.SetFromBig(bigint); overflow {
-		return n, fmt.Errorf("conversion from bigint (%x) to uint256.Int caused overflow", bigint)
+		return n, fmt.Errorf("conversion from bigint (%x) to uint512.Int caused overflow", bigint)
 	}
 	return n, nil
 }
 
 // parseStack takes a list of strings and returns a stack of *big.Ints
-func parseStack(stackStrings []any) ([]uint256.Int, error) {
+func parseStack(stackStrings []any) ([]uint512.Int, error) {
 	var (
-		s []uint256.Int
+		s []uint512.Int
 	)
 	for _, item := range stackStrings {
 		n, err := ParseHex(item.(string))

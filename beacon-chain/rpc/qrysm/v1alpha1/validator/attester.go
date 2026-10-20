@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/beacon-chain/core/feed"
 	"github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
@@ -33,10 +34,7 @@ func (vs *Server) GetAttestationData(ctx context.Context, req *qrysmpb.Attestati
 	}
 
 	// An optimistic validator MUST NOT participate in attestation. (i.e., sign across the DOMAIN_BEACON_ATTESTER, DOMAIN_SELECTION_PROOF or DOMAIN_AGGREGATE_AND_PROOF domains).
-	if err := vs.optimisticStatus(ctx); err != nil {
-		return nil, err
-	}
-
+	// The optimistic check is performed inside CoreService.GetAttestationData (after the cache lookup) so it is skipped on cache hit.
 	res, err := vs.CoreService.GetAttestationData(ctx, req)
 	if err != nil {
 		return nil, status.Errorf(core.ErrorReasonToGRPC(err.Reason), "Could not get attestation data: %v", err.Err)
@@ -50,15 +48,42 @@ func (vs *Server) ProposeAttestation(ctx context.Context, att *qrysmpb.Attestati
 	ctx, span := trace.StartSpan(ctx, "AttesterServer.ProposeAttestation")
 	defer span.End()
 
+	if vs.SyncChecker.Syncing() {
+		return nil, status.Errorf(codes.Unavailable, "Syncing to latest head, not ready to respond")
+	}
+
+	if err := helpers.ValidateNilAttestation(att); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid attestation: %v", err)
+	}
+	// Validate fixed-size roots before passing the target checkpoint to state lookup.
+	root, err := att.Data.HashTreeRoot()
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Could not tree hash attestation: %v", err)
+	}
+	if err := helpers.ValidateSlotTargetEpoch(att.Data); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid attestation: %v", err)
+	}
+
 	for _, sig := range att.Signatures {
 		if _, err := ml_dsa_87.SignatureFromBytes(sig); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "Incorrect attestation signature")
 		}
 	}
 
-	root, err := att.Data.HashTreeRoot()
+	// The pool consumer assumes gossip has already checked LMD/FFG consistency.
+	if err := vs.AttestationReceiver.VerifyLmdFfgConsistency(ctx, att); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Inconsistent attestation: %v", err)
+	}
+
+	// Verify the signatures against the target state before broadcasting and
+	// pooling, like the gossip path does; see SubmitAttestations in the REST
+	// API for the rationale. (upstream #16879)
+	targetState, err := vs.AttestationReceiver.AttestationTargetState(ctx, att.Data.Target)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not tree hash attestation: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "Could not get attestation target state: %v", err)
+	}
+	if err := blocks.VerifyAttestationSignatures(ctx, targetState, att); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Incorrect attestation signature: %v", err)
 	}
 
 	// Broadcast the unaggregated attestation on a feed to notify other services in the beacon node

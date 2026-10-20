@@ -26,7 +26,7 @@ func ValidatorFieldRoots(validator *qrysmpb.Validator) ([][32]byte, error) {
 	var fieldRoots [][32]byte
 	if validator != nil {
 		pubkey := bytesutil.ToBytes2592(validator.PublicKey)
-		withdrawCreds := bytesutil.ToBytes32(validator.WithdrawalCredentials)
+		recipientBuf := bytesutil.ToBytes64(validator.WithdrawalRecipient)
 		var effectiveBalanceBuf [32]byte
 		binary.LittleEndian.PutUint64(effectiveBalanceBuf[:8], validator.EffectiveBalance)
 		// Slashed.
@@ -48,13 +48,27 @@ func ValidatorFieldRoots(validator *qrysmpb.Validator) ([][32]byte, error) {
 		var withdrawalBuf [32]byte
 		binary.LittleEndian.PutUint64(withdrawalBuf[:8], uint64(validator.WithdrawableEpoch))
 
+		randaoCommitment := bytesutil.ToBytes32(validator.RandaoCommitment)
+
 		// Public key.
 		pubKeyRoot, err := merkleizePubkey(pubkey[:])
 		if err != nil {
 			return [][32]byte{}, err
 		}
-		fieldRoots = [][32]byte{pubKeyRoot, withdrawCreds, effectiveBalanceBuf, slashBuf, activationEligibilityBuf,
-			activationBuf, exitBuf, withdrawalBuf}
+		// The withdrawal recipient is 64 bytes: merkleize two 32-byte chunks into one root.
+		var recipientChunk0, recipientChunk1 [32]byte
+		copy(recipientChunk0[:], recipientBuf[:32])
+		copy(recipientChunk1[:], recipientBuf[32:])
+		recipientRoot, err := ssz.BitwiseMerkleize([][32]byte{recipientChunk0, recipientChunk1}, 2, 2)
+		if err != nil {
+			return [][32]byte{}, err
+		}
+		// The validator container has 9 fields; its SSZ tree therefore has
+		// 16 leaves, the last 7 being zero. They are materialised here so
+		// that OptimizedValidatorRoots can hash a flat, fixed-width layout.
+		fieldRoots = make([][32]byte, ValidatorFieldRootCount)
+		copy(fieldRoots, [][32]byte{pubKeyRoot, recipientRoot, effectiveBalanceBuf, slashBuf, activationEligibilityBuf,
+			activationBuf, exitBuf, withdrawalBuf, randaoCommitment})
 	}
 	return fieldRoots, nil
 }

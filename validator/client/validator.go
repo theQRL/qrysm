@@ -5,7 +5,6 @@ package client
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -23,6 +22,7 @@ import (
 	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/async/event"
 	"github.com/theQRL/qrysm/beacon-chain/core/altair"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/config/features"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
@@ -30,12 +30,12 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/hash"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	accountsiface "github.com/theQRL/qrysm/validator/accounts/iface"
 	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	beacon_api "github.com/theQRL/qrysm/validator/client/beacon-api"
 	"github.com/theQRL/qrysm/validator/client/iface"
 	vdb "github.com/theQRL/qrysm/validator/db"
 	"github.com/theQRL/qrysm/validator/db/kv"
@@ -63,12 +63,18 @@ var (
 	msgNoKeysFetched     = "No validating keys fetched. Trying again"
 )
 
+var newSlotTicker = func(genesisTime time.Time, secondsPerSlot uint64) slots.Ticker {
+	return slots.NewSlotTicker(genesisTime, secondsPerSlot)
+}
+
 type validator struct {
 	logValidatorBalances               bool
 	emitAccountMetrics                 bool
-	domainDataLock                     sync.Mutex
+	dutyDependentRootProbeFailed       bool
+	domainDataLock                     sync.RWMutex
 	attLogsLock                        sync.Mutex
 	aggregatedSlotCommitteeIDCacheLock sync.Mutex
+	selectionProofsLock                sync.Mutex
 	highestValidSlotLock               sync.Mutex
 	prevBalanceLock                    sync.RWMutex
 	slashableKeysLock                  sync.RWMutex
@@ -78,11 +84,16 @@ type validator struct {
 	startBalances                      map[[fieldparams.MLDSA87PubkeyLength]byte]uint64
 	dutiesLock                         sync.RWMutex
 	duties                             *qrysmpb.DutiesResponse
+	previousDutyDependentRoot          []byte
+	currentDutyDependentRoot           []byte
 	prevBalance                        map[[fieldparams.MLDSA87PubkeyLength]byte]uint64
+	pubkeyToValidatorIndexLock         sync.Mutex
 	pubkeyToValidatorIndex             map[[fieldparams.MLDSA87PubkeyLength]byte]primitives.ValidatorIndex
+	signedValidatorRegistrationsLock   sync.Mutex
 	signedValidatorRegistrations       map[[fieldparams.MLDSA87PubkeyLength]byte]*qrysmpb.SignedValidatorRegistrationV1
 	graffitiOrderedIndex               uint64
 	aggregatedSlotCommitteeIDCache     *lru.Cache
+	selectionProofCache                map[selectionProofKey][]byte
 	domainDataCache                    *ristretto.Cache
 	highestValidSlot                   primitives.Slot
 	genesisTime                        uint64
@@ -90,12 +101,16 @@ type validator struct {
 	interopKeysConfig                  *local.InteropKeymanagerConfig
 	wallet                             *wallet.Wallet
 	graffitiStruct                     *graffiti.Graffiti
+	grpcHealthTracker                  grpcHealthTracker
 	node                               iface.NodeClient
 	db                                 vdb.Database
 	beaconClient                       iface.BeaconChainClient
+	qrysmBeaconClient                  iface.QrysmChainClient
 	keyManager                         keymanager.IKeymanager
 	ticker                             slots.Ticker
 	validatorClient                    iface.ValidatorClient
+	dutyDependentRootProvider          dutyDependentRootProvider
+	dutyDependentRootProbeFailedEpoch  primitives.Epoch
 	graffiti                           []byte
 	voteStats                          voteStats
 	syncCommitteeStats                 syncCommitteeStats
@@ -110,9 +125,28 @@ type validatorStatus struct {
 	index     primitives.ValidatorIndex
 }
 
+func (v *validator) GenesisTime() uint64 {
+	return v.genesisTime
+}
+
 // Done cleans up the validator.
 func (v *validator) Done() {
-	v.ticker.Done()
+	if v.ticker != nil {
+		v.ticker.Done()
+	}
+}
+
+// SetTicker (re)starts the slot ticker, stopping any existing ticker first.
+//
+// The slot ticker is intentionally created here, not in WaitForChainStart, to
+// avoid replaying old ticks once a slow consumer (e.g. one that was blocked
+// inside WaitForActivation) starts reading. Callers should invoke this
+// immediately before they begin consuming v.NextSlot().
+func (v *validator) SetTicker() {
+	if v.ticker != nil {
+		v.ticker.Done()
+	}
+	v.ticker = newSlotTicker(time.Unix(int64(v.genesisTime), 0), params.BeaconConfig().SecondsPerSlot)
 }
 
 // WaitForKeymanagerInitialization checks if the validator needs to wait for
@@ -240,9 +274,12 @@ func (v *validator) WaitForChainStart(ctx context.Context) error {
 		return iface.ErrConnectionIssue
 	}
 
-	// Once the ChainStart log is received, we update the genesis time of the validator client
-	// and begin a slot ticker used to track the current slot the beacon node is in.
-	v.ticker = slots.NewSlotTicker(time.Unix(int64(v.genesisTime), 0), params.BeaconConfig().SecondsPerSlot)
+	// The slot ticker is intentionally NOT started here. Starting it now would
+	// queue slot ticks while later steps (WaitForKeymanagerInitialization,
+	// WaitForSync, WaitForActivation, CheckDoppelGanger) block. Once the main
+	// runner loop finally drains the channel, the backlogged ticks rapid-fire
+	// and replay old slots. The ticker is created by SetTicker() once the
+	// caller is ready to consume v.NextSlot().
 	log.WithField("genesisTime", time.Unix(int64(v.genesisTime), 0)).Info("Beacon chain started")
 	return nil
 }
@@ -251,6 +288,12 @@ func (v *validator) WaitForChainStart(ctx context.Context) error {
 func (v *validator) WaitForSync(ctx context.Context) error {
 	ctx, span := trace.StartSpan(ctx, "validator.WaitForSync")
 	defer span.End()
+
+	if v.grpcHealthTracker != nil {
+		if err := v.grpcHealthTracker.EnsureHealthy(ctx); err == nil {
+			return nil
+		}
+	}
 
 	s, err := v.node.GetSyncStatus(ctx, &emptypb.Empty{})
 	if err != nil {
@@ -458,7 +501,7 @@ func (v *validator) CheckDoppelGanger(ctx context.Context) error {
 			&qrysmpb.DoppelGangerRequest_ValidatorRequest{
 				PublicKey:  r.PubKey[:],
 				Epoch:      r.Target,
-				SignedRoot: r.SigningRoot[:],
+				SignedRoot: r.SigningRoot,
 			})
 	}
 	resp, err := v.validatorClient.CheckDoppelGanger(ctx, req)
@@ -516,8 +559,17 @@ func retrieveLatestRecord(recs []*kv.AttestationRecord) *kv.AttestationRecord {
 // beginning of a new epoch.
 func (v *validator) UpdateDuties(ctx context.Context, slot primitives.Slot) error {
 	if slot%params.BeaconConfig().SlotsPerEpoch != 0 && v.duties != nil {
-		// Do nothing if not epoch start AND assignments already exist.
-		return nil
+		refresh, err := v.dutiesRefreshRequired(ctx, slot)
+		if err != nil {
+			// A failed probe says nothing about the duties themselves: keep
+			// the cached ones (they are refreshed at the next epoch start
+			// regardless) rather than re-fetching and re-signing every
+			// selection proof on every slot while the endpoint is down.
+			log.WithError(err).Warn("Could not check duty dependent roots, keeping cached duties until the next epoch")
+		}
+		if !refresh {
+			return nil
+		}
 	}
 	// Set deadline to end of epoch.
 	ss, err := slots.EpochStart(slots.ToEpoch(slot) + 1)
@@ -559,10 +611,34 @@ func (v *validator) UpdateDuties(ctx context.Context, slot primitives.Slot) erro
 	if err != nil {
 		v.dutiesLock.Lock()
 		v.duties = nil // Clear assignments so we know to retry the request.
+		v.previousDutyDependentRoot = nil
+		v.currentDutyDependentRoot = nil
 		v.dutiesLock.Unlock()
 		log.WithError(err).Error("Error getting validator duties")
 		return err
 	}
+
+	// Prefer the dependent roots inlined into DutiesResponse (single RPC). Fall back to
+	// the separate REST provider when the beacon node hasn't populated them (cross-version compat).
+	previousDutyDependentRoot := resp.GetPreviousDutyDependentRoot()
+	currentDutyDependentRoot := resp.GetCurrentDutyDependentRoot()
+	if len(previousDutyDependentRoot) == 0 || len(currentDutyDependentRoot) == 0 {
+		fetchedPrev, fetchedCurr, fetchErr := v.fetchDutyDependentRoots(ctx, req.Epoch)
+		if fetchErr != nil {
+			previousDutyDependentRoot = nil
+			currentDutyDependentRoot = nil
+		} else {
+			previousDutyDependentRoot = fetchedPrev
+			currentDutyDependentRoot = fetchedCurr
+		}
+	}
+
+	v.dutiesLock.Lock()
+	v.duties = resp
+	v.previousDutyDependentRoot = previousDutyDependentRoot
+	v.currentDutyDependentRoot = currentDutyDependentRoot
+	v.logDuties(slot, v.duties.CurrentEpochDuties, v.duties.NextEpochDuties)
+	v.dutiesLock.Unlock()
 
 	allExitedCounter := 0
 	for i := range resp.CurrentEpochDuties {
@@ -573,11 +649,6 @@ func (v *validator) UpdateDuties(ctx context.Context, slot primitives.Slot) erro
 	if allExitedCounter != 0 && allExitedCounter == len(resp.CurrentEpochDuties) {
 		return ErrValidatorsAllExited
 	}
-
-	v.dutiesLock.Lock()
-	v.duties = resp
-	v.logDuties(slot, v.duties.CurrentEpochDuties, v.duties.NextEpochDuties)
-	v.dutiesLock.Unlock()
 
 	// Non-blocking call for beacon node to start subscriptions for aggregators.
 	// Make sure to copy metadata into a new context
@@ -595,8 +666,73 @@ func (v *validator) UpdateDuties(ctx context.Context, slot primitives.Slot) erro
 	return nil
 }
 
-// subscribeToSubnets iterates through each validator duty, signs each slot, and asks beacon node
-// to eagerly subscribe to subnets so that the aggregator has attestations to aggregate.
+// dutiesRefreshRequired reports whether the cached duties must be refreshed
+// mid-epoch because the duty dependent roots changed (i.e. a reorg past the
+// epoch boundary). It only ever answers true on positive evidence: when the
+// roots cannot be fetched, the cached duties are kept and the probe is not
+// retried until the next epoch, so an unreachable REST endpoint costs at most
+// one failed probe (and one warning) per epoch instead of a full duties
+// refresh - and up to a couple of seconds of delay - on every slot.
+func (v *validator) dutiesRefreshRequired(ctx context.Context, slot primitives.Slot) (bool, error) {
+	previousCachedRoot, currentCachedRoot := v.cachedDutyDependentRoots()
+	if len(previousCachedRoot) == 0 || len(currentCachedRoot) == 0 {
+		return true, nil
+	}
+	if v.dutyDependentRootProvider == nil {
+		return false, nil
+	}
+
+	epoch := slots.ToEpoch(slot)
+	if v.dutyDependentRootProbeFailedIn(epoch) {
+		return false, nil
+	}
+	previousRoot, currentRoot, err := v.fetchDutyDependentRoots(ctx, epoch)
+	if err != nil {
+		v.setDutyDependentRootProbeFailed(epoch)
+		return false, err
+	}
+	if len(previousRoot) == 0 || len(currentRoot) == 0 {
+		return false, nil
+	}
+
+	return !bytes.Equal(previousCachedRoot, previousRoot) || !bytes.Equal(currentCachedRoot, currentRoot), nil
+}
+
+// dutyDependentRootProbeFailedIn reports whether the duty dependent root probe
+// already failed in the given epoch (dutyDependentRootProbeFailed and
+// dutyDependentRootProbeFailedEpoch, both guarded by dutiesLock), in which case
+// it is not retried until the next epoch.
+func (v *validator) dutyDependentRootProbeFailedIn(epoch primitives.Epoch) bool {
+	v.dutiesLock.RLock()
+	defer v.dutiesLock.RUnlock()
+	return v.dutyDependentRootProbeFailed && v.dutyDependentRootProbeFailedEpoch == epoch
+}
+
+func (v *validator) setDutyDependentRootProbeFailed(epoch primitives.Epoch) {
+	v.dutiesLock.Lock()
+	defer v.dutiesLock.Unlock()
+	v.dutyDependentRootProbeFailed = true
+	v.dutyDependentRootProbeFailedEpoch = epoch
+}
+
+func (v *validator) fetchDutyDependentRoots(ctx context.Context, epoch primitives.Epoch) ([]byte, []byte, error) {
+	if v.dutyDependentRootProvider == nil {
+		return nil, nil, nil
+	}
+	return v.dutyDependentRootProvider.GetDutyDependentRoots(ctx, epoch)
+}
+
+func (v *validator) cachedDutyDependentRoots() ([]byte, []byte) {
+	v.dutiesLock.RLock()
+	defer v.dutiesLock.RUnlock()
+
+	previousRoot := append([]byte(nil), v.previousDutyDependentRoot...)
+	currentRoot := append([]byte(nil), v.currentDutyDependentRoot...)
+	return previousRoot, currentRoot
+}
+
+// subscribeToSubnets checks each duty's aggregator eligibility and asks the
+// beacon node to subscribe early so aggregators have attestations to aggregate.
 func (v *validator) subscribeToSubnets(ctx context.Context, res *qrysmpb.DutiesResponse) error {
 	subscribeSlots := make([]primitives.Slot, 0, len(res.CurrentEpochDuties)+len(res.NextEpochDuties))
 	subscribeCommitteeIndices := make([]primitives.CommitteeIndex, 0, len(res.CurrentEpochDuties)+len(res.NextEpochDuties))
@@ -605,7 +741,6 @@ func (v *validator) subscribeToSubnets(ctx context.Context, res *qrysmpb.DutiesR
 	alreadySubscribed := make(map[[64]byte]bool)
 
 	for _, duty := range res.CurrentEpochDuties {
-		pk := bytesutil.ToBytes2592(duty.PublicKey)
 		if duty.Status == qrysmpb.ValidatorStatus_ACTIVE || duty.Status == qrysmpb.ValidatorStatus_EXITING {
 			attesterSlot := duty.AttesterSlot
 			committeeIndex := duty.CommitteeIndex
@@ -616,7 +751,7 @@ func (v *validator) subscribeToSubnets(ctx context.Context, res *qrysmpb.DutiesR
 				continue
 			}
 
-			aggregator, err := v.isAggregator(ctx, duty.Committee, attesterSlot, pk)
+			aggregator, err := v.isAggregator(duty, attesterSlot)
 			if err != nil {
 				return errors.Wrap(err, "could not check if a validator is an aggregator")
 			}
@@ -642,7 +777,7 @@ func (v *validator) subscribeToSubnets(ctx context.Context, res *qrysmpb.DutiesR
 				continue
 			}
 
-			aggregator, err := v.isAggregator(ctx, duty.Committee, attesterSlot, bytesutil.ToBytes2592(duty.PublicKey))
+			aggregator, err := v.isAggregator(duty, attesterSlot)
 			if err != nil {
 				return errors.Wrap(err, "could not check if a validator is an aggregator")
 			}
@@ -675,6 +810,10 @@ func (v *validator) subscribeToSubnets(ctx context.Context, res *qrysmpb.DutiesR
 func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[fieldparams.MLDSA87PubkeyLength]byte][]iface.ValidatorRole, error) {
 	v.dutiesLock.RLock()
 	defer v.dutiesLock.RUnlock()
+	if v.duties == nil {
+		return nil, errors.New("duties are not initialized")
+	}
+	v.pruneSelectionProofs(slot)
 	rolesAt := make(map[[fieldparams.MLDSA87PubkeyLength]byte][]iface.ValidatorRole)
 	for validator, duty := range v.duties.CurrentEpochDuties {
 		var roles []iface.ValidatorRole
@@ -693,9 +832,13 @@ func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[fie
 		if duty.AttesterSlot == slot {
 			roles = append(roles, iface.RoleAttester)
 
-			aggregator, err := v.isAggregator(ctx, duty.Committee, slot, bytesutil.ToBytes2592(duty.PublicKey))
+			aggregator, err := v.isAggregator(duty, slot)
 			if err != nil {
-				return nil, errors.Wrap(err, "could not check if a validator is an aggregator")
+				// Degrade gracefully: keep the attestation role and treat as
+				// non-aggregator so transient BN errors don't cause this
+				// validator to miss *all* roles for the slot.
+				aggregator = false
+				log.WithError(err).Errorf("Could not check if validator %#x is an aggregator", bytesutil.Trunc(duty.PublicKey))
 			}
 			if aggregator {
 				roles = append(roles, iface.RoleAggregator)
@@ -718,9 +861,10 @@ func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[fie
 			}
 		}
 		if inSyncCommittee {
-			aggregator, err := v.isSyncCommitteeAggregator(ctx, slot, bytesutil.ToBytes2592(duty.PublicKey))
+			aggregator, err := v.isSyncCommitteeAggregator(ctx, slot, duty)
 			if err != nil {
-				return nil, errors.Wrap(err, "could not check if a validator is a sync committee aggregator")
+				aggregator = false
+				log.WithError(err).Errorf("Could not check if validator %#x is a sync committee aggregator", bytesutil.Trunc(duty.PublicKey))
 			}
 			if aggregator {
 				roles = append(roles, iface.RoleSyncCommitteeAggregator)
@@ -746,35 +890,74 @@ func (v *validator) Keymanager() (keymanager.IKeymanager, error) {
 	return v.keyManager, nil
 }
 
-// isAggregator checks if a validator is an aggregator of a given slot and committee,
-// it uses a modulo calculated by validator count in committee and samples randomness around it.
-func (v *validator) isAggregator(ctx context.Context, committee []primitives.ValidatorIndex, slot primitives.Slot, pubKey [fieldparams.MLDSA87PubkeyLength]byte) (bool, error) {
-	modulo := uint64(1)
-	if len(committee)/int(params.BeaconConfig().TargetAggregatorsPerCommittee) > 1 {
-		modulo = uint64(len(committee)) / params.BeaconConfig().TargetAggregatorsPerCommittee
-	}
-
-	slotSig, err := v.signSlotWithSelectionProof(ctx, pubKey, slot)
-	if err != nil {
-		return false, err
-	}
-
-	b := hash.Hash(slotSig)
-
-	return binary.LittleEndian.Uint64(b[:8])%modulo == 0, nil
+// selectionProofKey identifies one aggregator selection proof: the attestation
+// selection proof over (pubkey, slot) when sync is false, or the sync committee
+// selection proof over (pubkey, slot, subnet) when sync is true.
+type selectionProofKey struct {
+	pubKey [fieldparams.MLDSA87PubkeyLength]byte
+	slot   primitives.Slot
+	sync   bool
+	subnet uint64
 }
 
-// isSyncCommitteeAggregator checks if a validator in an aggregator of a subcommittee for sync committee.
-// it uses a modulo calculated by validator count in committee and samples randomness around it.
+// selectionProof returns the selection proof for key, signing it with sign on
+// the first request and reusing the cached bytes afterwards.
 //
-// Spec code:
-// def is_sync_committee_aggregator(signature: MLDSA87Signature) -> bool:
-//
-//	modulo = max(1, SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT // TARGET_AGGREGATORS_PER_SYNC_SUBCOMMITTEE)
-//	return bytes_to_uint64(hash(signature)[0:8]) % modulo == 0
-func (v *validator) isSyncCommitteeAggregator(ctx context.Context, slot primitives.Slot, pubKey [fieldparams.MLDSA87PubkeyLength]byte) (bool, error) {
+// Proofs authenticate the selection message. Eligibility is derived separately
+// from the duty's epoch seed and validator index; changing a valid signature
+// does not change the validator's role. Caching avoids redundant signing work.
+func (v *validator) selectionProof(key selectionProofKey, sign func() ([]byte, error)) ([]byte, error) {
+	v.selectionProofsLock.Lock()
+	if proof, ok := v.selectionProofCache[key]; ok {
+		v.selectionProofsLock.Unlock()
+		return proof, nil
+	}
+	v.selectionProofsLock.Unlock()
+
+	// Sign outside the lock: signing is slow and independent per key.
+	proof, err := sign()
+	if err != nil {
+		return nil, err
+	}
+
+	v.selectionProofsLock.Lock()
+	defer v.selectionProofsLock.Unlock()
+	// A concurrent caller may have signed the same proof meanwhile; the first
+	// proof stored wins so every reader observes one proof per key.
+	if cached, ok := v.selectionProofCache[key]; ok {
+		return cached, nil
+	}
+	if v.selectionProofCache == nil {
+		v.selectionProofCache = make(map[selectionProofKey][]byte)
+	}
+	v.selectionProofCache[key] = proof
+	return proof, nil
+}
+
+// pruneSelectionProofs drops cached selection proofs for slots before slot.
+// Proofs for the current and future slots (e.g. signed ahead of time by
+// subscribeToSubnets for next-epoch duties) are kept.
+func (v *validator) pruneSelectionProofs(slot primitives.Slot) {
+	v.selectionProofsLock.Lock()
+	defer v.selectionProofsLock.Unlock()
+	for key := range v.selectionProofCache {
+		if key.slot < slot {
+			delete(v.selectionProofCache, key)
+		}
+	}
+}
+
+// isAggregator uses the seed delivered with this duty, so re-signing a
+// selection message cannot change the role and reorg duty refreshes replace it.
+func (v *validator) isAggregator(duty *qrysmpb.DutiesResponse_Duty, slot primitives.Slot) (bool, error) {
+	return helpers.IsAggregator(uint64(len(duty.Committee)), duty.AggregatorSelectionSeed, slot, duty.CommitteeIndex, duty.ValidatorIndex)
+}
+
+// isSyncCommitteeAggregator checks membership and applies the shared lottery
+// for each assigned subnet using the message epoch's duty seed.
+func (v *validator) isSyncCommitteeAggregator(ctx context.Context, slot primitives.Slot, duty *qrysmpb.DutiesResponse_Duty) (bool, error) {
 	res, err := v.validatorClient.GetSyncSubcommitteeIndex(ctx, &qrysmpb.SyncSubcommitteeIndexRequest{
-		PublicKey: pubKey[:],
+		PublicKey: duty.PublicKey,
 		Slot:      slot,
 	})
 	if err != nil {
@@ -784,11 +967,7 @@ func (v *validator) isSyncCommitteeAggregator(ctx context.Context, slot primitiv
 	for _, index := range res.Indices {
 		subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 		subnet := uint64(index) / subCommitteeSize
-		sig, err := v.signSyncSelectionData(ctx, pubKey, subnet, slot)
-		if err != nil {
-			return false, err
-		}
-		isAggregator, err := altair.IsSyncCommitteeAggregator(sig)
+		isAggregator, err := altair.IsSyncCommitteeAggregator(duty.AggregatorSelectionSeed, slot, subnet, duty.ValidatorIndex)
 		if err != nil {
 			return false, err
 		}
@@ -806,11 +985,13 @@ func (v *validator) isSyncCommitteeAggregator(ctx context.Context, slot primitiv
 // participating on the correct fork version.
 func (v *validator) UpdateDomainDataCaches(ctx context.Context, slot primitives.Slot) {
 	for _, d := range [][]byte{
-		params.BeaconConfig().DomainRandao[:],
 		params.BeaconConfig().DomainBeaconAttester[:],
 		params.BeaconConfig().DomainBeaconProposer[:],
 		params.BeaconConfig().DomainSelectionProof[:],
 		params.BeaconConfig().DomainAggregateAndProof[:],
+		params.BeaconConfig().DomainSyncCommittee[:],
+		params.BeaconConfig().DomainSyncCommitteeSelectionProof[:],
+		params.BeaconConfig().DomainContributionAndProof[:],
 	} {
 		_, err := v.domainData(ctx, slots.ToEpoch(slot), d)
 		if err != nil {
@@ -820,8 +1001,7 @@ func (v *validator) UpdateDomainDataCaches(ctx context.Context, slot primitives.
 }
 
 func (v *validator) domainData(ctx context.Context, epoch primitives.Epoch, domain []byte) (*qrysmpb.DomainResponse, error) {
-	v.domainDataLock.Lock()
-	defer v.domainDataLock.Unlock()
+	v.domainDataLock.RLock()
 
 	req := &qrysmpb.DomainRequest{
 		Epoch:  epoch,
@@ -830,6 +1010,19 @@ func (v *validator) domainData(ctx context.Context, epoch primitives.Epoch, doma
 
 	key := strings.Join([]string{strconv.FormatUint(uint64(req.Epoch), 10), hex.EncodeToString(req.Domain)}, ",")
 
+	if val, ok := v.domainDataCache.Get(key); ok {
+		v.domainDataLock.RUnlock()
+		return proto.Clone(val.(proto.Message)).(*qrysmpb.DomainResponse), nil
+	}
+	v.domainDataLock.RUnlock()
+
+	// Lock as we are about to perform an expensive request to the beacon node.
+	v.domainDataLock.Lock()
+	defer v.domainDataLock.Unlock()
+
+	// We check the cache again as in the event there are multiple inflight requests for
+	// the same domain data, the cache might have been filled while we were waiting
+	// to acquire the lock.
 	if val, ok := v.domainDataCache.Get(key); ok {
 		return proto.Clone(val.(proto.Message)).(*qrysmpb.DomainResponse), nil
 	}
@@ -955,13 +1148,10 @@ func (v *validator) SetProposerSettings(ctx context.Context, settings *validator
 }
 
 // PushProposerSettings calls the prepareBeaconProposer RPC to set the fee recipient and also the register validator API if using a custom builder.
-func (v *validator) PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot, deadline time.Time) error {
+func (v *validator) PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot) error {
 	if km == nil {
 		return errors.New("keymanager is nil when calling PrepareBeaconProposer")
 	}
-	nctx, cancel := context.WithDeadline(ctx, deadline)
-	ctx = nctx
-	defer cancel()
 
 	pubkeys, err := km.FetchValidatingPublicKeys(ctx)
 	if err != nil {
@@ -1009,12 +1199,15 @@ func (v *validator) PushProposerSettings(ctx context.Context, km keymanager.IKey
 func (v *validator) filterAndCacheActiveKeys(ctx context.Context, pubkeys [][fieldparams.MLDSA87PubkeyLength]byte, slot primitives.Slot) ([][fieldparams.MLDSA87PubkeyLength]byte, error) {
 	filteredKeys := make([][fieldparams.MLDSA87PubkeyLength]byte, 0)
 	statusRequestKeys := make([][]byte, 0)
+
+	v.pubkeyToValidatorIndexLock.Lock()
 	for _, k := range pubkeys {
 		_, ok := v.pubkeyToValidatorIndex[k]
 		// Get validator index from RPC server if not found.
 		if !ok {
 			i, ok, err := v.validatorIndex(ctx, k)
 			if err != nil {
+				v.pubkeyToValidatorIndexLock.Unlock()
 				return nil, err
 			}
 			if !ok { // Nothing we can do if RPC server doesn't have validator index.
@@ -1025,6 +1218,7 @@ func (v *validator) filterAndCacheActiveKeys(ctx context.Context, pubkeys [][fie
 		copiedk := k
 		statusRequestKeys = append(statusRequestKeys, copiedk[:])
 	}
+	v.pubkeyToValidatorIndexLock.Unlock()
 	resp, err := v.validatorClient.MultipleValidatorStatus(ctx, &qrysmpb.MultipleValidatorStatusRequest{
 		PublicKeys: statusRequestKeys,
 	})
@@ -1032,19 +1226,20 @@ func (v *validator) filterAndCacheActiveKeys(ctx context.Context, pubkeys [][fie
 		return nil, err
 	}
 	for i, status := range resp.Statuses {
-		// skip registration creation if validator is not active status
-		nonActive := status.Status != qrysmpb.ValidatorStatus_ACTIVE
-		// Handle edge case at the start of the epoch with newly activated validators
 		currEpoch := primitives.Epoch(slot / params.BeaconConfig().SlotsPerEpoch)
-		currActivated := status.Status == qrysmpb.ValidatorStatus_PENDING && currEpoch >= status.ActivationEpoch
-		if nonActive && !currActivated {
+		// Handle edge case at the start of the epoch with newly activated validators.
+		currActivating := status.Status == qrysmpb.ValidatorStatus_PENDING && currEpoch >= status.ActivationEpoch
+		active := status.Status == qrysmpb.ValidatorStatus_ACTIVE
+		exiting := status.Status == qrysmpb.ValidatorStatus_EXITING
+
+		if currActivating || active || exiting {
+			filteredKeys = append(filteredKeys, bytesutil.ToBytes2592(resp.PublicKeys[i]))
+		} else {
 			log.WithFields(logrus.Fields{
 				"publickey": hexutil.Encode(resp.PublicKeys[i]),
 				"status":    status.Status.String(),
 			}).Debugf("Skipping non active status key.")
-			continue
 		}
-		filteredKeys = append(filteredKeys, bytesutil.ToBytes2592(resp.PublicKeys[i]))
 	}
 
 	return filteredKeys, nil
@@ -1073,7 +1268,9 @@ func (v *validator) buildPrepProposerReqs(pubkeys [][fieldparams.MLDSA87PubkeyLe
 			}
 		}
 
+		v.pubkeyToValidatorIndexLock.Lock()
 		validatorIndex, ok := v.pubkeyToValidatorIndex[k]
+		v.pubkeyToValidatorIndexLock.Unlock()
 		if !ok {
 			continue
 		}
@@ -1142,7 +1339,9 @@ func (v *validator) buildSignedRegReqs(ctx context.Context, pubkeys [][fieldpara
 		}
 
 		// map is populated before this function in buildPrepProposerReq
+		v.pubkeyToValidatorIndexLock.Lock()
 		_, ok := v.pubkeyToValidatorIndex[k]
+		v.pubkeyToValidatorIndexLock.Unlock()
 		if !ok {
 			continue
 		}
@@ -1183,6 +1382,15 @@ func (v *validator) validatorIndex(ctx context.Context, pubkey [fieldparams.MLDS
 			"Perhaps the validator is not yet active.", pubkey)
 		return 0, false, nil
 	case err != nil:
+		// REST validator client returns a typed sentinel for "no such pubkey"
+		// (the beacon API doesn't map to gRPC codes); treat it the same as
+		// codes.NotFound so unknown keys aren't propagated as fatal errors.
+		notFoundErr := &beacon_api.IndexNotFoundError{}
+		if errors.As(err, &notFoundErr) {
+			log.Debugf("Could not find validator index for public key %#x. "+
+				"Perhaps the validator is not yet active.", pubkey)
+			return 0, false, nil
+		}
 		return 0, false, err
 	}
 	return resp.Index, true, nil

@@ -7,6 +7,7 @@ import (
 	"github.com/theQRL/qrysm/cmd"
 	"github.com/theQRL/qrysm/cmd/validator/flags"
 	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/runtime/tos"
 	"github.com/urfave/cli/v2"
 )
@@ -169,7 +170,7 @@ var Commands = &cli.Command{
 				if err := tos.VerifyTosAcceptedOrPrompt(cliCtx); err != nil {
 					return err
 				}
-				return features.ConfigureValidator(cliCtx)
+				return configureVoluntaryExit(cliCtx)
 			},
 			Action: func(cliCtx *cli.Context) error {
 				log.Info("This command will be deprecated in the future in favor of `qrysmctl validator exit`")
@@ -180,4 +181,14 @@ var Commands = &cli.Command{
 			},
 		},
 	},
+}
+
+func configureVoluntaryExit(cliCtx *cli.Context) error {
+	if err := features.ConfigureValidator(cliCtx); err != nil {
+		return err
+	}
+	if !cliCtx.IsSet(cmd.ChainConfigFileFlag.Name) {
+		return nil
+	}
+	return params.LoadChainConfigFile(cliCtx.String(cmd.ChainConfigFileFlag.Name), nil)
 }

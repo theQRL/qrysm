@@ -49,8 +49,8 @@ func TestProcessBlindWithdrawals(t *testing.T) {
 		Control control
 	}
 	executionAddress := func(i primitives.ValidatorIndex) []byte {
-		wc := make([]byte, 20)
-		wc[19] = byte(i)
+		wc := make([]byte, fieldparams.FeeRecipientLength)
+		wc[fieldparams.FeeRecipientLength-1] = byte(i)
 		return wc
 	}
 	withdrawalAmount := func(i primitives.ValidatorIndex) uint64 {
@@ -380,8 +380,8 @@ func TestProcessBlindWithdrawals(t *testing.T) {
 			v := &qrysmpb.Validator{}
 			v.EffectiveBalance = maxEffectiveBalance
 			v.WithdrawableEpoch = epochInFuture
-			v.WithdrawalCredentials = make([]byte, 32)
-			v.WithdrawalCredentials[31] = byte(i)
+			v.WithdrawalRecipient = make([]byte, fieldparams.WithdrawalRecipientLength)
+			v.WithdrawalRecipient[fieldparams.WithdrawalRecipientLength-1] = byte(i)
 			st.Balances[i] = v.EffectiveBalance - uint64(rand.Intn(1000))
 			validators[i] = v
 		}
@@ -390,10 +390,8 @@ func TestProcessBlindWithdrawals(t *testing.T) {
 				validators[idx].WithdrawableEpoch = epochInPast
 			}
 			st.Balances[idx] = withdrawalAmount(idx)
-			validators[idx].WithdrawalCredentials[0] = params.BeaconConfig().ExecutionAddressWithdrawalPrefixByte
 		}
 		for _, idx := range arguments.PartialWithdrawalIndices {
-			validators[idx].WithdrawalCredentials[0] = params.BeaconConfig().ExecutionAddressWithdrawalPrefixByte
 			st.Balances[idx] = withdrawalAmount(idx)
 		}
 		st.Validators = validators
@@ -469,8 +467,8 @@ func TestProcessWithdrawals(t *testing.T) {
 		Control control
 	}
 	executionAddress := func(i primitives.ValidatorIndex) []byte {
-		wc := make([]byte, 20)
-		wc[19] = byte(i)
+		wc := make([]byte, fieldparams.FeeRecipientLength)
+		wc[fieldparams.FeeRecipientLength-1] = byte(i)
 		return wc
 	}
 	withdrawalAmount := func(i primitives.ValidatorIndex) uint64 {
@@ -800,8 +798,8 @@ func TestProcessWithdrawals(t *testing.T) {
 			v := &qrysmpb.Validator{}
 			v.EffectiveBalance = maxEffectiveBalance
 			v.WithdrawableEpoch = epochInFuture
-			v.WithdrawalCredentials = make([]byte, 32)
-			v.WithdrawalCredentials[31] = byte(i)
+			v.WithdrawalRecipient = make([]byte, fieldparams.WithdrawalRecipientLength)
+			v.WithdrawalRecipient[fieldparams.WithdrawalRecipientLength-1] = byte(i)
 			st.Balances[i] = v.EffectiveBalance - uint64(rand.Intn(1000))
 			validators[i] = v
 		}
@@ -810,10 +808,8 @@ func TestProcessWithdrawals(t *testing.T) {
 				validators[idx].WithdrawableEpoch = epochInPast
 			}
 			st.Balances[idx] = withdrawalAmount(idx)
-			validators[idx].WithdrawalCredentials[0] = params.BeaconConfig().ExecutionAddressWithdrawalPrefixByte
 		}
 		for _, idx := range arguments.PartialWithdrawalIndices {
-			validators[idx].WithdrawalCredentials[0] = params.BeaconConfig().ExecutionAddressWithdrawalPrefixByte
 			st.Balances[idx] = withdrawalAmount(idx)
 		}
 		st.Validators = validators

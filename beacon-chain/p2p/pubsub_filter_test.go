@@ -75,12 +75,54 @@ func TestService_CanSubscribe(t *testing.T) {
 		},
 		{
 			name:  "att subnet topic on current fork",
-			topic: fmt.Sprintf(AttestationSubnetTopicFormat, digest, 55 /*subnet*/) + validProtocolSuffix,
+			topic: fmt.Sprintf(AttestationSubnetTopicFormat, digest, 3 /*subnet*/) + validProtocolSuffix,
 			want:  true,
 		},
 		{
 			name:  "att subnet topic on unknown fork",
 			topic: fmt.Sprintf(AttestationSubnetTopicFormat, [4]byte{0xCC, 0xBB, 0xAA, 0xA1} /*fork digest*/, 54 /*subnet*/) + validProtocolSuffix,
+			want:  false,
+		},
+		// Partial matches. Each of these was accepted by the fmt.Sscanf-based
+		// check and let a peer grow pubsub's per-peer topic map without bound.
+		{
+			name:  "att subnet id with trailing garbage",
+			topic: fmt.Sprintf(AttestationSubnetTopicFormat, digest, 5) + "zzzz" + validProtocolSuffix,
+			want:  false,
+		},
+		{
+			name:  "att subnet id negative",
+			topic: fmt.Sprintf(AttestationSubnetTopicFormat, digest, -5) + validProtocolSuffix,
+			want:  false,
+		},
+		{
+			name:  "att subnet id with leading zero",
+			topic: fmt.Sprintf("/consensus/%x/beacon_attestation_05", digest) + validProtocolSuffix,
+			want:  false,
+		},
+		{
+			name:  "att subnet id out of range",
+			topic: fmt.Sprintf(AttestationSubnetTopicFormat, digest, params.BeaconNetworkConfig().AttestationSubnetCount) + validProtocolSuffix,
+			want:  false,
+		},
+		{
+			name:  "sync subnet id out of range",
+			topic: fmt.Sprintf(SyncCommitteeSubnetTopicFormat, digest, params.BeaconConfig().SyncCommitteeSubnetCount) + validProtocolSuffix,
+			want:  false,
+		},
+		{
+			name:  "block topic with trailing garbage",
+			topic: fmt.Sprintf(BlockSubnetTopicFormat, digest) + "ZZZZ" + validProtocolSuffix,
+			want:  false,
+		},
+		{
+			name:  "block topic with leading garbage",
+			topic: fmt.Sprintf("/consensus/%x/xbeacon_block", digest) + validProtocolSuffix,
+			want:  false,
+		},
+		{
+			name:  "digest with trailing garbage",
+			topic: fmt.Sprintf("/consensus/%xff/beacon_block", digest) + validProtocolSuffix,
 			want:  false,
 		},
 	}
@@ -118,96 +160,6 @@ func TestService_CanSubscribe_uninitialized(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	s := &Service{}
 	require.Equal(t, false, s.CanSubscribe("foo"))
-}
-
-func Test_scanfcheck(t *testing.T) {
-	params.SetupTestConfigCleanup(t)
-	type args struct {
-		input  string
-		format string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    int
-		wantErr bool
-	}{
-		{
-			name: "no formatting, exact match",
-			args: args{
-				input:  "/foo/bar/zzzzzzzzzzzz/1234567",
-				format: "/foo/bar/zzzzzzzzzzzz/1234567",
-			},
-			want:    0,
-			wantErr: false,
-		},
-		{
-			name: "no formatting, mismatch",
-			args: args{
-				input:  "/foo/bar/zzzzzzzzzzzz/1234567",
-				format: "/bar/foo/yyyyyy/7654321",
-			},
-			want:    0,
-			wantErr: true,
-		},
-		{
-			name: "formatting, match",
-			args: args{
-				input:  "/foo/bar/abcdef/topic_11",
-				format: "/foo/bar/%x/topic_%d",
-			},
-			want:    2,
-			wantErr: false,
-		},
-		{
-			name: "formatting, incompatible bytes",
-			args: args{
-				input:  "/foo/bar/zzzzzz/topic_11",
-				format: "/foo/bar/%x/topic_%d",
-			},
-			want:    0,
-			wantErr: true,
-		},
-		{ // Note: This method only supports integer compatible formatting values.
-			name: "formatting, string match",
-			args: args{
-				input:  "/foo/bar/zzzzzz/topic_11",
-				format: "/foo/bar/%s/topic_%d",
-			},
-			want:    0,
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := scanfcheck(tt.args.input, tt.args.format)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("scanfcheck() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("scanfcheck() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestGossipTopicMapping_scanfcheck_GossipTopicFormattingSanityCheck(t *testing.T) {
-	params.SetupTestConfigCleanup(t)
-	// scanfcheck only supports integer based substitutions at the moment. Any others will
-	// inaccurately fail validation.
-	for _, topic := range AllTopics() {
-		t.Run(topic, func(t *testing.T) {
-			for i, c := range topic {
-				if string(c) == "%" {
-					next := string(topic[i+1])
-					if next != "d" && next != "x" {
-						t.Errorf("Topic %s has formatting incompatible with scanfcheck. Only %%d and %%x are supported", topic)
-					}
-				}
-			}
-		})
-	}
 }
 
 func TestService_FilterIncomingSubscriptions(t *testing.T) {
@@ -349,4 +301,49 @@ func TestService_MonitorsStateForkUpdates(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	require.Equal(t, true, s.isInitialized())
+}
+
+// TestService_subscribableTopics_IsExactAndBounded pins the size of the
+// subscription allowlist: pubsub keeps one map entry per accepted topic per
+// peer, so the set of topics a peer can make us record must be exactly the
+// node's own gossip topics for the current digest.
+func TestService_subscribableTopics_IsExactAndBounded(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	genesisTime := time.Now()
+	var valRoot [32]byte
+	digest, err := forks.CreateForkDigest(genesisTime, valRoot[:])
+	require.NoError(t, err)
+	s := &Service{
+		genesisValidatorsRoot: valRoot[:],
+		genesisTime:           genesisTime,
+	}
+
+	topics := s.subscribableTopics(digest)
+	nonSubnetTopics := len(gossipTopicMappings) - 2 // attestation and sync committee subnet formats
+	want := nonSubnetTopics +
+		int(params.BeaconNetworkConfig().AttestationSubnetCount) +
+		int(params.BeaconConfig().SyncCommitteeSubnetCount)
+	require.Equal(t, want, len(topics))
+	for topic := range topics {
+		require.Equal(t, true, s.CanSubscribe(topic), "topic %s", topic)
+	}
+
+	// A flood of near-miss topics leaves nothing accepted.
+	suffix := "/" + encoder.ProtocolSuffixSSZSnappy
+	var subs []*pubsubpb.RPC_SubOpts
+	for i := range pubsubSubscriptionRequestLimit {
+		topic := fmt.Sprintf(AttestationSubnetTopicFormat, digest, i%3) + fmt.Sprintf("x%d", i) + suffix
+		subscribe := true
+		subs = append(subs, &pubsubpb.RPC_SubOpts{Subscribe: &subscribe, Topicid: &topic})
+	}
+	got, err := s.FilterIncomingSubscriptions("peer", subs)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(got))
+
+	// The cache is rebuilt for a new digest and no longer accepts the old one.
+	otherDigest := [4]byte{0xde, 0xad, 0xbe, 0xef}
+	otherTopics := s.subscribableTopics(otherDigest)
+	require.Equal(t, want, len(otherTopics))
+	_, ok := otherTopics[fmt.Sprintf(BlockSubnetTopicFormat, digest)+suffix]
+	require.Equal(t, false, ok)
 }

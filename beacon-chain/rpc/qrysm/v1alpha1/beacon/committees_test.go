@@ -220,10 +220,10 @@ func setupActiveValidators(t *testing.T, count int) state.BeaconState {
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
 		balances[i] = uint64(i)
 		validators = append(validators, &qrysmpb.Validator{
-			PublicKey:             pubKey,
-			ActivationEpoch:       0,
-			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
-			WithdrawalCredentials: make([]byte, 32),
+			PublicKey:           pubKey,
+			ActivationEpoch:     0,
+			ExitEpoch:           params.BeaconConfig().FarFutureEpoch,
+			WithdrawalRecipient: make([]byte, 64),
 		})
 	}
 	s, err := util.NewBeaconStateZond()

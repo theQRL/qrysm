@@ -3,9 +3,10 @@ package kv
 import (
 	"context"
 	"fmt"
+	"os"
 	"path"
 
-	"github.com/theQRL/qrysm/config/params"
+	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/io/file"
 	bolt "go.etcd.io/bbolt"
@@ -16,6 +17,14 @@ const backupsDirectoryName = "backups"
 
 // Backup the database to the datadir backup directory.
 // Example for backup at slot 345: $DATADIR/backups/qrysm_beacondb_at_slot_0000345.backup
+//
+// The backup is one consistent snapshot of the database, taken in a single
+// read transaction: copying key by key across transactions could record a
+// finalized checkpoint whose block and state were written after the keys were
+// listed, and such a backup cannot start a node. The snapshot is written to a
+// temporary file, synced to disk and only then renamed to its final name, so a
+// file with the final name is always complete; the directory is synced after the
+// rename, so a completed backup survives a crash right after it is reported.
 func (s *Store) Backup(ctx context.Context, outputDir string, permissionOverride bool) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.Backup")
 	defer span.End()
@@ -41,78 +50,61 @@ func (s *Store) Backup(ctx context.Context, outputDir string, permissionOverride
 	if err := file.HandleBackupDir(backupsDir, permissionOverride); err != nil {
 		return err
 	}
+	// State summaries are buffered in memory and only written to the database
+	// periodically; flush them so the backup does not lack summaries for blocks
+	// it contains.
+	if err := s.saveCachedStateSummariesDB(ctx); err != nil {
+		return errors.Wrap(err, "could not flush state summaries before backup")
+	}
 	backupPath := path.Join(backupsDir, fmt.Sprintf("qrysm_beacondb_at_slot_%07d.backup", head.Block().Slot()))
 	log.WithField("backup", backupPath).Info("Writing backup database.")
 
-	copyDB, err := bolt.Open(
-		backupPath,
-		params.BeaconIoConfig().ReadWritePermissions,
-		&bolt.Options{NoSync: true, Timeout: params.BeaconIoConfig().BoltTimeout, FreelistType: bolt.FreelistMapType},
-	)
+	// Each backup writes its own temporary file. Two backups for the same head
+	// slot can run at the same time (the webhook can be triggered twice), and a
+	// shared temporary name would let one of them rename the other's unfinished
+	// copy into place.
+	tmpFile, err := os.CreateTemp(backupsDir, path.Base(backupPath)+".*.tmp")
 	if err != nil {
+		return errors.Wrap(err, "could not create temporary backup file")
+	}
+	tmpPath := tmpFile.Name()
+	if err := s.writeSnapshot(ctx, tmpFile); err != nil {
+		if closeErr := tmpFile.Close(); closeErr != nil {
+			log.WithError(closeErr).Error("Failed to close temporary backup file")
+		}
+		if rmErr := os.Remove(tmpPath); rmErr != nil {
+			log.WithError(rmErr).Error("Failed to remove incomplete backup file")
+		}
 		return err
 	}
-	copyDB.AllocSize = boltAllocSize
+	if err := tmpFile.Close(); err != nil {
+		return errors.Wrap(err, "could not close backup file")
+	}
+	if err := os.Rename(tmpPath, backupPath); err != nil {
+		return errors.Wrap(err, "could not move backup database into place")
+	}
+	// The rename is durable only once the directory is: a crash right after
+	// this returns would otherwise leave the backup under its temporary name.
+	if err := file.SyncDir(backupsDir); err != nil {
+		return errors.Wrap(err, "could not sync the backups directory")
+	}
+	return nil
+}
 
-	defer func() {
-		if err := copyDB.Close(); err != nil {
-			log.WithError(err).Error("Failed to close backup database")
-		}
-	}()
-	// Prefetch all keys of buckets, and inner keys in a
-	// bucket to use less memory usage when backing up.
-	var bucketKeys [][]byte
-	bucketMap := make(map[string][][]byte)
-	err = s.db.View(func(tx *bolt.Tx) error {
-		return tx.ForEach(func(name []byte, b *bolt.Bucket) error {
-			newName := make([]byte, len(name))
-			copy(newName, name)
-			bucketKeys = append(bucketKeys, newName)
-			var innerKeys [][]byte
-			err := b.ForEach(func(k, v []byte) error {
-				if k == nil {
-					return nil
-				}
-				nKey := make([]byte, len(k))
-				copy(nKey, k)
-				innerKeys = append(innerKeys, nKey)
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-			bucketMap[string(newName)] = innerKeys
-			return nil
-		})
-	})
-	if err != nil {
+// writeSnapshot writes a consistent copy of the whole database into f, as of
+// one read transaction, and syncs it to disk.
+func (s *Store) writeSnapshot(ctx context.Context, f *os.File) error {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
-	// Utilize much smaller writes, compared to
-	// writing for a whole bucket in a single transaction. Also
-	// prevent long-running read transactions, as Bolt doesn't
-	// handle those well.
-	for _, k := range bucketKeys {
-		log.Debugf("Copying bucket %s\n", k)
-		innerKeys := bucketMap[string(k)]
-		for _, ik := range innerKeys {
-			err = s.db.View(func(tx *bolt.Tx) error {
-				bkt := tx.Bucket(k)
-				return copyDB.Update(func(tx2 *bolt.Tx) error {
-					b2, err := tx2.CreateBucketIfNotExists(k)
-					if err != nil {
-						return err
-					}
-					return b2.Put(ik, bkt.Get(ik))
-				})
-			})
-			if err != nil {
-				return err
-			}
-		}
+	if err := s.db.View(func(tx *bolt.Tx) error {
+		_, err := tx.WriteTo(f)
+		return err
+	}); err != nil {
+		return errors.Wrap(err, "could not write database snapshot")
 	}
-	// Re-enable sync to allow bolt to fsync
-	// again.
-	copyDB.NoSync = false
+	if err := f.Sync(); err != nil {
+		return errors.Wrap(err, "could not sync backup file")
+	}
 	return nil
 }

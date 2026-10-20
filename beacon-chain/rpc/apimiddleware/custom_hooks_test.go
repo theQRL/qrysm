@@ -137,6 +137,10 @@ func TestPrepareValidatorAggregates(t *testing.T) {
 }
 
 func TestSerializeBlock(t *testing.T) {
+	t.Run("Zond consensus version descriptor", func(t *testing.T) {
+		assert.Equal(t, "ZOND", qrlpb.Version_ZOND.String())
+	})
+
 	t.Run("incorrect response type", func(t *testing.T) {
 		response := &types.Empty{}
 		runDefault, j, errJson := serializeBlock(response)

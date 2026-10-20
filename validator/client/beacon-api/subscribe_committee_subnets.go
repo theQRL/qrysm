@@ -34,12 +34,12 @@ func (c beaconApiValidatorClient) subscribeCommitteeSubnets(ctx context.Context,
 		if !foundSlot {
 			// Lazily fetch the committeesAtSlot from the beacon node if they are not already in the map
 			epoch := slots.ToEpoch(subscribeSlot)
-			duties, err := c.dutiesProvider.GetAttesterDuties(ctx, epoch, validatorIndices)
+			dutiesResp, err := c.dutiesProvider.GetAttesterDuties(ctx, epoch, validatorIndices)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get duties for epoch `%d`", epoch)
 			}
 
-			for _, duty := range duties {
+			for _, duty := range dutiesResp.Data {
 				dutySlot, err := strconv.ParseUint(duty.Slot, 10, 64)
 				if err != nil {
 					return errors.Wrapf(err, "failed to parse slot `%s`", duty.Slot)

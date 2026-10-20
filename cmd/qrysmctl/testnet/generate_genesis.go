@@ -153,11 +153,12 @@ var (
 // Represents a json object of hex string and uint64 values for
 // validators on Ethereum. This file can be generated using the official staking-deposit-cli.
 type depositDataJSON struct {
-	PubKey                string `json:"pubkey"`
-	Amount                uint64 `json:"amount"`
-	WithdrawalCredentials string `json:"withdrawal_credentials"`
-	DepositDataRoot       string `json:"deposit_data_root"`
-	Signature             string `json:"signature"`
+	PubKey              string `json:"pubkey"`
+	Amount              uint64 `json:"amount"`
+	WithdrawalRecipient string `json:"withdrawal_recipient"`
+	RandaoCommitment    string `json:"randao_commitment"`
+	DepositDataRoot     string `json:"deposit_data_root"`
+	Signature           string `json:"signature"`
 }
 
 func cliActionGenerateGenesisState(cliCtx *cli.Context) error {
@@ -225,13 +226,6 @@ func setGlobalParams() error {
 
 func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 	f := &generateGenesisStateFlags
-	if f.GenesisTime == 0 {
-		f.GenesisTime = uint64(time.Now().Unix())
-		log.Info("No genesis time specified, defaulting to now()")
-	}
-	log.Infof("Delaying genesis %v by %v seconds", f.GenesisTime, f.GenesisTimeDelay)
-	f.GenesisTime += f.GenesisTimeDelay
-	log.Infof("Genesis is now %v", f.GenesisTime)
 
 	// v, err := version.FromString(f.ForkName)
 	// if err != nil {
@@ -271,11 +265,33 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 		if err := json.Unmarshal(gbytes, gen); err != nil {
 			return nil, err
 		}
-		// set timestamps for genesis
-		gen.Timestamp = f.GenesisTime
+		// QRL is post-merge, so baseFeePerGas is mandatory. Catch a missing
+		// value up front instead of letting gen.ToBlock() panic on a nil
+		// BaseFee deeper in go-qrl.
+		if gen.BaseFee == nil {
+			return nil, fmt.Errorf("baseFeePerGas must be set in %s", f.GqrlGenesisJsonIn)
+		}
+		// Prefer the input file's timestamp when --genesis-time wasn't given.
+		if f.GenesisTime == 0 {
+			f.GenesisTime = gen.Timestamp
+			log.Infof("Using genesis time from input file: %d", f.GenesisTime)
+		}
+	}
 
-		// NOTE(rgeraldes24): unused for now
-		// log.Info("setting fork qrl times")
+	// Fall back to now() if neither --genesis-time nor an input file timestamp
+	// supplied a value.
+	if f.GenesisTime == 0 {
+		f.GenesisTime = uint64(time.Now().Unix())
+		log.Info("No genesis time specified, defaulting to now()")
+	}
+	if f.GenesisTimeDelay > 0 {
+		log.Infof("Delaying genesis %d by %d seconds", f.GenesisTime, f.GenesisTimeDelay)
+		f.GenesisTime += f.GenesisTimeDelay
+	}
+	log.Infof("Genesis time is %d", f.GenesisTime)
+
+	if f.GqrlGenesisJsonIn != "" {
+		gen.Timestamp = f.GenesisTime
 	} else {
 		gen = interop.GqrlTestnetGenesis(f.GenesisTime, params.BeaconConfig())
 	}
@@ -362,7 +378,11 @@ func depositJSONToDepositData(input *depositDataJSON) ([]byte, *qrysmpb.Deposit_
 	if err != nil {
 		return nil, nil, err
 	}
-	creds, err := hex.DecodeString(strings.TrimPrefix(input.WithdrawalCredentials, "0x"))
+	withdrawalRecipient, err := hex.DecodeString(strings.TrimPrefix(input.WithdrawalRecipient, "0x"))
+	if err != nil {
+		return nil, nil, err
+	}
+	randaoCommitment, err := hex.DecodeString(strings.TrimPrefix(input.RandaoCommitment, "0x"))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -371,10 +391,11 @@ func depositJSONToDepositData(input *depositDataJSON) ([]byte, *qrysmpb.Deposit_
 		return nil, nil, err
 	}
 	return root, &qrysmpb.Deposit_Data{
-		PublicKey:             pk,
-		WithdrawalCredentials: creds,
-		Amount:                input.Amount,
-		Signature:             sig,
+		PublicKey:           pk,
+		WithdrawalRecipient: withdrawalRecipient,
+		Amount:              input.Amount,
+		RandaoCommitment:    randaoCommitment,
+		Signature:           sig,
 	}, nil
 }
 

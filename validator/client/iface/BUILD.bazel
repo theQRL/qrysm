@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "beacon_chain_client.go",
         "node_client.go",
+        "qrysm_chain_client.go",
         "validator.go",
         "validator_client.go",
     ],
@@ -18,6 +19,7 @@ go_library(
         "//proto/qrysm/v1alpha1",
         "//proto/qrysm/v1alpha1/validator-client",
         "//validator/keymanager",
+        "@com_github_pkg_errors//:errors",
         "@org_golang_google_protobuf//types/known/emptypb",
     ],
 )

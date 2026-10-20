@@ -26,6 +26,9 @@ func (km *Keymanager) listenForAccountChanges(ctx context.Context) {
 	debounceFileChangesInterval := features.Get().KeystoreImportDebounceInterval
 	accountsFilePath := filepath.Join(km.wallet.AccountsDir(), AccountsPath, AccountsKeystoreFileName)
 	if !file.FileExists(accountsFilePath) {
+		// Nothing to watch yet. SaveStoreAndReInitialize starts a watcher once
+		// the accounts file is first created (e.g. by a keymanager API import).
+		log.Warnf("Starting without accounts located in wallet at %s", accountsFilePath)
 		return
 	}
 	watcher, err := fsnotify.NewWatcher()

@@ -338,6 +338,9 @@ func (b *BeaconBlock) HashTreeRoot() ([field_params.RootLength]byte, error) {
 	if err != nil {
 		return [field_params.RootLength]byte{}, err
 	}
+	if err := checkHashable(pb); err != nil {
+		return [field_params.RootLength]byte{}, err
+	}
 	switch b.version {
 	case version.Zond:
 		if b.IsBlinded() {
@@ -353,6 +356,9 @@ func (b *BeaconBlock) HashTreeRoot() ([field_params.RootLength]byte, error) {
 func (b *BeaconBlock) HashTreeRootWith(h *ssz.Hasher) error {
 	pb, err := b.Proto()
 	if err != nil {
+		return err
+	}
+	if err := checkHashable(pb); err != nil {
 		return err
 	}
 	switch b.version {
@@ -502,7 +508,7 @@ func (b *BeaconBlockBody) IsNil() bool {
 }
 
 // RandaoReveal returns the randao reveal from the block body.
-func (b *BeaconBlockBody) RandaoReveal() [field_params.MLDSA87SignatureLength]byte {
+func (b *BeaconBlockBody) RandaoReveal() [field_params.RandaoRevealLength]byte {
 	return b.randaoReveal
 }
 
@@ -579,6 +585,9 @@ func (b *BeaconBlockBody) Execution() (interfaces.ExecutionData, error) {
 func (b *BeaconBlockBody) HashTreeRoot() ([field_params.RootLength]byte, error) {
 	pb, err := b.Proto()
 	if err != nil {
+		return [field_params.RootLength]byte{}, err
+	}
+	if err := checkHashable(pb); err != nil {
 		return [field_params.RootLength]byte{}, err
 	}
 	switch b.version {

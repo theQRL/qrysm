@@ -177,32 +177,23 @@ func TestMultipleValidatorStatus_Nominal(t *testing.T) {
 	assert.DeepEqual(t, &expectedValidatorStatusResponse, actualValidatorStatusResponse)
 }
 
-func TestMultipleValidatorStatus_Error(t *testing.T) {
+func TestMultipleValidatorStatus_No_Keys(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	ctx := context.Background()
 	stateValidatorsProvider := mock.NewMockstateValidatorsProvider(ctrl)
 
-	stateValidatorsProvider.EXPECT().GetStateValidators(
-		ctx,
-		gomock.Any(),
-		nil,
-		nil,
-	).Return(
-		&beacon.GetValidatorsResponse{},
-		errors.New("a specific error"),
-	).Times(1)
-
 	validatorClient := beaconApiValidatorClient{stateValidatorsProvider: stateValidatorsProvider}
 
-	_, err := validatorClient.MultipleValidatorStatus(
+	resp, err := validatorClient.MultipleValidatorStatus(
 		ctx,
 		&qrysmpb.MultipleValidatorStatusRequest{
 			PublicKeys: [][]byte{},
 		},
 	)
-	require.ErrorContains(t, "failed to get validators status response", err)
+	require.NoError(t, err)
+	require.DeepEqual(t, &qrysmpb.MultipleValidatorStatusResponse{}, resp)
 }
 
 func TestGetValidatorsStatusResponse_Nominal_SomeActiveValidators(t *testing.T) {

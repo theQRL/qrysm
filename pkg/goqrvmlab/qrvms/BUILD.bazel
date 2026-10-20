@@ -30,7 +30,7 @@ go_test(
     data = glob(["testdata/**"]),
     embed = [":qrvms"],
     deps = [
-        "@com_github_holiman_uint256//:uint256",
+        "@com_github_theqrl_go_qrl//common/uint512",
         "@com_github_theqrl_go_qrl//qrl/tracers/logger",
     ],
 )

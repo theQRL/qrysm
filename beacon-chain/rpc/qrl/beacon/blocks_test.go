@@ -232,7 +232,7 @@ func TestServer_ListBlockAttestations(t *testing.T) {
 		b := util.NewBeaconBlockZond()
 		b.Block.Body.Attestations = []*qrysmpb.Attestation{
 			{
-				AggregationBits: bitfield.Bitlist{0x00},
+				AggregationBits: bitfield.Bitlist{0x03},
 				Data: &qrysmpb.AttestationData{
 					Slot:            123,
 					CommitteeIndex:  123,
@@ -249,7 +249,7 @@ func TestServer_ListBlockAttestations(t *testing.T) {
 				Signatures: [][]byte{bytesutil.PadTo([]byte("sig1"), field_params.MLDSA87SignatureLength)},
 			},
 			{
-				AggregationBits: bitfield.Bitlist{0x01},
+				AggregationBits: bitfield.Bitlist{0x06},
 				Data: &qrysmpb.AttestationData{
 					Slot:            456,
 					CommitteeIndex:  456,

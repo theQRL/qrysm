@@ -138,3 +138,29 @@ func TestStore_FinalizedCheckpoint_StateMustExist(t *testing.T) {
 
 	require.ErrorContains(t, errMissingStateForCheckpoint.Error(), db.SaveFinalizedCheckpoint(ctx, cp))
 }
+
+// Regression test for upstream prysm#15896: verify that saving a checkpoint
+// triggers recovery which writes the state summary into stateSummaryBucket so
+// that HasStateSummary/StateSummary see it.
+func TestRecoverStateSummary_WritesToStateSummaryBucket(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	blk := util.HydrateSignedBeaconBlockZond(&qrysmpb.SignedBeaconBlockZond{})
+	root, err := blk.Block.HashTreeRoot()
+	require.NoError(t, err)
+	wsb, err := blocks.NewSignedBeaconBlock(blk)
+	require.NoError(t, err)
+	require.NoError(t, db.SaveBlock(ctx, wsb))
+
+	require.Equal(t, false, db.HasStateSummary(ctx, root))
+
+	cp := &qrysmpb.Checkpoint{Epoch: 2, Root: root[:]}
+	require.NoError(t, db.SaveJustifiedCheckpoint(ctx, cp))
+
+	require.Equal(t, true, db.HasStateSummary(ctx, root))
+	summary, err := db.StateSummary(ctx, root)
+	require.NoError(t, err)
+	require.NotNil(t, summary)
+	assert.DeepEqual(t, &qrysmpb.StateSummary{Slot: blk.Block.Slot, Root: root[:]}, summary)
+}

@@ -8,12 +8,24 @@ import (
 )
 
 func (c *AttCaches) insertSeenBit(att *qrysmpb.Attestation) error {
+	c.seenAttLock.Lock()
+	defer c.seenAttLock.Unlock()
+	return insertSeenBit(c.seenAtt, att)
+}
+
+func (c *AttCaches) insertSeenAggregatedBit(att *qrysmpb.Attestation) error {
+	c.seenAttLock.Lock()
+	defer c.seenAttLock.Unlock()
+	return insertSeenBit(c.seenAggregatedAtt, att)
+}
+
+func insertSeenBit(seenCache *cache.Cache, att *qrysmpb.Attestation) error {
 	r, err := hashFn(att.Data)
 	if err != nil {
 		return err
 	}
 
-	v, ok := c.seenAtt.Get(string(r[:]))
+	v, ok := seenCache.Get(string(r[:]))
 	if ok {
 		seenBits, ok := v.([]bitfield.Bitlist)
 		if !ok {
@@ -22,7 +34,7 @@ func (c *AttCaches) insertSeenBit(att *qrysmpb.Attestation) error {
 		alreadyExists := false
 		for _, bit := range seenBits {
 			if c, err := bit.Contains(att.AggregationBits); err != nil {
-				return err
+				return errors.Wrap(err, "could not check attestation bits containment")
 			} else if c {
 				alreadyExists = true
 				break
@@ -31,21 +43,33 @@ func (c *AttCaches) insertSeenBit(att *qrysmpb.Attestation) error {
 		if !alreadyExists {
 			seenBits = append(seenBits, att.AggregationBits)
 		}
-		c.seenAtt.Set(string(r[:]), seenBits, cache.DefaultExpiration /* one epoch */)
+		seenCache.Set(string(r[:]), seenBits, cache.DefaultExpiration /* two epochs (EIP-7045 window) */)
 		return nil
 	}
 
-	c.seenAtt.Set(string(r[:]), []bitfield.Bitlist{att.AggregationBits}, cache.DefaultExpiration /* one epoch */)
+	seenCache.Set(string(r[:]), []bitfield.Bitlist{att.AggregationBits}, cache.DefaultExpiration /* two epochs (EIP-7045 window) */)
 	return nil
 }
 
 func (c *AttCaches) hasSeenBit(att *qrysmpb.Attestation) (bool, error) {
+	c.seenAttLock.RLock()
+	defer c.seenAttLock.RUnlock()
+	return hasSeenBit(c.seenAtt, att)
+}
+
+func (c *AttCaches) hasSeenAggregatedBit(att *qrysmpb.Attestation) (bool, error) {
+	c.seenAttLock.RLock()
+	defer c.seenAttLock.RUnlock()
+	return hasSeenBit(c.seenAggregatedAtt, att)
+}
+
+func hasSeenBit(seenCache *cache.Cache, att *qrysmpb.Attestation) (bool, error) {
 	r, err := hashFn(att.Data)
 	if err != nil {
 		return false, err
 	}
 
-	v, ok := c.seenAtt.Get(string(r[:]))
+	v, ok := seenCache.Get(string(r[:]))
 	if ok {
 		seenBits, ok := v.([]bitfield.Bitlist)
 		if !ok {
@@ -53,11 +77,22 @@ func (c *AttCaches) hasSeenBit(att *qrysmpb.Attestation) (bool, error) {
 		}
 		for _, bit := range seenBits {
 			if c, err := bit.Contains(att.AggregationBits); err != nil {
-				return false, err
+				return false, errors.Wrap(err, "could not check attestation bits containment")
 			} else if c {
 				return true, nil
 			}
 		}
 	}
 	return false, nil
+}
+
+// markSeen records att's participants as seen for both pool saves and gossip
+// deduplication. Only a vote authenticated in its target state may be marked:
+// the markers suppress every later attestation with the same data whose bits
+// they cover, including the genuine one when att itself was not genuine.
+func (c *AttCaches) markSeen(att *qrysmpb.Attestation) error {
+	if err := c.insertSeenBit(att); err != nil {
+		return err
+	}
+	return c.insertSeenAggregatedBit(att)
 }

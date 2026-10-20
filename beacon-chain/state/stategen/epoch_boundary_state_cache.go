@@ -16,6 +16,7 @@ var (
 	maxCacheSize        = uint64(8)
 	errNotSlotRootInfo  = errors.New("not slot root info type")
 	errNotRootStateInfo = errors.New("not root state info type")
+	errNilBoundaryState = errors.New("nil epoch boundary state")
 )
 
 // slotRootInfo specifies the slot root info in the epoch boundary state cache.
@@ -129,6 +130,9 @@ func (e *epochBoundaryState) getBySlot(s primitives.Slot) (*rootStateInfo, bool,
 // least recently added state info if the cache size has reached the max cache
 // size limit.
 func (e *epochBoundaryState) put(blockRoot [32]byte, s state.BeaconState) error {
+	if s == nil || s.IsNil() {
+		return errNilBoundaryState
+	}
 	e.lock.Lock()
 	defer e.lock.Unlock()
 

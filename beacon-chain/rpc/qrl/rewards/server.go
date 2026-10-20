@@ -14,4 +14,5 @@ type Server struct {
 	TimeFetcher           blockchain.TimeFetcher
 	Stater                lookup.Stater
 	HeadFetcher           blockchain.HeadFetcher
+	ForkchoiceFetcher     blockchain.ForkchoiceFetcher
 }

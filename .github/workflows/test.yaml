@@ -1,0 +1,70 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # Six partitions of //... so wall clock divides and no runner holds
+    # more than a slice of the memory-hungry beacon-chain tests. The chain
+    # simulations get a runner to themselves: next to any other test they
+    # exhaust 16 GB. The other blockchain tests get one too, away from the
+    # core tests, for the same reason. Each partition keeps its own disk
+    # cache; the patterns are disjoint and together cover //... exactly.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: simulation
+            targets: //beacon-chain/blockchain:simulation_test
+          - name: blockchain
+            targets: >-
+              //beacon-chain/blockchain/... -//beacon-chain/blockchain:simulation_test
+          - name: beacon-core
+            targets: >-
+              //beacon-chain/core/... //beacon-chain/state/... //beacon-chain/sync/...
+          - name: beacon-rest
+            targets: >-
+              //beacon-chain/... -//beacon-chain/blockchain/... -//beacon-chain/core/...
+              -//beacon-chain/state/... -//beacon-chain/sync/...
+          - name: validator-testing
+            targets: //validator/... //testing/... //cmd/...
+          - name: rest
+            targets: >-
+              //... -//beacon-chain/... -//validator/... -//testing/... -//cmd/...
+    name: test (${{ matrix.name }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # cache-version prefixes the cache keys with the partition name: each
+      # partition fetches a different set of Go modules, and one shared
+      # repository cache left all but the first partition re-fetching from
+      # the module proxy on every run.
+      - name: Set up Bazel cache
+        uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          cache-version: ${{ matrix.name }}
+          bazelisk-cache: true
+          disk-cache: ci-qrysm-${{ runner.os }}-${{ runner.arch }}
+          repository-cache: true
+          bazelrc: |
+            build --experimental_disk_cache_gc_max_size=4G
+            build --strip=always
+            # Memory is the runner's limit: the beacon-chain and race detector
+            # test binaries take gigabytes, so two tests at a time with a
+            # 5 GiB Go memory limit each fit in 16 GB.
+            test --local_test_jobs=2
+            test --test_env=GOMEMLIMIT=5GiB
+
+      - name: Test
+        run: bazel test --test_output=errors --keep_going -- ${{ matrix.targets }}

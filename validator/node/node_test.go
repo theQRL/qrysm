@@ -4,29 +4,51 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/gorilla/mux"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
+	gatewaymiddleware "github.com/theQRL/qrysm/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/cmd/validator/flags"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
 	"github.com/theQRL/qrysm/consensus-types/validator"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
+	qrysmruntime "github.com/theQRL/qrysm/runtime"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/accounts"
 	"github.com/theQRL/qrysm/validator/db/iface"
 	dbTest "github.com/theQRL/qrysm/validator/db/testing"
 	"github.com/theQRL/qrysm/validator/keymanager"
+	validatormiddleware "github.com/theQRL/qrysm/validator/rpc/apimiddleware"
 	"github.com/urfave/cli/v2"
 )
+
+type shutdownCountingService struct {
+	stopCalls int
+}
+
+func (*shutdownCountingService) Start() {}
+
+func (s *shutdownCountingService) Stop() error {
+	s.stopCalls++
+	return nil
+}
+
+func (*shutdownCountingService) Status() error {
+	return nil
+}
 
 // Test that the sharding node can build with default flag values.
 func TestNode_Builds(t *testing.T) {
@@ -64,6 +86,136 @@ func TestNode_Builds(t *testing.T) {
 	require.NoError(t, err, "Failed to create ValidatorClient")
 	err = valClient.db.Close()
 	require.NoError(t, err)
+}
+
+func TestValidatorGateway_KeymanagerAliasesRequireSameAuth(t *testing.T) {
+	t.Parallel()
+
+	router := mux.NewRouter()
+	apiMiddleware := &gatewaymiddleware.ApiProxyMiddleware{
+		GatewayAddress:  "validator.example",
+		EndpointCreator: &validatormiddleware.ValidatorEndpointFactory{},
+		Timeout:         time.Second,
+		ProxyClient: &http.Client{
+			Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				require.Equal(t, "http", r.URL.Scheme)
+				require.Equal(t, "validator.example", r.URL.Host)
+				require.Equal(t, "/internal/qrl/v1/keystores", r.URL.Path)
+
+				statusCode := http.StatusOK
+				body := `{"data":[]}`
+				if r.Header.Get("Authorization") == "" {
+					statusCode = http.StatusUnauthorized
+					body = `{"message":"Unauthorized","code":401}`
+				}
+
+				return &http.Response{
+					StatusCode: statusCode,
+					Header:     make(http.Header),
+					Body:       io.NopCloser(strings.NewReader(body)),
+				}, nil
+			}),
+		},
+	}
+	apiMiddleware.Run(router)
+	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if strings.HasPrefix(req.URL.Path, "/api/qrl/") {
+			req.URL.Path = strings.Replace(req.URL.Path, "/api", "", 1)
+			apiMiddleware.ServeHTTP(w, req)
+			return
+		}
+	})
+
+	tests := []struct {
+		name       string
+		path       string
+		authHeader string
+		wantCode   int
+		wantBody   string
+	}{
+		{
+			name:     "direct keymanager route without auth",
+			path:     "/qrl/v1/keystores",
+			wantCode: http.StatusUnauthorized,
+			wantBody: "Unauthorized",
+		},
+		{
+			name:     "api-prefixed keymanager route without auth",
+			path:     "/api/qrl/v1/keystores",
+			wantCode: http.StatusUnauthorized,
+			wantBody: "Unauthorized",
+		},
+		{
+			name:       "direct keymanager route with auth",
+			path:       "/qrl/v1/keystores",
+			authHeader: "Bearer test-token",
+			wantCode:   http.StatusOK,
+			wantBody:   `"data":[]`,
+		},
+		{
+			name:       "api-prefixed keymanager route with auth",
+			path:       "/api/qrl/v1/keystores",
+			authHeader: "Bearer test-token",
+			wantCode:   http.StatusOK,
+			wantBody:   `"data":[]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "http://example.com"+tt.path, nil)
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
+			}
+			rr := httptest.NewRecorder()
+			router.ServeHTTP(rr, req)
+
+			require.Equal(t, tt.wantCode, rr.Code)
+			assert.Equal(t, true, strings.Contains(rr.Body.String(), tt.wantBody))
+		})
+	}
+}
+
+func TestValidatorClientClose_Idempotent(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	registry := qrysmruntime.NewServiceRegistry()
+	service := &shutdownCountingService{}
+	require.NoError(t, registry.RegisterService(service))
+
+	valClient := &ValidatorClient{
+		ctx:      ctx,
+		cancel:   cancel,
+		services: registry,
+		stop:     make(chan struct{}),
+	}
+
+	func() {
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				t.Fatalf("Close panicked on repeated call: %v", recovered)
+			}
+		}()
+		valClient.Close()
+		valClient.Close()
+	}()
+
+	require.Equal(t, 1, service.stopCalls)
+	select {
+	case <-valClient.stop:
+	default:
+		t.Fatal("expected stop channel to be closed")
+	}
+	select {
+	case <-valClient.ctx.Done():
+	default:
+		t.Fatal("expected validator client context to be canceled")
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
 }
 
 // TestClearDB tests clearing the database
@@ -211,13 +363,13 @@ func TestWeb3SignerConfig(t *testing.T) {
 
 func TestProposerSettings(t *testing.T) {
 	hook := logtest.NewGlobal()
-	recipient0, err := common.NewAddressFromString("Qae967917c465db8578ca9024c205720b1a3651A9")
+	recipient0, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae967917c465db8578ca9024c205720b1a3651A9")
 	require.NoError(t, err)
-	recipient1, err := common.NewAddressFromString("Q50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3")
+	recipient1, err := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000050155530FCE8a85ec7055A5F8b2bE214B3DaeFd3")
 	require.NoError(t, err)
-	recipient2, err := common.NewAddressFromString("Q60155530FCE8a85ec7055A5F8b2bE214B3DaeFd4")
+	recipient2, err := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060155530FCE8a85ec7055A5F8b2bE214B3DaeFd4")
 	require.NoError(t, err)
-	recipient3, err := common.NewAddressFromString("Q6e35733c5af9B61374A128e6F85f553aF09ff89A")
+	recipient3, err := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A")
 	require.NoError(t, err)
 
 	type proposerSettingsFlag struct {
@@ -264,7 +416,7 @@ func TestProposerSettings(t *testing.T) {
 			},
 		},
 		{
-			name: "Happy Path Config file File, bad checksum",
+			name: "Happy Path Config file File, mixed-case fee recipient",
 			args: args{
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "./testdata/good-prepare-beacon-proposer-config-badchecksum.json",
@@ -291,7 +443,6 @@ func TestProposerSettings(t *testing.T) {
 				}
 			},
 			wantErr: "",
-			wantLog: "is not a checksum QRL address",
 		},
 		{
 			name: "Happy Path Config file File multiple fee recipients",
@@ -413,7 +564,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "",
 					url:        "",
-					defaultfee: "Q6e35733c5af9B61374A128e6F85f553aF09ff89A",
+					defaultfee: "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A",
 				},
 			},
 			want: func() *validatorserviceconfig.ProposerSettings {
@@ -434,7 +585,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "",
 					url:        "",
-					defaultfee: "Q6e35733c5af9B61374A128e6F85f553aF09ff89A",
+					defaultfee: "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A",
 				},
 			},
 			want: func() *validatorserviceconfig.ProposerSettings {
@@ -460,7 +611,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "",
 					url:        "",
-					defaultfee: "Q6e35733c5af9B61374A128e6F85f553aF09ff89A",
+					defaultfee: "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A",
 					defaultgas: "50000000",
 				},
 			},
@@ -487,7 +638,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "./testdata/good-prepare-beacon-proposer-config.json",
 					url:        "",
-					defaultfee: "Q6e35733c5af9B61374A128e6F85f553aF09ff89B",
+					defaultfee: "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89B",
 				},
 			},
 			want: func() *validatorserviceconfig.ProposerSettings {
@@ -516,7 +667,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "./testdata/good-prepare-beacon-proposer-config.json",
 					url:        "",
-					defaultfee: "Q6e35733c5af9B61374A128e6F85f553aF09ff89B",
+					defaultfee: "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89B",
 				},
 			},
 			want: func() *validatorserviceconfig.ProposerSettings {

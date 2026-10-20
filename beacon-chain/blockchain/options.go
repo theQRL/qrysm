@@ -75,6 +75,15 @@ func WithProposerIdsCache(c *cache.ProposerPayloadIDsCache) Option {
 	}
 }
 
+// WithAttestationCache sets the attestation data cache served by the RPC
+// layer, so that it can be cleared whenever the head changes.
+func WithAttestationCache(c *cache.AttestationCache) Option {
+	return func(s *Service) error {
+		s.cfg.AttestationCache = c
+		return nil
+	}
+}
+
 // WithAttestationPool for attestation lifecycle after chain inclusion.
 func WithAttestationPool(p attestations.Pool) Option {
 	return func(s *Service) error {

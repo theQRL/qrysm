@@ -54,6 +54,9 @@ func (s *Service) processPendingBlocks(ctx context.Context) error {
 	ctx, span := trace.StartSpan(ctx, "processPendingBlocks")
 	defer span.End()
 
+	// Remove old blocks from our expiration cache.
+	s.deleteExpiredBlocksFromCache()
+
 	pids := s.cfg.p2p.Peers().Connected()
 	if err := s.validatePendingSlots(); err != nil {
 		return errors.Wrap(err, "could not validate pending slots")
@@ -107,9 +110,8 @@ func (s *Service) processPendingBlocks(ctx context.Context) error {
 				continue
 			}
 
-			inDB := s.cfg.beaconDB.HasBlock(ctx, blkRoot)
-			// No need to process the same block twice.
-			if inDB {
+			// Persisted blocks from an incomplete batch still need importing.
+			if s.cfg.chain.HasBlock(ctx, blkRoot) {
 				s.pendingQueueLock.Lock()
 				if err = s.deleteBlockFromPendingQueue(slot, b, blkRoot); err != nil {
 					s.pendingQueueLock.Unlock()
@@ -133,12 +135,12 @@ func (s *Service) processPendingBlocks(ctx context.Context) error {
 			}
 
 			parentRoot := b.Block().ParentRoot()
-			parentInDb := s.cfg.beaconDB.HasBlock(ctx, parentRoot)
+			parentAvailable := s.cfg.chain.HasBlock(ctx, parentRoot)
 			hasPeer := len(pids) != 0
 
-			// Only request for missing parent block if it's not in beaconDB, not in pending cache
+			// Only request a missing parent if it is not imported or in the pending cache
 			// and has peer in the peer list.
-			if !inPendingQueue && !parentInDb && hasPeer {
+			if !inPendingQueue && !parentAvailable && hasPeer {
 				log.WithFields(logrus.Fields{
 					"currentSlot": b.Block().Slot(),
 					"parentRoot":  hex.EncodeToString(bytesutil.Trunc(parentRoot[:])),
@@ -149,14 +151,14 @@ func (s *Service) processPendingBlocks(ctx context.Context) error {
 				continue
 			}
 
-			if !parentInDb {
+			if !parentAvailable {
 				span.End()
 				continue
 			}
 
 			err = s.validateBeaconBlock(ctx, b, blkRoot)
 			switch {
-			case errors.Is(ErrOptimisticParent, err): // Ok to continue process block with parent that is an optimistic candidate.
+			case errors.Is(err, ErrOptimisticParent): // Ok to continue process block with parent that is an optimistic candidate.
 			case err != nil:
 				log.WithError(err).WithField("slot", b.Block().Slot()).Debug("Could not validate block")
 				tracing.AnnotateError(span, err)
@@ -164,22 +166,40 @@ func (s *Service) processPendingBlocks(ctx context.Context) error {
 				continue
 			default:
 			}
+			// A block requested by root never went through the gossip pipeline,
+			// which is where the slasher receives block headers. Feed it now that
+			// it is authenticated: a proposer can otherwise deliver an
+			// equivocation this way without the slasher ever seeing it.
+			s.feedBlockHeaderToSlasher(b)
 
-			if err := s.cfg.chain.ReceiveBlock(ctx, b, blkRoot); err != nil {
+			// Calculate the deadline time by adding three slots duration to the current time.
+			secondsPerSlot := params.BeaconConfig().SecondsPerSlot
+			threeSlotDuration := 3 * time.Duration(secondsPerSlot) * time.Second
+			ctxWithTimeout, cancelFunction := context.WithTimeout(ctx, threeSlotDuration)
+			if err := s.cfg.chain.ReceiveBlock(ctxWithTimeout, b, blkRoot); err != nil {
 				if blockchain.IsInvalidBlock(err) {
 					r := blockchain.InvalidBlockRoot(err)
 					if r != [32]byte{} {
-						s.setBadBlock(ctx, r) // Setting head block as bad.
+						s.setBadBlock(ctxWithTimeout, r) // Setting head block as bad.
 					} else {
-						s.setBadBlock(ctx, blkRoot)
+						s.setBadBlock(ctxWithTimeout, blkRoot)
 					}
 				}
 				log.WithError(err).WithField("slot", b.Block().Slot()).Debug("Could not process block")
 
 				// In the next iteration of the queue, this block will be removed from
 				// the pending queue as it has been marked as a 'bad' block.
+				cancelFunction()
 				span.End()
 				continue
+			}
+			cancelFunction()
+
+			// Drain any pending attestations that were waiting on this block before
+			// returning to the queue loop, so they don't have to wait for the next
+			// processPendingAttsPeriod tick (upstream PR #15824).
+			if err := s.processPendingAttsForBlock(ctx, blkRoot); err != nil {
+				log.WithError(err).Debug("Failed to process pending attestations for block")
 			}
 
 			s.setSeenBlockIndexSlot(b.Block().Slot(), b.Block().ProposerIndex())
@@ -247,11 +267,15 @@ func (s *Service) sendBatchRootRequest(ctx context.Context, roots [][32]byte, ra
 	defer span.End()
 
 	roots = dedupRoots(roots)
+	s.pendingQueueLock.RLock()
 	for i := len(roots) - 1; i >= 0; i-- {
-		if s.cfg.chain.BlockBeingSynced(roots[i]) {
+		r := roots[i]
+		if s.seenPendingBlocks[r] || s.cfg.chain.BlockBeingSynced(r) {
 			roots = append(roots[:i], roots[i+1:]...)
 		}
 	}
+	s.pendingQueueLock.RUnlock()
+
 	if len(roots) == 0 {
 		return nil
 	}
@@ -360,6 +384,15 @@ func (s *Service) clearPendingSlots() {
 	s.seenPendingBlocks = make(map[[32]byte]bool)
 }
 
+// This method manually clears our cache so that all expired
+// entries are correctly removed.
+func (s *Service) deleteExpiredBlocksFromCache() {
+	s.pendingQueueLock.Lock()
+	defer s.pendingQueueLock.Unlock()
+
+	s.slotToPendingBlocks.DeleteExpired()
+}
+
 // Delete block from the list from the pending queue using the slot as key.
 // Note: this helper is not thread safe.
 func (s *Service) deleteBlockFromPendingQueue(slot primitives.Slot, b interfaces.ReadOnlySignedBeaconBlock, r [32]byte) error {
@@ -414,8 +447,15 @@ func (s *Service) insertBlockToPendingQueue(_ primitives.Slot, b interfaces.Read
 		return nil
 	}
 
-	if err := s.addPendingBlockToCache(b); err != nil {
+	stored, err := s.addPendingBlockToCache(b)
+	if err != nil {
 		return err
+	}
+	// Only mark seen when cached, so the seen root always has a cache entry
+	// whose eviction clears it. Marking a dropped block as seen would leak the
+	// map entry forever and permanently prevent the block from being processed.
+	if !stored {
+		return nil
 	}
 
 	s.seenPendingBlocks[r] = true
@@ -436,22 +476,24 @@ func (s *Service) pendingBlocksInCache(slot primitives.Slot) []interfaces.ReadOn
 	return blks
 }
 
-// This adds input signed beacon block to slotToPendingBlocks cache.
-func (s *Service) addPendingBlockToCache(b interfaces.ReadOnlySignedBeaconBlock) error {
+// This adds input signed beacon block to slotToPendingBlocks cache. It returns
+// whether the block was actually stored: a block is dropped without error when
+// the slot already holds maxBlocksPerSlot pending blocks.
+func (s *Service) addPendingBlockToCache(b interfaces.ReadOnlySignedBeaconBlock) (bool, error) {
 	if err := blocks.BeaconBlockIsNil(b); err != nil {
-		return err
+		return false, err
 	}
 
 	blks := s.pendingBlocksInCache(b.Block().Slot())
 
 	if len(blks) >= maxBlocksPerSlot {
-		return nil
+		return false, nil
 	}
 
 	blks = append(blks, b)
 	k := slotToCacheKey(b.Block().Slot())
 	s.slotToPendingBlocks.Set(k, blks, pendingBlockExpTime)
-	return nil
+	return true, nil
 }
 
 // This converts input string to slot.

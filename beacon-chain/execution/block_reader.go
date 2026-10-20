@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/pkg/errors"
+	qrl "github.com/theQRL/go-qrl"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/execution/types"
 	"github.com/theQRL/qrysm/config/params"
@@ -61,7 +62,7 @@ func (s *Service) BlockHashByHeight(ctx context.Context, height *big.Int) (commo
 	}
 	span.AddAttributes(trace.BoolAttribute("headerCacheHit", false))
 
-	if s.rpcClient == nil {
+	if s.executionClient() == nil {
 		err := errors.New("nil rpc client")
 		tracing.AnnotateError(span, err)
 		return [32]byte{}, err
@@ -81,7 +82,7 @@ func (s *Service) BlockHashByHeight(ctx context.Context, height *big.Int) (commo
 func (s *Service) BlockTimeByHeight(ctx context.Context, height *big.Int) (uint64, error) {
 	ctx, span := trace.StartSpan(ctx, "execution-chain.BlockTimeByHeight")
 	defer span.End()
-	if s.rpcClient == nil {
+	if s.executionClient() == nil {
 		err := errors.New("nil rpc client")
 		tracing.AnnotateError(span, err)
 		return 0, err
@@ -164,7 +165,7 @@ func (s *Service) BlockByTimestamp(ctx context.Context, time uint64) (*types.Hea
 // Performs a search to find a target execution block which is earlier than or equal to the
 // target time. This method is used when head.time > targetTime
 func (s *Service) findMaxTargetExecutionBlock(ctx context.Context, upperBoundBlk *big.Int, targetTime uint64) (*types.HeaderInfo, error) {
-	for bn := upperBoundBlk; ; bn = big.NewInt(0).Sub(bn, big.NewInt(1)) {
+	for bn := upperBoundBlk; bn.Sign() >= 0; bn = big.NewInt(0).Sub(bn, big.NewInt(1)) {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
@@ -176,6 +177,7 @@ func (s *Service) findMaxTargetExecutionBlock(ctx context.Context, upperBoundBlk
 			return info, nil
 		}
 	}
+	return nil, qrl.NotFound
 }
 
 // Performs a search to find a target execution block which is just earlier than or equal to the

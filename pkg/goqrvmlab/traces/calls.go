@@ -129,14 +129,16 @@ func determineDestination(log *logger.StructLog, current *common.Address) (conte
 	case vm.CALL:
 		name = "CALL"
 		if len(log.Stack) > 1 {
-			a := common.Address(log.Stack[1].Bytes20())
+			b := log.Stack[1].Bytes64()
+			a := common.BytesToAddress(b[16:])
 			callDest = &a
 			contextAddr = &a
 		}
 	case vm.STATICCALL:
 		name = "SCALL"
 		if len(log.Stack) > 1 {
-			a := common.Address(log.Stack[1].Bytes20())
+			b := log.Stack[1].Bytes64()
+			a := common.BytesToAddress(b[16:])
 			callDest = &a
 			contextAddr = &a
 		}
@@ -144,7 +146,8 @@ func determineDestination(log *logger.StructLog, current *common.Address) (conte
 		// The stack index is 1, but the actual execution context remains the same
 		name = "DCALL"
 		if len(log.Stack) > 1 {
-			a := common.Address(log.Stack[1].Bytes20())
+			b := log.Stack[1].Bytes64()
+			a := common.BytesToAddress(b[16:])
 			callDest = &a
 			contextAddr = current
 		}

@@ -40,10 +40,10 @@ func TestWaitForActivation_ValidatorOriginallyExists(t *testing.T) {
 		Slot: 4000,
 		Validators: []*qrysmpb.Validator{
 			{
-				ActivationEpoch:       0,
-				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
-				PublicKey:             pubKey1,
-				WithdrawalCredentials: make([]byte, 32),
+				ActivationEpoch:     0,
+				ExitEpoch:           params.BeaconConfig().FarFutureEpoch,
+				PublicKey:           pubKey1,
+				WithdrawalRecipient: make([]byte, 64),
 			},
 		},
 	}
@@ -51,15 +51,19 @@ func TestWaitForActivation_ValidatorOriginallyExists(t *testing.T) {
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	depData := &qrysmpb.Deposit_Data{
-		PublicKey:             pubKey1,
-		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
-		Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+		PublicKey:           pubKey1,
+		WithdrawalRecipient: bytesutil.PadTo([]byte("hey"), 64),
+		Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+		RandaoCommitment: make([]byte, 32),
 	}
 	domain, err := signing.ComputeDomain(params.BeaconConfig().DomainDeposit, nil, nil)
 	require.NoError(t, err)
 	signingRoot, err := signing.ComputeSigningRoot(depData, domain)
 	require.NoError(t, err)
-	depData.Signature = priv1.Sign(signingRoot[:]).Marshal()
+	lsig1, err := priv1.Sign(signingRoot[:])
+	require.NoError(t, err)
+	depData.Signature = lsig1.Marshal()
 
 	deposit := &qrysmpb.Deposit{
 		Data: depData,

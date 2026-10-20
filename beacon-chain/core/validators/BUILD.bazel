@@ -36,5 +36,6 @@ go_test(
         "//runtime/version",
         "//testing/assert",
         "//testing/require",
+        "//time/slots",
     ],
 )

@@ -48,8 +48,14 @@ mkdir %wrapper_dir%
 
 REM get_qrysm_version - Find the latest Qrysm version available for download.
 :: TODO(now.youtrack.cloud/issue/TQ-1)
-(for /f %%i in ('curl -f -s https://prysmaticlabs.com/releases/latest') do set qrysm_version=%%i) || (echo [31mERROR: Starting qrysm requires an internet connection. If you are being blocked by your antivirus, you can download the beacon chain and validator executables from our releases page on Github here https://github.com/theQRL/qrysm/releases/ [0m && exit /b 1)
-set qrysm_version="v0.1.1"
+REM The release tag (not the release title) names the download assets.
+(for /f "tokens=2 delims=:," %%i in ('curl -f -s https://api.github.com/repos/theQRL/qrysm/releases/latest ^| findstr /c:"\"tag_name\""') do set qrysm_version=%%i) || (echo [31mERROR: Starting qrysm requires an internet connection. If you are being blocked by your antivirus, you can download the beacon chain and validator executables from our releases page on Github here https://github.com/theQRL/qrysm/releases/ [0m && exit /b 1)
+set qrysm_version=%qrysm_version:"=%
+set qrysm_version=%qrysm_version: =%
+if not defined qrysm_version (
+    echo [31mERROR: Could not determine the latest qrysm release from GitHub. You can pin a version with USE_QRYSM_VERSION.[0m
+    exit /b 1
+)
 echo [37mLatest qrysm release is %qrysm_version%.[0m
 IF defined USE_QRYSM_VERSION (
     echo [33mdetected variable USE_QRYSM_VERSION=%USE_QRYSM_VERSION%[0m

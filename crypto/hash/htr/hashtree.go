@@ -31,7 +31,7 @@ func VectorizedSha256(inputList [][32]byte) [][32]byte {
 		}
 		return outputList
 	}
-	n := runtime.GOMAXPROCS(0) - 1
+	n := max(runtime.GOMAXPROCS(0)-1, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(n)
 	groupSize := len(inputList) / (2 * (n + 1))

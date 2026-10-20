@@ -75,10 +75,15 @@ func ByteArrayRootWithLimit(roots [][]byte, limit uint64) ([32]byte, error) {
 
 // SlashingsRoot computes the HashTreeRoot Merkleization of
 // a list of uint64 slashing values according to the Ethereum
-// Simple Serialize specification.
+// Simple Serialize specification. The values are hashed as a vector of
+// their own length, which must not exceed the compiled slashings vector
+// length; longer inputs are rejected rather than silently truncated.
 func SlashingsRoot(slashings []uint64) ([32]byte, error) {
-	slashingMarshaling := make([][]byte, fieldparams.SlashingsLength)
-	for i := 0; i < len(slashings) && i < len(slashingMarshaling); i++ {
+	if len(slashings) > fieldparams.SlashingsLength {
+		return [32]byte{}, errors.Errorf("slashings length %d exceeds vector length %d", len(slashings), fieldparams.SlashingsLength)
+	}
+	slashingMarshaling := make([][]byte, len(slashings))
+	for i := 0; i < len(slashings); i++ {
 		slashBuf := make([]byte, 8)
 		binary.LittleEndian.PutUint64(slashBuf, slashings[i])
 		slashingMarshaling[i] = slashBuf
@@ -162,14 +167,8 @@ func transactionRoot(tx []byte) ([32]byte, error) {
 }
 
 func withdrawalRoot(w *enginev1.Withdrawal) ([32]byte, error) {
-	fieldRoots := make([][32]byte, 4)
-	if w != nil {
-		binary.LittleEndian.PutUint64(fieldRoots[0][:], w.Index)
-
-		binary.LittleEndian.PutUint64(fieldRoots[1][:], uint64(w.ValidatorIndex))
-
-		fieldRoots[2] = bytesutil.ToBytes32(w.Address)
-		binary.LittleEndian.PutUint64(fieldRoots[3][:], w.Amount)
+	if w == nil {
+		return BitwiseMerkleize(make([][32]byte, 4), 4, 4)
 	}
-	return BitwiseMerkleize(fieldRoots, uint64(len(fieldRoots)), uint64(len(fieldRoots)))
+	return w.HashTreeRoot()
 }

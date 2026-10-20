@@ -10,10 +10,6 @@ import (
 
 // JustificationBits marking which epochs have been justified in the beacon chain.
 func (b *BeaconState) JustificationBits() bitfield.Bitvector4 {
-	if b.justificationBits == nil {
-		return nil
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -34,10 +30,6 @@ func (b *BeaconState) justificationBitsVal() bitfield.Bitvector4 {
 
 // PreviousJustifiedCheckpoint denoting an epoch and block root.
 func (b *BeaconState) PreviousJustifiedCheckpoint() *qrysmpb.Checkpoint {
-	if b.previousJustifiedCheckpoint == nil {
-		return nil
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -52,10 +44,6 @@ func (b *BeaconState) previousJustifiedCheckpointVal() *qrysmpb.Checkpoint {
 
 // CurrentJustifiedCheckpoint denoting an epoch and block root.
 func (b *BeaconState) CurrentJustifiedCheckpoint() *qrysmpb.Checkpoint {
-	if b.currentJustifiedCheckpoint == nil {
-		return nil
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -71,6 +59,9 @@ func (b *BeaconState) currentJustifiedCheckpointVal() *qrysmpb.Checkpoint {
 // MatchCurrentJustifiedCheckpoint returns true if input justified checkpoint matches
 // the current justified checkpoint in state.
 func (b *BeaconState) MatchCurrentJustifiedCheckpoint(c *qrysmpb.Checkpoint) bool {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.currentJustifiedCheckpoint == nil {
 		return false
 	}
@@ -84,6 +75,9 @@ func (b *BeaconState) MatchCurrentJustifiedCheckpoint(c *qrysmpb.Checkpoint) boo
 // MatchPreviousJustifiedCheckpoint returns true if the input justified checkpoint matches
 // the previous justified checkpoint in state.
 func (b *BeaconState) MatchPreviousJustifiedCheckpoint(c *qrysmpb.Checkpoint) bool {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.previousJustifiedCheckpoint == nil {
 		return false
 	}
@@ -96,10 +90,6 @@ func (b *BeaconState) MatchPreviousJustifiedCheckpoint(c *qrysmpb.Checkpoint) bo
 
 // FinalizedCheckpoint denoting an epoch and block root.
 func (b *BeaconState) FinalizedCheckpoint() *qrysmpb.Checkpoint {
-	if b.finalizedCheckpoint == nil {
-		return nil
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -114,11 +104,12 @@ func (b *BeaconState) finalizedCheckpointVal() *qrysmpb.Checkpoint {
 
 // FinalizedCheckpointEpoch returns the epoch value of the finalized checkpoint.
 func (b *BeaconState) FinalizedCheckpointEpoch() primitives.Epoch {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.finalizedCheckpoint == nil {
 		return 0
 	}
-	b.lock.RLock()
-	defer b.lock.RUnlock()
 
 	return b.finalizedCheckpoint.Epoch
 }

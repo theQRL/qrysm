@@ -73,16 +73,31 @@ func (f *ForkChoice) ShouldOverrideFCU() (override bool) {
 	if head.slot > parent.slot+1 {
 		return
 	}
-	// Do not orphan a block that has higher justification than the parent
-	// if head.unrealizedJustifiedEpoch > parent.unrealizedJustifiedEpoch {
-	//		return
-	// }
-
-	// Only orphan a block if the head LMD vote is weak
-	if head.weight*100 > f.store.committeeWeight*params.BeaconConfig().ReorgWeightThreshold {
+	// Only orphan a block whose FFG information is competitive with the
+	// parent's (is_ffg_competitive). A head that advanced justification must
+	// stay: the store pulls its justification up at the epoch boundary and a
+	// replacement built on the parent would then lose to it or delay
+	// finalization.
+	if head.unrealizedJustifiedEpoch != parent.unrealizedJustifiedEpoch {
 		return
 	}
 
+	// Only orphan a block if the head LMD vote is weak
+	if head.weight*100 > f.store.committeeWeight*params.BeaconConfig().ReorgHeadWeightThreshold {
+		return
+	}
+
+	// Return early if we are checking before attestations for the current slot
+	// have been processed. The parent LMD weight check below relies on those
+	// attestations and would otherwise veto legitimate reorgs of late blocks.
+	secs, err := slots.SecondsSinceSlotStart(head.slot, f.store.genesisTime, uint64(time.Now().Unix()))
+	if err != nil {
+		log.WithError(err).Error("could not check current slot")
+		return true
+	}
+	if secs < ProcessAttestationsThreshold {
+		return true
+	}
 	// Only orphan a block if the parent LMD vote is strong
 	if parent.weight*100 < f.store.committeeWeight*params.BeaconConfig().ReorgParentWeightThreshold {
 		return
@@ -136,9 +151,14 @@ func (f *ForkChoice) GetProposerHead() [32]byte {
 	if head.slot > parent.slot+1 {
 		return head.root
 	}
+	// Only orphan a block whose FFG information is competitive with the
+	// parent's (is_ffg_competitive).
+	if head.unrealizedJustifiedEpoch != parent.unrealizedJustifiedEpoch {
+		return head.root
+	}
 
 	// Only orphan a block if the head LMD vote is weak
-	if head.weight*100 > f.store.committeeWeight*params.BeaconConfig().ReorgWeightThreshold {
+	if head.weight*100 > f.store.committeeWeight*params.BeaconConfig().ReorgHeadWeightThreshold {
 		return head.root
 	}
 

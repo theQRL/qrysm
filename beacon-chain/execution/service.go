@@ -96,7 +96,7 @@ type Chain interface {
 // RPCClient defines the rpc methods required to interact with the execution node.
 type RPCClient interface {
 	Close()
-	BatchCall(b []rpc.BatchElem) error
+	BatchCallContext(ctx context.Context, b []rpc.BatchElem) error
 	CallContext(ctx context.Context, result any, method string, args ...any) error
 }
 
@@ -104,7 +104,7 @@ type RPCClientEmpty struct {
 }
 
 func (RPCClientEmpty) Close() {}
-func (RPCClientEmpty) BatchCall([]rpc.BatchElem) error {
+func (RPCClientEmpty) BatchCallContext(context.Context, []rpc.BatchElem) error {
 	return errors.New("rpc client is not initialized")
 }
 
@@ -133,24 +133,30 @@ type config struct {
 // Validator Registration Contract on the execution chain to kick off the beacon
 // chain's validator registration process.
 type Service struct {
-	connectedExecution      bool
+	// genesisBlockResolved guards the one-shot genesis block height lookup so a pruned
+	// execution client doesn't make us spam HeaderByHash + retry on every loop iteration.
+	genesisBlockResolved bool
+	// serviceLock protects rpcClient, the resolved genesis block, and the
+	// running, connection, and error status.
+	serviceLock             sync.RWMutex
 	isRunning               bool
+	connectedExecution      bool
 	processingLock          sync.RWMutex
 	latestExecutionDataLock sync.RWMutex
-	cfg                     *config
-	ctx                     context.Context
+	lastReceivedMerkleIndex int64 // Keeps track of the last received index to prevent log spam.
+	chainStartData          *qrysmpb.ChainStartData
+	depositContractCaller   *contracts.DepositContractCaller
+	latestExecutionData     *qrysmpb.LatestExecutionData
+	headerCache             *headerCache // cache to store block hash/block height.
 	cancel                  context.CancelFunc
 	executionHeadTicker     *time.Ticker
-	httpLogger              bind.ContractFilterer
+	cfg                     *config
+	ctx                     context.Context
 	rpcClient               RPCClient
-	headerCache             *headerCache // cache to store block hash/block height.
-	latestExecutionData     *qrysmpb.LatestExecutionData
-	depositContractCaller   *contracts.DepositContractCaller
 	depositTrie             cache.MerkleTree
-	chainStartData          *qrysmpb.ChainStartData
-	lastReceivedMerkleIndex int64 // Keeps track of the last received index to prevent log spam.
 	runError                error
 	preGenesisState         state.BeaconState
+	httpLogger              bind.ContractFilterer
 }
 
 // NewService sets up a new instance with an ethclient when given a web3 endpoint as a string in the config.
@@ -202,13 +208,9 @@ func NewService(ctx context.Context, opts ...Option) (*Service, error) {
 		}
 	}
 
-	if err := s.ensureValidExecutionChainData(ctx); err != nil {
-		return nil, errors.Wrap(err, "unable to validate execution chain data")
-	}
-
-	executionData, err := s.cfg.beaconDB.ExecutionChainData(ctx)
+	executionData, err := s.validExecutionChainData(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to retrieve execution data")
+		return nil, errors.Wrap(err, "unable to validate execution chain data")
 	}
 	if err := s.initializeExecutionData(ctx, executionData); err != nil {
 		return nil, err
@@ -219,10 +221,14 @@ func NewService(ctx context.Context, opts ...Option) (*Service, error) {
 // Start the execution chain service's main event loop.
 func (s *Service) Start() {
 	if err := s.setupExecutionClientConnections(s.ctx, s.cfg.currHttpEndpoint); err != nil {
+		s.setRunError(err)
+		s.updateConnectedExecution(false)
 		log.WithError(err).Error("Could not connect to execution endpoint")
 	}
 
+	s.serviceLock.Lock()
 	s.isRunning = true
+	s.serviceLock.Unlock()
 
 	// Poll the execution client connection and fallback if errors occur.
 	s.pollConnectionStatus(s.ctx)
@@ -235,8 +241,8 @@ func (s *Service) Stop() error {
 	if s.cancel != nil {
 		defer s.cancel()
 	}
-	if s.rpcClient != nil {
-		s.rpcClient.Close()
+	if client := s.executionClient(); client != nil {
+		client.Close()
 	}
 	return nil
 }
@@ -248,6 +254,8 @@ func (s *Service) ChainStartExecutionData() *qrysmpb.ExecutionData {
 
 // Status is service health checks. Return nil or error.
 func (s *Service) Status() error {
+	s.serviceLock.RLock()
+	defer s.serviceLock.RUnlock()
 	// Service don't start
 	if !s.isRunning {
 		return nil
@@ -258,6 +266,8 @@ func (s *Service) Status() error {
 
 // ExecutionClientConnected checks whether are connected via RPC.
 func (s *Service) ExecutionClientConnected() bool {
+	s.serviceLock.RLock()
+	defer s.serviceLock.RUnlock()
 	return s.connectedExecution
 }
 
@@ -268,7 +278,21 @@ func (s *Service) ExecutionClientEndpoint() string {
 
 // ExecutionClientConnectionErr returns the error (if any) of the current connection.
 func (s *Service) ExecutionClientConnectionErr() error {
+	s.serviceLock.RLock()
+	defer s.serviceLock.RUnlock()
 	return s.runError
+}
+
+func (s *Service) executionClient() RPCClient {
+	s.serviceLock.RLock()
+	defer s.serviceLock.RUnlock()
+	return s.rpcClient
+}
+
+func (s *Service) setRunError(err error) {
+	s.serviceLock.Lock()
+	s.runError = err
+	s.serviceLock.Unlock()
 }
 
 func (s *Service) updateBeaconNodeStats() {
@@ -280,7 +304,9 @@ func (s *Service) updateBeaconNodeStats() {
 }
 
 func (s *Service) updateConnectedExecution(state bool) {
+	s.serviceLock.Lock()
 	s.connectedExecution = state
+	s.serviceLock.Unlock()
 	s.updateBeaconNodeStats()
 }
 
@@ -288,13 +314,17 @@ func (s *Service) updateConnectedExecution(state bool) {
 // SECONDS_PER_EXECUTION_BLOCK * EXECUTION_FOLLOW_DISTANCE <= current_unix_time
 func (s *Service) followedBlockHeight(ctx context.Context) (uint64, error) {
 	followTime := params.BeaconConfig().ExecutionFollowDistance * params.BeaconConfig().SecondsPerExecutionBlock
+	s.latestExecutionDataLock.RLock()
+	blockTime := s.latestExecutionData.BlockTime
+	blockHeight := s.latestExecutionData.BlockHeight
+	s.latestExecutionDataLock.RUnlock()
 	latestBlockTime := uint64(0)
-	if s.latestExecutionData.BlockTime > followTime {
-		latestBlockTime = max(s.latestExecutionData.BlockTime-followTime, s.chainStartData.GenesisTime)
+	if blockTime > followTime {
+		latestBlockTime = max(blockTime-followTime, s.chainStartData.GenesisTime)
 		// This should only come into play in testnets - when the chain hasn't advanced past the follow distance,
 		// we don't want to consider any block before the genesis block.
-		if s.latestExecutionData.BlockHeight < params.BeaconConfig().ExecutionFollowDistance {
-			latestBlockTime = s.latestExecutionData.BlockTime
+		if blockHeight < params.BeaconConfig().ExecutionFollowDistance {
+			latestBlockTime = blockTime
 		}
 	}
 	blk, err := s.BlockByTimestamp(ctx, latestBlockTime)
@@ -313,6 +343,17 @@ func (s *Service) initDepositCaches(ctx context.Context, ctrs []*qrysmpb.Deposit
 	genesisState, err := s.cfg.beaconDB.GenesisState(ctx)
 	if err != nil {
 		return err
+	}
+	if genesisState == nil || genesisState.IsNil() {
+		// No genesis state exists yet (pre-genesis), so no deposit has been
+		// included in the chain: keep the containers in the deposit cache
+		// (inserted above) but do not add any to the pending cache. This is
+		// upstream's guard on ChainStartData.Chainstarted, a field qrysm no
+		// longer has; GenesisState returns (nil, nil) in that situation.
+		if s.preGenesisState != nil && !s.preGenesisState.IsNil() {
+			validDepositsCount.Add(float64(s.preGenesisState.ExecutionDepositIndex()))
+		}
+		return nil
 	}
 	// Default to all post-genesis deposits in
 	// the event we cannot find a finalized state.
@@ -377,7 +418,7 @@ func (s *Service) processBlockHeader(header *types.HeaderInfo) {
 
 // batchRequestHeaders requests the block range specified in the arguments. Instead of requesting
 // each block in one call, it batches all requests into a single rpc call.
-func (s *Service) batchRequestHeaders(startBlock, endBlock uint64) ([]*types.HeaderInfo, error) {
+func (s *Service) batchRequestHeaders(ctx context.Context, startBlock, endBlock uint64) ([]*types.HeaderInfo, error) {
 	if startBlock > endBlock {
 		return nil, fmt.Errorf("start block height %d cannot be > end block height %d", startBlock, endBlock)
 	}
@@ -387,17 +428,17 @@ func (s *Service) batchRequestHeaders(startBlock, endBlock uint64) ([]*types.Hea
 	if requestRange == 0 {
 		return headers, nil
 	}
-	for i := startBlock; i <= endBlock; i++ {
+	for i := uint64(0); i < requestRange; i++ {
 		header := &types.HeaderInfo{}
 		elems = append(elems, rpc.BatchElem{
 			Method: "qrl_getBlockByNumber",
-			Args:   []any{hexutil.EncodeBig(big.NewInt(0).SetUint64(i)), false},
+			Args:   []any{hexutil.EncodeBig(big.NewInt(0).SetUint64(startBlock + i)), false},
 			Result: header,
 			Error:  error(nil),
 		})
 		headers = append(headers, header)
 	}
-	ioErr := s.rpcClient.BatchCall(elems)
+	ioErr := s.executionClient().BatchCallContext(ctx, elems)
 	if ioErr != nil {
 		return nil, ioErr
 	}
@@ -434,8 +475,16 @@ func (s *Service) handleExecutionFollowDistance() {
 	// use a 5 minutes timeout for block time, because the max mining time is 278 sec (block 7208027)
 	// (analyzed the time of the block from 2018-09-01 to 2019-02-13)
 	fiveMinutesTimeout := qrysmTime.Now().Add(-5 * time.Minute)
+	s.latestExecutionDataLock.RLock()
+	blockTime := s.latestExecutionData.BlockTime
+	lastRequestedBlock := s.latestExecutionData.LastRequestedBlock
+	blockHeight := s.latestExecutionData.BlockHeight
+	s.latestExecutionDataLock.RUnlock()
 	// check that web3 client is syncing
-	if time.Unix(int64(s.latestExecutionData.BlockTime), 0).Before(fiveMinutesTimeout) {
+	blockUnixTime, ok := unixTimeFromUint64(blockTime)
+	if !ok {
+		log.Warn("Execution client returned an invalid block time")
+	} else if blockUnixTime.Before(fiveMinutesTimeout) {
 		log.Warn("Execution client is not syncing")
 	}
 
@@ -443,19 +492,26 @@ func (s *Service) handleExecutionFollowDistance() {
 	// we do not request batched logs as this means there are no new
 	// logs for the execution chain service to process. Also it is a potential
 	// failure condition as would mean we have not respected the protocol threshold.
-	if s.latestExecutionData.LastRequestedBlock == s.latestExecutionData.BlockHeight {
+	if lastRequestedBlock == blockHeight {
 		log.Error("Beacon node is not respecting the follow distance")
 		return
 	}
 	if err := s.requestBatchedHeadersAndLogs(ctx); err != nil {
-		s.runError = errors.Wrap(err, "requestBatchedHeadersAndLogs")
+		s.setRunError(errors.Wrap(err, "requestBatchedHeadersAndLogs"))
 		log.Error(err)
 		return
 	}
 	// Reset the Status.
-	if s.runError != nil {
-		s.runError = nil
+	s.setRunError(nil)
+}
+
+func unixTimeFromUint64(seconds uint64) (time.Time, bool) {
+	const maxInt64 = uint64(1<<63 - 1)
+	if seconds > maxInt64 {
+		return time.Time{}, false
 	}
+	// lint:ignore uintcast blockTime is checked above against int64 overflow.
+	return time.Unix(int64(seconds), 0), true
 }
 
 func (s *Service) initExecutionService() {
@@ -511,23 +567,24 @@ func (s *Service) initExecutionService() {
 				continue
 			}
 			// Handle edge case with embedded genesis state by fetching genesis header to determine
-			// its height.
-			if s.chainStartData.GenesisBlock == 0 {
+			// its height. Attempt at most once per process: with PoS-from-genesis the resolved
+			// block number is 0 (the same as the uninitialized sentinel), so we'd otherwise retry
+			// every loop iteration and spam "pruned history unavailable" on pruned execution
+			// clients. A failed lookup is non-fatal — leave GenesisBlock at 0 and continue.
+			if !s.genesisBlockResolved && s.chainStartData.GenesisBlock == 0 {
+				s.genesisBlockResolved = true
 				genHash := common.BytesToHash(s.chainStartData.ExecutionData.BlockHash)
-				genBlock := s.chainStartData.GenesisBlock
-				// In the event our provided chainstart data references a non-existent block hash,
-				// we assume the genesis block to be 0.
 				if genHash != [32]byte{} {
 					genHeader, err := s.HeaderByHash(ctx, genHash)
 					if err != nil {
-						err = errors.Wrapf(err, "HeaderByHash, hash=%#x", genHash)
-						s.retryExecutionClientConnection(ctx, err)
-						errorLogger(err, "Unable to retrieve proof-of-stake genesis block data")
-						continue
+						log.WithError(err).WithField("hash", fmt.Sprintf("%#x", genHash)).
+							Warn("Could not retrieve proof-of-stake genesis block data; assuming genesis block 0")
+					} else {
+						s.serviceLock.Lock()
+						s.chainStartData.GenesisBlock = genHeader.Number.Uint64()
+						s.serviceLock.Unlock()
 					}
-					genBlock = genHeader.Number.Uint64()
 				}
-				s.chainStartData.GenesisBlock = genBlock
 				if err := s.saveExecutionChainData(ctx); err != nil {
 					err = errors.Wrap(err, "saveExecutionChainData")
 					s.retryExecutionClientConnection(ctx, err)
@@ -542,22 +599,29 @@ func (s *Service) initExecutionService() {
 
 // run subscribes to all the services for the execution chain.
 func (s *Service) run(done <-chan struct{}) {
-	s.runError = nil
+	s.setRunError(nil)
 
 	s.initExecutionService()
+	// The finalized state is no longer needed after init; release the
+	// (potentially multi-MB) reference so it can be garbage-collected.
+	s.removeStartupState()
 
 	for {
 		select {
 		case <-done:
+			s.serviceLock.Lock()
 			s.isRunning = false
 			s.runError = nil
-			s.rpcClient.Close()
+			s.serviceLock.Unlock()
+			s.executionClient().Close()
 			s.updateConnectedExecution(false)
 			log.Debug("Context closed, exiting goroutine")
 			return
 		case <-s.executionHeadTicker.C:
 			head, err := s.HeaderByNumber(s.ctx, nil)
 			if err != nil {
+				s.setRunError(errors.Wrap(err, "HeaderByNumber"))
+				s.updateConnectedExecution(false)
 				s.pollConnectionStatus(s.ctx)
 				log.WithError(err).Debug("Could not fetch latest execution header")
 				continue
@@ -580,44 +644,34 @@ func (s *Service) cacheHeadersForExecutionDataVote(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "determineEarliestVotingBlock=%d", end)
 	}
-	return s.cacheBlockHeaders(start, end)
+	return s.cacheBlockHeaders(ctx, start, end)
 }
 
 // Caches block headers from the desired range.
-func (s *Service) cacheBlockHeaders(start, end uint64) error {
+func (s *Service) cacheBlockHeaders(ctx context.Context, start, end uint64) error {
 	batchSize := s.cfg.executionHeaderReqLimit
-	for i := start; i < end; i += batchSize {
-		startReq := i
-		endReq := i + batchSize
-		if endReq > 0 {
-			// Reduce the end request by one
-			// to prevent total batch size from exceeding
-			// the allotted limit.
-			endReq -= 1
-		}
-		if endReq > end {
-			endReq = end
-		}
+	if batchSize == 0 {
+		return errors.New("execution header request limit must be greater than zero")
+	}
+	for start <= end {
+		endReq := start + min(batchSize-1, end-start)
 		// We call batchRequestHeaders for its header caching side-effect, so we don't need the return value.
-		_, err := s.batchRequestHeaders(startReq, endReq)
+		_, err := s.batchRequestHeaders(ctx, start, endReq)
 		if err != nil {
-			if clientTimedOutError(err) {
-				// Reduce batch size as execution node is
-				// unable to respond to the request in time.
-				batchSize /= 2
-				// Always have it greater than 0.
-				if batchSize == 0 {
-					batchSize += 1
-				}
-
-				// Reset request value
-				if i > batchSize {
-					i -= batchSize
-				}
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			if clientTimedOutError(err) && batchSize > 1 {
+				// Retry the same first block with a smaller request.
+				batchSize = max(uint64(1), batchSize/2)
 				continue
 			}
-			return errors.Wrapf(err, "cacheBlockHeaders, start=%d, end=%d", startReq, endReq)
+			return errors.Wrapf(err, "cacheBlockHeaders, start=%d, end=%d", start, endReq)
 		}
+		if endReq == end {
+			break
+		}
+		start = endReq + 1
 	}
 	return nil
 }
@@ -637,7 +691,10 @@ func (s *Service) determineEarliestVotingBlock(ctx context.Context, followBlock 
 	}
 	// This should only come into play in testnets - when the chain hasn't advanced past the follow distance,
 	// we don't want to consider any block before the genesis block.
-	if s.latestExecutionData.BlockHeight < params.BeaconConfig().ExecutionFollowDistance {
+	s.latestExecutionDataLock.RLock()
+	blockHeight := s.latestExecutionData.BlockHeight
+	s.latestExecutionDataLock.RUnlock()
+	if blockHeight < params.BeaconConfig().ExecutionFollowDistance {
 		return 0, nil
 	}
 	votingTime := slots.VotingPeriodStartTime(genesisTime, currSlot)
@@ -674,6 +731,10 @@ func (s *Service) initializeExecutionData(ctx context.Context, executionDataInDB
 			}
 		}
 	} else {
+		if executionDataInDB.Trie == nil && executionDataInDB.DepositSnapshot != nil {
+			return errors.Errorf("trying to use old deposit trie after migration to the new trie. "+
+				"Run with the --%s flag to resume normal operations.", features.EnableEIP4881.Name)
+		}
 		s.depositTrie, err = trie.CreateTrieFromProto(executionDataInDB.Trie)
 	}
 	if err != nil {
@@ -738,23 +799,23 @@ func validateDepositContainers(ctrs []*qrysmpb.DepositContainer) bool {
 
 // Validates the current execution chain data is saved and makes sure that any
 // embedded genesis state is correctly accounted for.
-func (s *Service) ensureValidExecutionChainData(ctx context.Context) error {
+func (s *Service) validExecutionChainData(ctx context.Context) (*qrysmpb.ExecutionChainData, error) {
 	genState, err := s.cfg.beaconDB.GenesisState(ctx)
 	if err != nil {
-		return err
-	}
-	// Exit early if no genesis state is saved.
-	if genState == nil || genState.IsNil() {
-		return nil
+		return nil, err
 	}
 	executionData, err := s.cfg.beaconDB.ExecutionChainData(ctx)
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve execution data")
+		return nil, errors.Wrap(err, "unable to retrieve execution data")
+	}
+	// Exit early if no genesis state is saved.
+	if genState == nil || genState.IsNil() {
+		return executionData, nil
 	}
 	if executionData == nil || !validateDepositContainers(executionData.DepositContainers) {
 		pbState, err := native.ProtobufBeaconStateZond(s.preGenesisState.ToProtoUnsafe())
 		if err != nil {
-			return err
+			return nil, err
 		}
 		s.chainStartData = &qrysmpb.ChainStartData{
 			GenesisTime:   genState.GenesisTime(),
@@ -770,22 +831,28 @@ func (s *Service) ensureValidExecutionChainData(ctx context.Context) error {
 		if features.Get().EnableEIP4881 {
 			trie, ok := s.depositTrie.(*depositsnapshot.DepositTree)
 			if !ok {
-				return errors.New("deposit trie was not EIP4881 DepositTree")
+				return nil, errors.New("deposit trie was not EIP4881 DepositTree")
 			}
 			executionData.DepositSnapshot, err = trie.ToProto()
 			if err != nil {
-				return err
+				return nil, err
 			}
 		} else {
 			trie, ok := s.depositTrie.(*trie.SparseMerkleTrie)
 			if !ok {
-				return errors.New("deposit trie was not SparseMerkleTrie")
+				return nil, errors.New("deposit trie was not SparseMerkleTrie")
 			}
 			executionData.Trie = trie.ToProto()
 		}
-		return s.cfg.beaconDB.SaveExecutionChainData(ctx, executionData)
+		if err := s.cfg.beaconDB.SaveExecutionChainData(ctx, executionData); err != nil {
+			return nil, err
+		}
 	}
-	return nil
+	return executionData, nil
+}
+
+func (s *Service) removeStartupState() {
+	s.cfg.finalizedStateAtStartup = nil
 }
 
 func (s *Service) migrateOldDepositTree(executionDataInDB *qrysmpb.ExecutionChainData) error {
@@ -794,7 +861,8 @@ func (s *Service) migrateOldDepositTree(executionDataInDB *qrysmpb.ExecutionChai
 		return err
 	}
 	newDepositTrie := depositsnapshot.NewDepositTree()
-	for i, item := range oldDepositTrie.Items() {
+	// An empty sparse trie stores a zero leaf as a placeholder, not a deposit.
+	for i, item := range oldDepositTrie.Items()[:oldDepositTrie.NumOfItems()] {
 		if err = newDepositTrie.Insert(item, i); err != nil {
 			return errors.Wrapf(err, "could not insert item at index %d into deposit snapshot tree", i)
 		}
@@ -808,7 +876,7 @@ func (s *Service) migrateOldDepositTree(executionDataInDB *qrysmpb.ExecutionChai
 		return err
 	}
 	if newDepositRoot != depositRoot {
-		return errors.Wrapf(err, "mismatched deposit roots, old %#x != new %#x", depositRoot, newDepositRoot)
+		return errors.Errorf("mismatched deposit roots, old %#x != new %#x", depositRoot, newDepositRoot)
 	}
 	s.depositTrie = newDepositTrie
 	return nil

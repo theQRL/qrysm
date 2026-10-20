@@ -42,13 +42,18 @@ func (s *Service) getBlockPreState(ctx context.Context, b interfaces.ReadOnlyBea
 	if err := s.verifyBlkPreState(ctx, b); err != nil {
 		return nil, err
 	}
+	// Storage alone does not establish a usable parent after a partial batch
+	// import. Keep this a local, retryable error rather than blaming the child.
+	if !s.HasBlock(ctx, b.ParentRoot()) {
+		return nil, errors.New("parent block has not been imported")
+	}
 
 	preState, err := s.cfg.StateGen.StateByRoot(ctx, b.ParentRoot())
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get pre state for slot %d", b.Slot())
 	}
 	if preState == nil || preState.IsNil() {
-		return nil, errors.Wrapf(err, "nil pre state for slot %d", b.Slot())
+		return nil, errors.Errorf("nil pre state for slot %d", b.Slot())
 	}
 
 	// Verify block slot time is not from the future.
@@ -57,7 +62,10 @@ func (s *Service) getBlockPreState(ctx context.Context, b interfaces.ReadOnlyBea
 	}
 
 	// Verify block is later than the finalized epoch slot.
-	if err := s.verifyBlkFinalizedSlot(b); err != nil {
+	s.cfg.ForkChoiceStore.RLock()
+	err = s.verifyBlkFinalizedSlot(b)
+	s.cfg.ForkChoiceStore.RUnlock()
+	if err != nil {
 		return nil, err
 	}
 
@@ -70,6 +78,9 @@ func (s *Service) verifyBlkPreState(ctx context.Context, b interfaces.ReadOnlyBe
 	defer span.End()
 
 	parentRoot := b.ParentRoot()
+	if err := s.checkInvalidBlock(parentRoot); err != nil {
+		return err
+	}
 	// Loosen the check to HasBlock because state summary gets saved in batches
 	// during initial syncing. There's no risk given a state summary object is just a
 	// subset of the block object.
@@ -82,16 +93,39 @@ func (s *Service) verifyBlkPreState(ctx context.Context, b interfaces.ReadOnlyBe
 		return err
 	}
 	if !has {
-		if err := s.cfg.BeaconDB.SaveBlocks(ctx, s.getInitSyncBlocks()); err != nil {
+		if err := s.saveInitSyncBlocks(ctx, true); err != nil {
 			return errors.Wrap(err, "could not save initial sync blocks")
 		}
-		s.clearInitSyncBlocks()
 	}
 	return nil
 }
 
+// isImportedBlock recognizes accepted blocks, including ancestors pruned by
+// finalization. The caller must hold the forkchoice lock. Use the store's
+// checkpoint ancestry because its persistence can lag behind finalization and
+// the DB's finalized index also includes forks in the latest finalized epoch.
+func (s *Service) isImportedBlock(ctx context.Context, root [32]byte, slot primitives.Slot) (bool, error) {
+	if s.cfg.ForkChoiceStore.HasNode(root) {
+		return true, nil
+	}
+	finalized := s.cfg.ForkChoiceStore.FinalizedCheckpoint()
+	finalizedSlot, err := slots.EpochStart(finalized.Epoch)
+	if err != nil {
+		return false, err
+	}
+	if slot > finalizedSlot {
+		return false, nil
+	}
+	ancestor, err := s.ancestorByDB(ctx, s.ensureRootNotZeros(finalized.Root), slot)
+	if err != nil {
+		return false, errors.Wrap(err, "could not check finalized block ancestry")
+	}
+	return ancestor == root, nil
+}
+
 // verifyBlkFinalizedSlot validates input block is not less than or equal
 // to current finalized slot.
+// The caller must hold the forkchoice lock.
 func (s *Service) verifyBlkFinalizedSlot(b interfaces.ReadOnlyBeaconBlock) error {
 	finalized := s.cfg.ForkChoiceStore.FinalizedCheckpoint()
 	finalizedSlot, err := slots.EpochStart(finalized.Epoch)
@@ -105,44 +139,62 @@ func (s *Service) verifyBlkFinalizedSlot(b interfaces.ReadOnlyBeaconBlock) error
 	return nil
 }
 
-// updateFinalized saves the init sync blocks, finalized checkpoint, migrates
-// to cold old states and saves the last validated checkpoint to DB. It returns
-// early if the new checkpoint is older than the one on db.
-func (s *Service) updateFinalized(ctx context.Context, cp *qrysmpb.Checkpoint) error {
+// updateCheckpoints reconciles accepted forkchoice checkpoints with the DB.
+// Blocks and ticks can both advance them. The caller must hold the forkchoice
+// write lock. The result reports whether persisted finality advanced, even if
+// its separate execution-validation marker could not be saved.
+func (s *Service) updateCheckpoints(ctx context.Context) (bool, error) {
+	justified := s.cfg.ForkChoiceStore.JustifiedCheckpoint()
+	savedJustified, err := s.cfg.BeaconDB.JustifiedCheckpoint(ctx)
+	if err != nil {
+		return false, err
+	}
+	if justified.Epoch > savedJustified.Epoch {
+		if err := s.cfg.BeaconDB.SaveJustifiedCheckpoint(ctx, &qrysmpb.Checkpoint{Epoch: justified.Epoch, Root: justified.Root[:]}); err != nil {
+			return false, err
+		}
+	}
+	finalized := s.cfg.ForkChoiceStore.FinalizedCheckpoint()
+	return s.updateFinalized(ctx, &qrysmpb.Checkpoint{Epoch: finalized.Epoch, Root: finalized.Root[:]})
+}
+
+// updateFinalized persists finality and migrates old states to cold storage.
+// Validation can advance independently, including at unchanged finality. The
+// caller must hold the forkchoice lock. The result reports new persisted
+// finality even when updating its execution-validation marker fails.
+func (s *Service) updateFinalized(ctx context.Context, cp *qrysmpb.Checkpoint) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "blockChain.updateFinalized")
 	defer span.End()
 
-	// return early if new checkpoint is not newer than the one in DB
 	currentFinalized, err := s.cfg.BeaconDB.FinalizedCheckpoint(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if cp.Epoch <= currentFinalized.Epoch {
-		return nil
+		// Also retry a deferred check when finality is unchanged, for example
+		// after a cancelled request or a temporary checkpoint lookup failure.
+		if err := s.verifyWeakSubjectivity(ctx, currentFinalized.Epoch); err != nil {
+			return false, err
+		}
+		return false, s.updateLastValidatedCheckpoint(ctx, currentFinalized)
 	}
 
 	// Blocks need to be saved so that we can retrieve finalized block from
 	// DB when migrating states.
-	if err := s.cfg.BeaconDB.SaveBlocks(ctx, s.getInitSyncBlocks()); err != nil {
-		return err
+	if err := s.saveInitSyncBlocks(ctx, true); err != nil {
+		return false, err
 	}
-	s.clearInitSyncBlocks()
 
 	if err := s.cfg.BeaconDB.SaveFinalizedCheckpoint(ctx, cp); err != nil {
-		return err
+		return false, err
+	}
+	if s.checkpointStateCache != nil {
+		s.checkpointStateCache.EvictUpTo(cp.Epoch)
 	}
 
+	// Finality is durable now. Start migration regardless of a later failure
+	// to save its validation marker: retries at this epoch take the path above.
 	fRoot := bytesutil.ToBytes32(cp.Root)
-	optimistic, err := s.cfg.ForkChoiceStore.IsOptimistic(fRoot)
-	if err != nil && !errors.Is(err, doublylinkedtree.ErrNilNode) {
-		return err
-	}
-	if !optimistic {
-		err = s.cfg.BeaconDB.SaveLastValidatedCheckpoint(ctx, cp)
-		if err != nil {
-			return err
-		}
-	}
 	go func() {
 		// We do not pass in the parent context from the method as this method call
 		// is meant to be asynchronous and run in the background rather than being
@@ -151,7 +203,42 @@ func (s *Service) updateFinalized(ctx context.Context, cp *qrysmpb.Checkpoint) e
 			log.WithError(err).Error("could not migrate to cold")
 		}
 	}()
-	return nil
+	// Finality can advance in gossip imports and slot ticks as well as batches.
+	// Check before the separate validation-marker write, whose failure must not
+	// suppress enforcement of the configured trust anchor.
+	if err := s.verifyWeakSubjectivity(ctx, cp.Epoch); err != nil {
+		return true, err
+	}
+	return true, s.updateLastValidatedCheckpoint(ctx, cp)
+}
+
+// updateLastValidatedCheckpoint persists execution validation of a saved
+// finalized checkpoint without repeating finalization side effects. The caller
+// must hold the forkchoice lock.
+func (s *Service) updateLastValidatedCheckpoint(ctx context.Context, cp *qrysmpb.Checkpoint) error {
+	// Genesis is the fallback validation checkpoint, so epoch zero cannot
+	// advance the persisted marker.
+	if cp.Epoch == 0 {
+		return nil
+	}
+	optimistic, err := s.cfg.ForkChoiceStore.IsOptimistic(bytesutil.ToBytes32(cp.Root))
+	if errors.Is(err, doublylinkedtree.ErrNilNode) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if optimistic {
+		return nil
+	}
+	validated, err := s.cfg.BeaconDB.LastValidatedCheckpoint(ctx)
+	if err != nil {
+		return err
+	}
+	if cp.Epoch <= validated.Epoch {
+		return nil
+	}
+	return s.cfg.BeaconDB.SaveLastValidatedCheckpoint(ctx, cp)
 }
 
 // This retrieves an ancestor root using DB. The look up is recursively looking up DB. Slower than `ancestorByForkChoiceStore`.
@@ -220,7 +307,7 @@ func (s *Service) fillInForkChoiceMissingBlocks(ctx context.Context, blk interfa
 		return ErrNotDescendantOfFinalized
 	}
 	slices.Reverse(pendingNodes)
-	return s.cfg.ForkChoiceStore.InsertChain(ctx, pendingNodes)
+	return s.restoreForkchoiceChain(ctx, pendingNodes)
 }
 
 // inserts finalized deposits into our finalized deposit trie, needs to be

@@ -35,7 +35,7 @@ func Test_RegisterValidator(t *testing.T) {
 	s, err := NewService(ctx, WithDatabase(db), WithHeadFetcher(headFetcher), WithBuilderClient(&builder))
 	require.NoError(t, err)
 	pubkey := bytesutil.ToBytes2592([]byte("pubkey"))
-	var feeRecipient [20]byte
+	var feeRecipient [field_params.FeeRecipientLength]byte
 	require.NoError(t, s.RegisterValidator(ctx, []*qrysmpb.SignedValidatorRegistrationV1{{Message: &qrysmpb.ValidatorRegistrationV1{Pubkey: pubkey[:], FeeRecipient: feeRecipient[:]}}}))
 	assert.Equal(t, true, builder.RegisteredVals[pubkey])
 }
@@ -47,7 +47,7 @@ func Test_RegisterValidator_WithCache(t *testing.T) {
 	s, err := NewService(ctx, WithRegistrationCache(), WithHeadFetcher(headFetcher), WithBuilderClient(&builder))
 	require.NoError(t, err)
 	pubkey := bytesutil.ToBytes2592([]byte("pubkey"))
-	var feeRecipient [20]byte
+	var feeRecipient [field_params.FeeRecipientLength]byte
 	reg := &qrysmpb.ValidatorRegistrationV1{Pubkey: pubkey[:], Timestamp: uint64(time.Now().UTC().Unix()), FeeRecipient: feeRecipient[:]}
 	require.NoError(t, s.RegisterValidator(ctx, []*qrysmpb.SignedValidatorRegistrationV1{{Message: reg}}))
 	registration, err := s.registrationCache.RegistrationByIndex(0)

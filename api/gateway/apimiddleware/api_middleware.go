@@ -16,6 +16,7 @@ type ApiProxyMiddleware struct {
 	GatewayAddress  string
 	EndpointCreator EndpointFactory
 	Timeout         time.Duration
+	ProxyClient     *http.Client
 	router          *mux.Router
 }
 
@@ -180,6 +181,13 @@ func (m *ApiProxyMiddleware) WithMiddleware(path string) http.HandlerFunc {
 }
 
 func handlePostRequestForEndpoint(endpoint *Endpoint, w http.ResponseWriter, req *http.Request) ErrorJson {
+	// An endpoint without a POST request container has nothing to translate:
+	// proxy the request untouched and let grpc-gateway answer (405 for a
+	// GET-only route). Running the container pipeline on a nil container
+	// used to panic on a crafted `POST {}`.
+	if endpoint.PostRequest == nil {
+		return nil
+	}
 	if errJson := deserializeRequestBodyIntoContainerWrapped(endpoint, req, w); errJson != nil {
 		return errJson
 	}
@@ -190,6 +198,10 @@ func handlePostRequestForEndpoint(endpoint *Endpoint, w http.ResponseWriter, req
 }
 
 func handleDeleteRequestForEndpoint(endpoint *Endpoint, req *http.Request) ErrorJson {
+	// See handlePostRequestForEndpoint.
+	if endpoint.DeleteRequest == nil {
+		return nil
+	}
 	if errJson := DeserializeRequestBodyIntoContainer(req.Body, endpoint.DeleteRequest); errJson != nil {
 		return errJson
 	}

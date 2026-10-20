@@ -79,11 +79,11 @@ func scrapeProm(url string, tripper http.RoundTripper) (map[string]*dto.MetricFa
 	errChan := make(chan error, 1)
 	go func() {
 		// FetchMetricFamilies handles grpc flavored prometheus ez
-		// but at the cost of the awkward channel select loop below
-		err := prom2json.FetchMetricFamilies(url, mfChan, tripper)
-		if err != nil {
-			errChan <- err
-		}
+		// but at the cost of the awkward channel select loop below.
+		// Always send the outcome (nil included): FetchMetricFamilies closes
+		// mfChan before it returns, so the receiver may observe the close
+		// first and must be able to wait for the result. (upstream #17118)
+		errChan <- prom2json.FetchMetricFamilies(url, mfChan, tripper)
 	}()
 	result := make(map[string]*dto.MetricFamily)
 	// channel select accumulates results from FetchMetricFamilies
@@ -91,18 +91,18 @@ func scrapeProm(url string, tripper http.RoundTripper) (map[string]*dto.MetricFa
 	for {
 		select {
 		case fam, chanOpen := <-mfChan:
-			// FetchMetricFamilies will close the channel when done
-			// at which point we want to stop the goroutine
+			// FetchMetricFamilies will close the channel when done, at which
+			// point the fetch outcome decides whether the scrape succeeded:
+			// a down or unauthorized metrics endpoint used to be reported as
+			// a successful scrape with empty stats because the close was seen
+			// before the error was sent.
 			if fam == nil && !chanOpen {
-				return result, nil
+				return result, <-errChan
 			}
 			ptr := fam
 			result[fam.GetName()] = ptr
 		case err := <-errChan:
 			return result, err
-		}
-		if errChan == nil && mfChan == nil {
-			return result, nil
 		}
 	}
 }

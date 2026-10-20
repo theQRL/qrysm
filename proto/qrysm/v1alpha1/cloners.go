@@ -155,24 +155,18 @@ func CopyAttesterSlashings(slashings []*AttesterSlashing) []*AttesterSlashing {
 
 // CopyIndexedAttestation copies the provided IndexedAttestation.
 func CopyIndexedAttestation(indexedAtt *IndexedAttestation) *IndexedAttestation {
-	var (
-		indices    []uint64
-		signatures [][]byte
-	)
 	if indexedAtt == nil {
 		return nil
-	} else if indexedAtt.AttestingIndices != nil {
+	}
+	var indices []uint64
+	if indexedAtt.AttestingIndices != nil {
 		indices = make([]uint64, len(indexedAtt.AttestingIndices))
 		copy(indices, indexedAtt.AttestingIndices)
-		signatures = make([][]byte, len(indexedAtt.Signatures))
-		for i, sig := range indexedAtt.Signatures {
-			signatures[i] = bytesutil.SafeCopyBytes(sig)
-		}
 	}
 	return &IndexedAttestation{
 		AttestingIndices: indices,
 		Data:             CopyAttestationData(indexedAtt.Data),
-		Signatures:       signatures,
+		Signatures:       bytesutil.SafeCopy2dBytes(indexedAtt.Signatures),
 	}
 }
 
@@ -217,10 +211,11 @@ func CopyDepositData(depData *Deposit_Data) *Deposit_Data {
 		return nil
 	}
 	return &Deposit_Data{
-		PublicKey:             bytesutil.SafeCopyBytes(depData.PublicKey),
-		WithdrawalCredentials: bytesutil.SafeCopyBytes(depData.WithdrawalCredentials),
-		Amount:                depData.Amount,
-		Signature:             bytesutil.SafeCopyBytes(depData.Signature),
+		PublicKey:           bytesutil.SafeCopyBytes(depData.PublicKey),
+		WithdrawalRecipient: bytesutil.SafeCopyBytes(depData.WithdrawalRecipient),
+		Amount:              depData.Amount,
+		RandaoCommitment:    bytesutil.SafeCopyBytes(depData.RandaoCommitment),
+		Signature:           bytesutil.SafeCopyBytes(depData.Signature),
 	}
 }
 
@@ -252,19 +247,23 @@ func CopySignedVoluntaryExit(exit *SignedVoluntaryExit) *SignedVoluntaryExit {
 
 // CopyValidator copies the provided validator.
 func CopyValidator(val *Validator) *Validator {
+	if val == nil {
+		return nil
+	}
 	pubKey := make([]byte, len(val.PublicKey))
 	copy(pubKey, val.PublicKey)
-	withdrawalCreds := make([]byte, len(val.WithdrawalCredentials))
-	copy(withdrawalCreds, val.WithdrawalCredentials)
+	withdrawalRecipient := make([]byte, len(val.WithdrawalRecipient))
+	copy(withdrawalRecipient, val.WithdrawalRecipient)
 	return &Validator{
 		PublicKey:                  pubKey,
-		WithdrawalCredentials:      withdrawalCreds,
+		WithdrawalRecipient:        withdrawalRecipient,
 		EffectiveBalance:           val.EffectiveBalance,
 		Slashed:                    val.Slashed,
 		ActivationEligibilityEpoch: val.ActivationEligibilityEpoch,
 		ActivationEpoch:            val.ActivationEpoch,
 		ExitEpoch:                  val.ExitEpoch,
 		WithdrawableEpoch:          val.WithdrawableEpoch,
+		RandaoCommitment:           bytesutil.SafeCopyBytes(val.RandaoCommitment),
 	}
 }
 

@@ -2,20 +2,31 @@ package ml_dsa_87
 
 import (
 	"bytes"
-	"encoding/hex"
+	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87/ml_dsa_87t"
+)
+
+const (
+	maxVerboseSignatureFailures   = 8
+	maxVerboseSignatureErrorBytes = 4096
+	verboseSignaturePrefixBytes   = 16
+	maxVerboseSignatureTextBytes  = 128
 )
 
 // SignatureBatch refers to the defined set of
 // signatures and its respective public keys and
 // messages required to verify it.
 type SignatureBatch struct {
-	Signatures   [][][]byte
-	PublicKeys   [][]PublicKey
-	Messages     [][32]byte
+	Signatures [][][]byte
+	PublicKeys [][]PublicKey
+	Messages   [][32]byte
+	// Descriptions must contain one label per message for VerifyVerbosely and
+	// RemoveDuplicates. Verify does not use this metadata.
 	Descriptions []string
 }
 
@@ -38,51 +49,119 @@ func (s *SignatureBatch) Join(set *SignatureBatch) *SignatureBatch {
 	return s
 }
 
-// Verify the current signature batch using the batch verify algorithm.
+// Verify checks the current signature set in parallel.
 func (s *SignatureBatch) Verify() (bool, error) {
 	return VerifyMultipleSignatures(s.Signatures, s.Messages, s.PublicKeys)
 }
 
-// VerifyVerbosely verifies signatures as a whole at first, if fails, fallback
-// to verify each single signature to identify invalid ones.
+// VerifySequential checks signatures in order, stopping on the first failure or
+// cancellation. Callers that already limit concurrent requests can use this to
+// avoid starting another worker pool for every request. Descriptions are unused.
+func (s *SignatureBatch) VerifySequential(ctx context.Context) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if s == nil {
+		return false, errors.New("nil signature set")
+	}
+	if err := ml_dsa_87t.ValidateSignatureBatch(s.Signatures, s.Messages, s.PublicKeys); err != nil {
+		return false, err
+	}
+	if len(s.Signatures) == 0 {
+		return false, nil
+	}
+	for i, msg := range s.Messages {
+		for j, signature := range s.Signatures[i] {
+			if err := ctx.Err(); err != nil {
+				return false, err
+			}
+			valid, err := VerifySignature(signature, msg, s.PublicKeys[i][j])
+			if err != nil || !valid {
+				return false, err
+			}
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *SignatureBatch) validateDescriptions() error {
+	if len(s.Descriptions) != len(s.Messages) {
+		return errors.Errorf("descriptions and messages have differing lengths. D: %d, M: %d", len(s.Descriptions), len(s.Messages))
+	}
+	return nil
+}
+
+// VerifyVerbosely verifies signatures in parallel once and reports a bounded
+// sample of failures. Diagnostics contain short byte prefixes instead of full
+// signatures and public keys, and the resulting error is capped at 4 KiB.
 func (s *SignatureBatch) VerifyVerbosely() (bool, error) {
-	valid, err := s.Verify()
-	if err != nil || valid {
+	if s == nil {
+		return false, errors.New("nil signature set")
+	}
+	if err := s.validateDescriptions(); err != nil {
+		return false, err
+	}
+	type failure struct {
+		batchIndex, signatureIndex int
+		err                        error
+	}
+	var mu sync.Mutex
+	var failures [maxVerboseSignatureFailures]failure
+	invalidCount := 0
+	valid, err := ml_dsa_87t.VerifyMultipleSignaturesWithReporter(s.Signatures, s.Messages, s.PublicKeys, func(i, j int, err error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if invalidCount < len(failures) {
+			failures[invalidCount] = failure{batchIndex: i, signatureIndex: j, err: err}
+		}
+		invalidCount++
+	})
+	if invalidCount == 0 {
 		return valid, err
 	}
 
-	// if signature batch is invalid, we then verify signatures one by one.
-
 	var errmsg strings.Builder
 	errmsg.WriteString("some signatures are invalid. details:")
-
-	for i, msg := range s.Messages {
-		for j, sig := range s.Signatures[i] {
-			pubKey := s.PublicKeys[i][j]
-
-			valid, err := VerifySignature(sig, msg, pubKey)
-			if !valid {
-				desc := s.Descriptions[i]
-				if err != nil {
-					_, _ = fmt.Fprintf(&errmsg, "\nsignature '%s' is invalid."+
-						" signature: 0x%s, public key: 0x%s, message: 0x%v, error: %v",
-						desc, hex.EncodeToString(sig), hex.EncodeToString(pubKey.Marshal()),
-						hex.EncodeToString(msg[:]), err)
-				} else {
-					_, _ = fmt.Fprintf(&errmsg, "\nsignature '%s' is invalid."+
-						" signature: 0x%s, public key: 0x%s, message: 0x%v",
-						desc, hex.EncodeToString(sig), hex.EncodeToString(pubKey.Marshal()),
-						hex.EncodeToString(msg[:]))
-				}
-			}
+	reported := 0
+	for _, f := range failures[:min(invalidCount, len(failures))] {
+		i, j := f.batchIndex, f.signatureIndex
+		sig := s.Signatures[i][j]
+		pub := s.PublicKeys[i][j].Marshal()
+		detail := fmt.Sprintf("\nsignature '%s' is invalid. batch: %d, index: %d,"+
+			" signature prefix: 0x%x (%d bytes), public key prefix: 0x%x (%d bytes), message: 0x%x",
+			truncateVerboseSignatureText(s.Descriptions[i]), i, j,
+			sig[:min(len(sig), verboseSignaturePrefixBytes)], len(sig),
+			pub[:min(len(pub), verboseSignaturePrefixBytes)], len(pub), s.Messages[i])
+		if f.err != nil {
+			detail += ", error: " + truncateVerboseSignatureText(f.err.Error())
 		}
+		// Reserve enough space for the omitted-count summary, including its integer.
+		if errmsg.Len()+len(detail) > maxVerboseSignatureErrorBytes-128 {
+			break
+		}
+		errmsg.WriteString(detail)
+		reported++
+	}
+	if reported < invalidCount {
+		_, _ = fmt.Fprintf(&errmsg, "\n%d additional invalid signatures omitted.", invalidCount-reported)
 	}
 
 	return false, errors.New(errmsg.String())
 }
 
+func truncateVerboseSignatureText(text string) string {
+	if len(text) > maxVerboseSignatureTextBytes {
+		return text[:maxVerboseSignatureTextBytes] + "..."
+	}
+	return text
+}
+
 // Copy the attached signature batch and return it
-// to the caller.
+// to the caller. Uninitialized public keys are copied as nil entries, which
+// verification will reject.
 func (s *SignatureBatch) Copy() *SignatureBatch {
 	signatures := make([][][]byte, len(s.Signatures))
 	pubkeys := make([][]PublicKey, len(s.PublicKeys))
@@ -99,7 +178,9 @@ func (s *SignatureBatch) Copy() *SignatureBatch {
 	for i := range s.PublicKeys {
 		pubkeys[i] = make([]PublicKey, len(s.PublicKeys[i]))
 		for j := range s.PublicKeys[i] {
-			pubkeys[i][j] = s.PublicKeys[i][j].Copy()
+			if s.PublicKeys[i][j] != nil {
+				pubkeys[i][j] = s.PublicKeys[i][j].Copy()
+			}
 		}
 	}
 	for i := range s.Messages {
@@ -115,13 +196,15 @@ func (s *SignatureBatch) Copy() *SignatureBatch {
 }
 
 func (s *SignatureBatch) RemoveDuplicates() (int, *SignatureBatch, error) {
-	if len(s.Signatures) == 0 || len(s.PublicKeys) == 0 || len(s.Messages) == 0 {
-		return 0, s, nil
+	// Validate the entire batch before comparing keys or compacting any slices.
+	if err := ml_dsa_87t.ValidateSignatureBatch(s.Signatures, s.Messages, s.PublicKeys); err != nil {
+		return 0, s, err
 	}
-
-	if len(s.Signatures) != len(s.PublicKeys) || len(s.Signatures) != len(s.Messages) {
-		return 0, s, errors.Errorf("mismatch number of signatures batches, publickeys batches and messages in signature batch. "+
-			"Signatures Batches %d, Public Keys Batches %d , Messages %d", len(s.Signatures), len(s.PublicKeys), len(s.Messages))
+	if err := s.validateDescriptions(); err != nil {
+		return 0, s, err
+	}
+	if len(s.Signatures) == 0 {
+		return 0, s, nil
 	}
 
 	msgMap := make(map[string][]int)
@@ -129,11 +212,6 @@ func (s *SignatureBatch) RemoveDuplicates() (int, *SignatureBatch, error) {
 
 loop:
 	for i := 0; i < len(s.Messages); i++ {
-		if len(s.Signatures[i]) != len(s.PublicKeys[i]) {
-			return 0, s, errors.Errorf("mismatch number of signatures and publickeys in signature batch[%d]. "+
-				"Signatures %d, Public Keys %d", i, len(s.Signatures[i]), len(s.PublicKeys[i]))
-		}
-
 		if indices, ok := msgMap[string(s.Messages[i][:])]; ok {
 		loop2:
 			for _, msgIdx := range indices {

@@ -3,6 +3,7 @@ package doublylinkedtree
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/theQRL/qrysm/config/params"
@@ -15,6 +16,56 @@ import (
 // boost. It alters the genesisTime tracked by the store.
 func driftGenesisTime(f *ForkChoice, slot primitives.Slot, delay uint64) {
 	f.SetGenesisTime(uint64(time.Now().Unix()) - uint64(slot)*params.BeaconConfig().SecondsPerSlot - delay)
+}
+
+func TestForkChoice_HeadExpiresProposerBoost(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		slot primitives.Slot
+	}{
+		{name: "next slot", slot: 2},
+		{name: "skipped slot", slot: 3},
+		{name: "epoch boundary", slot: params.BeaconConfig().SlotsPerEpoch},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				ctx := context.Background()
+				f := setup(0, 0)
+				f.justifiedBalances = []uint64{1}
+				f.store.committeeWeight = 100
+				boosted, voted := [32]byte{'a'}, [32]byte{'z'}
+				driftGenesisTime(f, 1, 0)
+				for _, root := range [][32]byte{boosted, voted} {
+					st, block, err := prepareForkchoiceState(ctx, 1, root, [32]byte{}, root, 0, 0)
+					require.NoError(t, err)
+					require.NoError(t, f.InsertNode(ctx, st, block))
+				}
+				f.ProcessAttestation(ctx, []uint64{0}, voted, 0)
+				// Repeated head calls and delayed ticks preserve a current boost.
+				for _, tick := range []primitives.Slot{0, 1, 1} {
+					require.NoError(t, f.NewSlot(ctx, tick))
+					head, err := f.Head(ctx)
+					require.NoError(t, err)
+					require.Equal(t, boosted, head)
+					require.Equal(t, boosted, f.ProposerBoost())
+				}
+				// No tick or block insertion occurs before this head calculation.
+				driftGenesisTime(f, tc.slot, 0)
+				for range 2 {
+					head, err := f.Head(ctx)
+					require.NoError(t, err)
+					require.Equal(t, voted, head)
+					require.Equal(t, [32]byte{}, f.ProposerBoost())
+					weight, err := f.Weight(boosted)
+					require.NoError(t, err)
+					require.Equal(t, uint64(0), weight)
+					weight, err = f.Weight(voted)
+					require.NoError(t, err)
+					require.Equal(t, uint64(1), weight)
+				}
+			})
+		})
+	}
 }
 
 // Simple, ex-ante attack mitigation using proposer boost.
@@ -502,5 +553,5 @@ func TestForkChoice_missingProposerBoostRoots(t *testing.T) {
 	headRoot, err = f.Head(ctx)
 	require.NoError(t, err)
 	require.Equal(t, blk.Root(), headRoot)
-	require.Equal(t, [32]byte{'p'}, f.store.proposerBoostRoot)
+	require.Equal(t, [32]byte{}, f.store.proposerBoostRoot, "insertion expires a boost whose node is missing")
 }

@@ -13,6 +13,8 @@ import (
 // are used by proposer actor. Unaggregated attestations are used by
 // aggregator actor.
 type Pool interface {
+	// RecoverAttestation restores an orphaned vote for block inclusion.
+	RecoverAttestation(att *qrysmpb.Attestation) error
 	// For Aggregated attestations
 	AggregateUnaggregatedAttestations(ctx context.Context) error
 	SaveAggregatedAttestation(att *qrysmpb.Attestation) error
@@ -30,10 +32,13 @@ type Pool interface {
 	DeleteUnaggregatedAttestation(att *qrysmpb.Attestation) error
 	DeleteSeenUnaggregatedAttestations() (int, error)
 	UnaggregatedAttestationCount() int
-	// For attestations that were included in the block.
+	// Included attestations awaiting forkchoice processing. The chain service
+	// retries these independently of gossip aggregation and age limits.
 	SaveBlockAttestation(att *qrysmpb.Attestation) error
 	BlockAttestations() []*qrysmpb.Attestation
 	DeleteBlockAttestation(att *qrysmpb.Attestation) error
+	DiscardBlockAttestation(att *qrysmpb.Attestation) error
+	MarkAppliedAttestation(att *qrysmpb.Attestation) error
 	// For attestations to be passed to fork choice.
 	SaveForkchoiceAttestation(att *qrysmpb.Attestation) error
 	SaveForkchoiceAttestations(atts []*qrysmpb.Attestation) error

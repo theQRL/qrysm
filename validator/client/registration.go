@@ -38,7 +38,7 @@ func SubmitValidatorRegistrations(
 		}
 		return errors.Wrap(err, "could not submit signed registrations to beacon node")
 	}
-	log.Infoln("Submitted builder validator registration settings for custom builders")
+	log.Debugln("Submitted builder validator registration settings for custom builders")
 	return nil
 }
 
@@ -73,6 +73,9 @@ func signValidatorRegistration(ctx context.Context, signer iface.SigningFunc, re
 
 // SignValidatorRegistrationRequest compares and returns either the cached validator registration request or signs a new one.
 func (v *validator) SignValidatorRegistrationRequest(ctx context.Context, signer iface.SigningFunc, newValidatorRegistration *qrysmpb.ValidatorRegistrationV1) (*qrysmpb.SignedValidatorRegistrationV1, error) {
+	v.signedValidatorRegistrationsLock.Lock()
+	defer v.signedValidatorRegistrationsLock.Unlock()
+
 	signedReg, ok := v.signedValidatorRegistrations[bytesutil.ToBytes2592(newValidatorRegistration.Pubkey)]
 	if ok && isValidatorRegistrationSame(signedReg.Message, newValidatorRegistration) {
 		return signedReg, nil

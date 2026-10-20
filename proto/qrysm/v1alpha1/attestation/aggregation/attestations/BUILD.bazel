@@ -28,7 +28,6 @@ go_test(
     embed = [":attestations"],
     deps = [
         "//config/params",
-        "//encoding/ssz/equality",
         "//proto/qrysm/v1alpha1",
         "//proto/qrysm/v1alpha1/attestation/aggregation",
         "//proto/qrysm/v1alpha1/attestation/aggregation/testing",

@@ -19,13 +19,12 @@ import (
 	"go.opencensus.io/trace"
 )
 
-// ExecuteStateTransitionNoVerifyAnySig defines the procedure for a state transition function.
-// This does not validate any ML-DSA-87 signatures of attestations, block proposer signature, randao signature,
-// it is used for performing a state transition as quickly as possible. This function also returns a signature
-// set of all signatures not verified, so that they can be stored and verified later.
+// ExecuteStateTransitionNoVerifyAnySig applies a state transition while deferring
+// proposer and attestation signature verification to the returned signature set.
+// It verifies sync committee signatures, RANDAO reveals and other operations.
 //
-// WARNING: This method does not validate any signatures (i.e. calling `state_transition()` with `validate_result=False`).
-// This method also modifies the passed in state.
+// WARNING: The caller must verify the returned signature set before accepting the
+// block. This method modifies the passed in state.
 //
 // Spec pseudocode definition:
 //
@@ -86,13 +85,12 @@ func ExecuteStateTransitionNoVerifyAnySig(
 	return set, st, nil
 }
 
-// CalculateStateRoot defines the procedure for a state transition function.
-// This does not validate any ML-DSA-87 signatures in a block, it is used for calculating the
-// state root of the state for the block proposer to use.
-// This does not modify state.
+// CalculateStateRoot computes a proposed block's state root without modifying the
+// input state. It skips proposer, attestation and sync committee signature checks
+// and RANDAO reveal verification. Other operation checks are retained.
 //
-// WARNING: This method does not validate any ML-DSA-87 signatures (i.e. calling `state_transition()` with `validate_result=False`).
-// This is used for proposer to compute state root before proposing a new block, and this does not modify state.
+// WARNING: This is for block construction, not block validation. Sync committee
+// messages and contributions must already have been verified before pool admission.
 //
 // Spec pseudocode definition:
 //
@@ -137,8 +135,9 @@ func CalculateStateRoot(
 		return [32]byte{}, errors.Wrap(err, "could not process slots")
 	}
 
-	// Execute per block transition.
-	state, err = ProcessBlockForStateRoot(ctx, state, signed)
+	// Sync committee signatures were verified when the messages and contributions
+	// entered the pool, so block construction only needs their state effects.
+	state, err = processBlockForStateRoot(ctx, state, signed, false /* verifySyncSignatures */)
 	if err != nil {
 		return [32]byte{}, errors.Wrap(err, "could not process block")
 	}
@@ -146,10 +145,9 @@ func CalculateStateRoot(
 	return state.HashTreeRoot(ctx)
 }
 
-// ProcessBlockNoVerifyAnySig creates a new, modified beacon state by applying block operation
-// transformations as defined in the Ethereum Serenity specification. It does not validate
-// any block signature except for deposit and slashing signatures. It also returns the relevant
-// signature set from all the respective methods.
+// ProcessBlockNoVerifyAnySig applies block operations and returns the proposer and
+// attestation signatures for deferred verification. Sync committee signatures,
+// RANDAO reveals and other operation checks are verified during processing.
 //
 // Spec pseudocode definition:
 //
@@ -174,6 +172,13 @@ func ProcessBlockNoVerifyAnySig(
 	}
 
 	blk := signed.Block()
+	// The RANDAO reveal is a hash pre-image, not a signature: it is checked
+	// here, against the proposer's commitment in the pre-state, instead of
+	// being deferred to the signature batch.
+	if err := b.VerifyRandaoReveal(ctx, st, blk.Body().RandaoReveal()); err != nil {
+		tracing.AnnotateError(span, err)
+		return nil, nil, errors.Wrap(err, "could not verify block randao")
+	}
 	st, err := ProcessBlockForStateRoot(ctx, st, signed)
 	if err != nil {
 		return nil, nil, err
@@ -185,20 +190,14 @@ func ProcessBlockNoVerifyAnySig(
 		tracing.AnnotateError(span, err)
 		return nil, nil, errors.Wrap(err, "could not retrieve block signature set")
 	}
-	randaoReveal := signed.Block().Body().RandaoReveal()
-	rSet, err := b.RandaoSignatureBatch(ctx, st, randaoReveal[:])
-	if err != nil {
-		tracing.AnnotateError(span, err)
-		return nil, nil, errors.Wrap(err, "could not retrieve randao signature set")
-	}
 	aSet, err := b.AttestationSignatureBatch(ctx, st, signed.Block().Body().Attestations())
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "could not retrieve attestation signature set")
 	}
 
-	// Merge beacon block, randao and attestations signatures into a set.
+	// Merge beacon block and attestations signatures into a set.
 	set := ml_dsa_87.NewSet()
-	set.Join(bSet).Join(rSet).Join(aSet)
+	set.Join(bSet).Join(aSet)
 
 	return set, st, nil
 }
@@ -252,8 +251,8 @@ func ProcessOperationsNoVerifyAttsSigs(
 	return state, nil
 }
 
-// ProcessBlockForStateRoot processes the state for state root computation. It skips proposer signature
-// and randao signature verifications.
+// ProcessBlockForStateRoot processes the state for state root computation. It skips proposer and
+// attestation signature verification and RANDAO reveal verification, but verifies sync committee signatures.
 //
 // Spec pseudocode definition:
 // def process_block(state: BeaconState, block: ReadOnlyBeaconBlock) -> None:
@@ -272,6 +271,30 @@ func ProcessBlockForStateRoot(
 ) (state.BeaconState, error) {
 	ctx, span := trace.StartSpan(ctx, "core.state.ProcessBlockForStateRoot")
 	defer span.End()
+	return processBlockForStateRoot(ctx, state, signed, true /* verifySyncSignatures */)
+}
+
+// ProcessBlockForReplay applies the same block operations as ProcessBlockForStateRoot,
+// but also skips sync committee signature verification. Other operation checks are retained.
+//
+// WARNING: Only use this for previously verified blocks. The state must already be advanced to the block's slot.
+func ProcessBlockForReplay(
+	ctx context.Context,
+	state state.BeaconState,
+	signed interfaces.ReadOnlySignedBeaconBlock,
+) (state.BeaconState, error) {
+	ctx, span := trace.StartSpan(ctx, "core.state.ProcessBlockForReplay")
+	defer span.End()
+	return processBlockForStateRoot(ctx, state, signed, false /* verifySyncSignatures */)
+}
+
+func processBlockForStateRoot(
+	ctx context.Context,
+	state state.BeaconState,
+	signed interfaces.ReadOnlySignedBeaconBlock,
+	verifySyncSignatures bool,
+) (state.BeaconState, error) {
+	span := trace.FromContext(ctx)
 	if err := blocks.BeaconBlockIsNil(signed); err != nil {
 		return nil, err
 	}
@@ -308,11 +331,10 @@ func ProcessBlockForStateRoot(
 		}
 	}
 
-	randaoReveal := signed.Block().Body().RandaoReveal()
-	state, err = b.ProcessRandaoNoVerify(state, randaoReveal[:])
+	state, err = b.ProcessRandaoNoVerify(ctx, state, signed.Block().Body().RandaoReveal())
 	if err != nil {
 		tracing.AnnotateError(span, err)
-		return nil, errors.Wrap(err, "could not verify and process randao")
+		return nil, errors.Wrap(err, "could not process randao")
 	}
 
 	state, err = b.ProcessExecutionDataInBlock(ctx, state, signed.Block().Body().ExecutionData())
@@ -331,7 +353,11 @@ func ProcessBlockForStateRoot(
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get sync aggregate from block")
 	}
-	state, _, err = altair.ProcessSyncAggregate(ctx, state, sa)
+	if verifySyncSignatures {
+		state, _, err = altair.ProcessSyncAggregate(ctx, state, sa)
+	} else {
+		state, _, err = altair.ProcessSyncAggregateNoVerifySig(ctx, state, sa)
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "process_sync_aggregate failed")
 	}

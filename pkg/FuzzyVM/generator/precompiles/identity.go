@@ -22,7 +22,7 @@ import (
 	"github.com/theQRL/qrysm/pkg/goqrvmlab/program"
 )
 
-var identityAddr, _ = common.NewAddressFromString("Q0000000000000000000000000000000000000004")
+var identityAddr, _ = common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004")
 
 type identityCaller struct{}
 

@@ -24,7 +24,6 @@
 //	  return b.foo
 //	}
 //
-// Although it is technically possible to remove the short-circuit conditions
-// from the external function, that would require every read to obtain a lock
-// even if the data was not present, leading to potential slowdowns.
+// Checks for absent data also require the lock because setters may replace the
+// underlying fields concurrently.
 package state_native

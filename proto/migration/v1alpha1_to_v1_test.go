@@ -30,7 +30,7 @@ var (
 	stateRoot        = bytesutil.PadTo([]byte("stateroot"), fieldparams.RootLength)
 	signature        = bytesutil.PadTo([]byte("signature"), 4627)
 	signatures       = [][]byte{signature}
-	randaoReveal     = bytesutil.PadTo([]byte("randaoreveal"), 4627)
+	randaoReveal     = bytesutil.PadTo([]byte("randaoreveal"), 32)
 	depositRoot      = bytesutil.PadTo([]byte("depositroot"), fieldparams.RootLength)
 	blockHash        = bytesutil.PadTo([]byte("blockhash"), 32)
 	beaconBlockRoot  = bytesutil.PadTo([]byte("beaconblockroot"), fieldparams.RootLength)
@@ -39,7 +39,7 @@ var (
 	bodyRoot         = bytesutil.PadTo([]byte("bodyroot"), fieldparams.RootLength)
 	selectionProof   = bytesutil.PadTo([]byte("selectionproof"), 4627)
 	parentHash       = bytesutil.PadTo([]byte("parenthash"), 32)
-	feeRecipient     = bytesutil.PadTo([]byte("feerecipient"), 20)
+	feeRecipient     = bytesutil.PadTo([]byte("feerecipient"), fieldparams.FeeRecipientLength)
 	receiptsRoot     = bytesutil.PadTo([]byte("receiptsroot"), 32)
 	logsBloom        = bytesutil.PadTo([]byte("logsbloom"), 256)
 	prevRandao       = bytesutil.PadTo([]byte("prevrandao"), 32)
@@ -266,7 +266,7 @@ func Test_V1AttToV1Alpha1(t *testing.T) {
 func Test_V1Alpha1ValidatorToV1(t *testing.T) {
 	v1Alpha1Validator := &qrysmpb.Validator{
 		PublicKey:                  []byte("pubkey"),
-		WithdrawalCredentials:      []byte("withdraw"),
+		WithdrawalRecipient:        []byte("withdraw"),
 		EffectiveBalance:           99,
 		Slashed:                    true,
 		ActivationEligibilityEpoch: 1,
@@ -278,7 +278,7 @@ func Test_V1Alpha1ValidatorToV1(t *testing.T) {
 	v1Validator := V1Alpha1ValidatorToV1(v1Alpha1Validator)
 	require.NotNil(t, v1Validator)
 	assert.DeepEqual(t, []byte("pubkey"), v1Validator.Pubkey)
-	assert.DeepEqual(t, []byte("withdraw"), v1Validator.WithdrawalCredentials)
+	assert.DeepEqual(t, []byte("withdraw"), v1Validator.WithdrawalRecipient)
 	assert.Equal(t, uint64(99), v1Validator.EffectiveBalance)
 	assert.Equal(t, true, v1Validator.Slashed)
 	assert.Equal(t, primitives.Epoch(1), v1Validator.ActivationEligibilityEpoch)
@@ -290,7 +290,7 @@ func Test_V1Alpha1ValidatorToV1(t *testing.T) {
 func Test_V1ValidatorToV1Alpha1(t *testing.T) {
 	v1Validator := &qrlpb.Validator{
 		Pubkey:                     []byte("pubkey"),
-		WithdrawalCredentials:      []byte("withdraw"),
+		WithdrawalRecipient:        []byte("withdraw"),
 		EffectiveBalance:           99,
 		Slashed:                    true,
 		ActivationEligibilityEpoch: 1,
@@ -302,7 +302,7 @@ func Test_V1ValidatorToV1Alpha1(t *testing.T) {
 	v1Alpha1Validator := V1ValidatorToV1Alpha1(v1Validator)
 	require.NotNil(t, v1Alpha1Validator)
 	assert.DeepEqual(t, []byte("pubkey"), v1Alpha1Validator.PublicKey)
-	assert.DeepEqual(t, []byte("withdraw"), v1Alpha1Validator.WithdrawalCredentials)
+	assert.DeepEqual(t, []byte("withdraw"), v1Alpha1Validator.WithdrawalRecipient)
 	assert.Equal(t, uint64(99), v1Alpha1Validator.EffectiveBalance)
 	assert.Equal(t, true, v1Alpha1Validator.Slashed)
 	assert.Equal(t, primitives.Epoch(1), v1Alpha1Validator.ActivationEligibilityEpoch)
@@ -400,6 +400,49 @@ func Test_V1Alpha1BeaconBlockZondToV1Blinded(t *testing.T) {
 	assert.DeepEqual(t, alphaRoot, v1Root)
 }
 
+func Test_V1Alpha1BeaconBlockZondToV1Blinded_DepositData(t *testing.T) {
+	alphaBlock := util.HydrateBeaconBlockZond(&qrysmpb.BeaconBlockZond{})
+	proof := make([][]byte, fieldparams.DepositProofLength)
+	for i := range proof {
+		proof[i] = bytesutil.PadTo([]byte{byte(i + 1)}, fieldparams.RootLength)
+	}
+	commitment := bytesutil.PadTo([]byte{1, 2, 3}, fieldparams.RandaoCommitmentLength)
+	alphaBlock.Body.Deposits = []*qrysmpb.Deposit{{
+		Proof: proof,
+		Data: &qrysmpb.Deposit_Data{
+			PublicKey:           bytesutil.PadTo([]byte{4}, fieldparams.MLDSA87PubkeyLength),
+			WithdrawalRecipient: bytesutil.PadTo([]byte{5}, fieldparams.WithdrawalRecipientLength),
+			Amount:              6,
+			RandaoCommitment:    bytesutil.SafeCopyBytes(commitment),
+			Signature:           bytesutil.PadTo([]byte{7}, fieldparams.MLDSA87SignatureLength),
+		},
+	}}
+	_, err := alphaBlock.MarshalSSZ()
+	require.NoError(t, err)
+	alphaRoot, err := alphaBlock.HashTreeRoot()
+	require.NoError(t, err)
+
+	v1Block, err := V1Alpha1BeaconBlockZondToV1Blinded(alphaBlock)
+	require.NoError(t, err)
+	encoded, err := v1Block.MarshalSSZ()
+	assert.NoError(t, err)
+	v1Root, err := v1Block.HashTreeRoot()
+	require.NoError(t, err)
+	assert.Equal(t, alphaRoot, v1Root)
+
+	decoded := &qrlpb.BlindedBeaconBlockZond{}
+	require.NoError(t, decoded.UnmarshalSSZ(encoded))
+	decodedRoot, err := decoded.HashTreeRoot()
+	require.NoError(t, err)
+	assert.Equal(t, alphaRoot, decodedRoot)
+	assert.DeepEqual(t, commitment, decoded.Body.Deposits[0].Data.RandaoCommitment)
+
+	alphaBlock.Body.Deposits[0].Data.RandaoCommitment[0] ^= 0xff
+	assert.DeepEqual(t, commitment, v1Block.Body.Deposits[0].Data.RandaoCommitment)
+	v1Block.Body.Deposits[0].Data.RandaoCommitment[1] ^= 0xff
+	assert.Equal(t, commitment[1], alphaBlock.Body.Deposits[0].Data.RandaoCommitment[1])
+}
+
 func TestBeaconStateZondToProto(t *testing.T) {
 	source, err := util.NewBeaconStateZond(util.FillRootsNaturalOptZond, func(state *qrysmpb.BeaconStateZond) error {
 		state.GenesisTime = 1
@@ -433,13 +476,14 @@ func TestBeaconStateZondToProto(t *testing.T) {
 		state.ExecutionDepositIndex = 8
 		state.Validators = []*qrysmpb.Validator{{
 			PublicKey:                  bytesutil.PadTo([]byte("publickey"), 2592),
-			WithdrawalCredentials:      bytesutil.PadTo([]byte("withdrawalcredentials"), 32),
+			WithdrawalRecipient:        bytesutil.PadTo([]byte("withdrawalrecipient"), 64),
 			EffectiveBalance:           9,
 			Slashed:                    true,
 			ActivationEligibilityEpoch: 10,
 			ActivationEpoch:            11,
 			ExitEpoch:                  12,
 			WithdrawableEpoch:          13,
+			RandaoCommitment:           bytesutil.PadTo([]byte("randaocommitment"), 32),
 		}}
 		state.Balances = []uint64{14}
 		state.RandaoMixes = [][]byte{bytesutil.PadTo([]byte("randaomixes"), 32)}
@@ -468,7 +512,7 @@ func TestBeaconStateZondToProto(t *testing.T) {
 		}
 		state.LatestExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       bytesutil.PadTo([]byte("parenthash"), 32),
-			FeeRecipient:     bytesutil.PadTo([]byte("feerecipient"), 20),
+			FeeRecipient:     bytesutil.PadTo([]byte("feerecipient"), 64),
 			StateRoot:        bytesutil.PadTo([]byte("stateroot"), 32),
 			ReceiptsRoot:     bytesutil.PadTo([]byte("receiptroot"), 32),
 			LogsBloom:        bytesutil.PadTo([]byte("logsbloom"), 256),
@@ -538,13 +582,14 @@ func TestBeaconStateZondToProto(t *testing.T) {
 	resultValidator := result.Validators[0]
 	require.NotNil(t, resultValidator)
 	assert.DeepEqual(t, bytesutil.PadTo([]byte("publickey"), 2592), resultValidator.Pubkey)
-	assert.DeepEqual(t, bytesutil.PadTo([]byte("withdrawalcredentials"), 32), resultValidator.WithdrawalCredentials)
+	assert.DeepEqual(t, bytesutil.PadTo([]byte("withdrawalrecipient"), fieldparams.WithdrawalRecipientLength), resultValidator.WithdrawalRecipient)
 	assert.Equal(t, uint64(9), resultValidator.EffectiveBalance)
 	assert.Equal(t, true, resultValidator.Slashed)
 	assert.Equal(t, primitives.Epoch(10), resultValidator.ActivationEligibilityEpoch)
 	assert.Equal(t, primitives.Epoch(11), resultValidator.ActivationEpoch)
 	assert.Equal(t, primitives.Epoch(12), resultValidator.ExitEpoch)
 	assert.Equal(t, primitives.Epoch(13), resultValidator.WithdrawableEpoch)
+	assert.DeepEqual(t, bytesutil.PadTo([]byte("randaocommitment"), 32), resultValidator.RandaoCommitment)
 	assert.DeepEqual(t, []uint64{14}, result.Balances)
 	assert.Equal(t, 65536, len(result.RandaoMixes))
 	assert.DeepEqual(t, bytesutil.PadTo([]byte("randaomixes"), 32), result.RandaoMixes[0])
@@ -572,7 +617,7 @@ func TestBeaconStateZondToProto(t *testing.T) {
 	resultLatestExecutionPayloadHeader := result.LatestExecutionPayloadHeader
 	require.NotNil(t, resultLatestExecutionPayloadHeader)
 	assert.DeepEqual(t, bytesutil.PadTo([]byte("parenthash"), 32), resultLatestExecutionPayloadHeader.ParentHash)
-	assert.DeepEqual(t, bytesutil.PadTo([]byte("feerecipient"), 20), resultLatestExecutionPayloadHeader.FeeRecipient)
+	assert.DeepEqual(t, bytesutil.PadTo([]byte("feerecipient"), fieldparams.FeeRecipientLength), resultLatestExecutionPayloadHeader.FeeRecipient)
 	assert.DeepEqual(t, bytesutil.PadTo([]byte("stateroot"), 32), resultLatestExecutionPayloadHeader.StateRoot)
 	assert.DeepEqual(t, bytesutil.PadTo([]byte("receiptroot"), 32), resultLatestExecutionPayloadHeader.ReceiptsRoot)
 	assert.DeepEqual(t, bytesutil.PadTo([]byte("logsbloom"), 256), resultLatestExecutionPayloadHeader.LogsBloom)

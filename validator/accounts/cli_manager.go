@@ -18,9 +18,7 @@ import (
 
 // NewCLIManager allows for managing validator accounts via CLI commands.
 func NewCLIManager(opts ...Option) (*AccountsCLIManager, error) {
-	acc := &AccountsCLIManager{
-		// mnemonicLanguage: derived.DefaultMnemonicLanguage,
-	}
+	acc := &AccountsCLIManager{}
 	for _, opt := range opts {
 		if err := opt(acc); err != nil {
 			return nil, err
@@ -80,6 +78,7 @@ func (acm *AccountsCLIManager) prepareBeaconClients(ctx context.Context) (*iface
 		grpcConn,
 		acm.beaconApiEndpoint,
 		acm.beaconApiTimeout,
+		grpcConn.Close,
 	)
 
 	validatorClient := validatorClientFactory.NewValidatorClient(conn)

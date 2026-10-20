@@ -17,6 +17,7 @@ go_library(
         "//cmd",
         "//cmd/validator/flags",
         "//config/features",
+        "//config/params",
         "//io/prompt",
         "//runtime/tos",
         "//validator/accounts",
@@ -34,7 +35,9 @@ go_library(
 
 go_test(
     name = "accounts_test",
+    timeout = "long",
     srcs = [
+        "accounts_test.go",
         "backup_test.go",
         "delete_test.go",
         "exit_test.go",
@@ -44,7 +47,9 @@ go_test(
     embed = [":accounts"],
     deps = [
         "//build/bazel",
+        "//cmd",
         "//cmd/validator/flags",
+        "//config/features",
         "//config/params",
         "//crypto/ml_dsa_87",
         "//encoding/bytesutil",

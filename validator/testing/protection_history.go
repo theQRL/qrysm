@@ -59,7 +59,9 @@ func MockAttestingAndProposalHistories(pubkeys [][field_params.MLDSA87PubkeyLeng
 	proposalData := make([]kv.ProposalHistoryForPubkey, numValidators)
 	gen := rand.NewGenerator()
 	for v := range numValidators {
-		latestTarget := primitives.Epoch(gen.Intn(int(params.BeaconConfig().WeakSubjectivityPeriod) / 1000))
+		// Keep every history inside the proposal-pruning window (WeakSubjectivityPeriod
+		// epochs) so nothing is dropped on import and round-trips stay lossless.
+		latestTarget := primitives.Epoch(gen.Intn(int(params.BeaconConfig().WeakSubjectivityPeriod) / 2))
 		// If 0, we change the value to 1 as the we compute source by doing (target-1)
 		// to prevent any underflows in this setup helper.
 		if latestTarget == 0 {
@@ -74,7 +76,7 @@ func MockAttestingAndProposalHistories(pubkeys [][field_params.MLDSA87PubkeyLeng
 			historicalAtts = append(historicalAtts, &kv.AttestationRecord{
 				Source:      i - 1,
 				Target:      i,
-				SigningRoot: signingRoot,
+				SigningRoot: signingRoot[:],
 				PubKey:      pubkeys[v],
 			})
 		}

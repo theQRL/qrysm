@@ -30,7 +30,7 @@ func UpdateBalance(vp []*Validator, bBal *Balance) *Balance {
 }
 
 // EnsureBalancesLowerBound ensures all the balances such as active current epoch, active previous epoch and more
-// have EffectiveBalanceIncrement(1 eth) as a lower bound.
+// have EffectiveBalanceIncrement (1 Quanta) as a lower bound.
 func EnsureBalancesLowerBound(bBal *Balance) *Balance {
 	ebi := params.BeaconConfig().EffectiveBalanceIncrement
 	if ebi > bBal.ActiveCurrentEpoch {

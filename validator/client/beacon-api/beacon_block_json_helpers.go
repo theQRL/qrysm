@@ -56,10 +56,11 @@ func jsonifyDeposits(deposits []*qrysmpb.Deposit) []*apimiddleware.DepositJson {
 
 		jsonDeposit := &apimiddleware.DepositJson{
 			Data: &apimiddleware.Deposit_DataJson{
-				Amount:                uint64ToString(deposit.Data.Amount),
-				PublicKey:             hexutil.Encode(deposit.Data.PublicKey),
-				Signature:             hexutil.Encode(deposit.Data.Signature),
-				WithdrawalCredentials: hexutil.Encode(deposit.Data.WithdrawalCredentials),
+				Amount:              uint64ToString(deposit.Data.Amount),
+				PublicKey:           hexutil.Encode(deposit.Data.PublicKey),
+				RandaoCommitment:    hexutil.Encode(deposit.Data.RandaoCommitment),
+				Signature:           hexutil.Encode(deposit.Data.Signature),
+				WithdrawalRecipient: hexutil.Encode(deposit.Data.WithdrawalRecipient),
 			},
 			Proof: proofs,
 		}
@@ -186,7 +187,7 @@ func jsonifyWithdrawals(withdrawals []*enginev1.Withdrawal) []*apimiddleware.Wit
 		jsonWithdrawals[index] = &apimiddleware.WithdrawalJson{
 			WithdrawalIndex:  strconv.FormatUint(withdrawal.Index, 10),
 			ValidatorIndex:   strconv.FormatUint(uint64(withdrawal.ValidatorIndex), 10),
-			ExecutionAddress: hexutil.Encode(withdrawal.Address),
+			ExecutionAddress: hexutil.EncodeQ(withdrawal.Address),
 			Amount:           strconv.FormatUint(withdrawal.Amount, 10),
 		}
 	}

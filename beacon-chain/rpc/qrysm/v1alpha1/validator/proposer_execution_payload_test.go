@@ -121,6 +121,7 @@ func TestServer_getExecutionPayload(t *testing.T) {
 				ExecutionEngineCaller:  &exectesting.EngineClient{PayloadIDBytes: tt.payloadID, ErrForkchoiceUpdated: tt.forkchoiceErr, ExecutionPayloadZond: &pb.ExecutionPayloadZond{}, BuilderOverride: tt.override},
 				HeadFetcher:            &chainMock.ChainService{State: tt.st},
 				FinalizationFetcher:    &chainMock.ChainService{},
+				ForkchoiceFetcher:      &chainMock.ChainService{},
 				BeaconDB:               beaconDB,
 				ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 			}
@@ -159,6 +160,8 @@ func TestServer_getExecutionPayloadContextTimeout(t *testing.T) {
 	vs := &Server{
 		ExecutionEngineCaller:  &exectesting.EngineClient{PayloadIDBytes: &pb.PayloadIDBytes{}, ErrGetPayload: context.DeadlineExceeded, ExecutionPayloadZond: &pb.ExecutionPayloadZond{}},
 		HeadFetcher:            &chainMock.ChainService{State: nonTransitionSt},
+		FinalizationFetcher:    &chainMock.ChainService{},
+		ForkchoiceFetcher:      &chainMock.ChainService{},
 		BeaconDB:               beaconDB,
 		ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 	}
@@ -213,6 +216,7 @@ func TestServer_getExecutionPayload_UnexpectedFeeRecipient(t *testing.T) {
 		},
 		HeadFetcher:            &chainMock.ChainService{State: transitionSt},
 		FinalizationFetcher:    &chainMock.ChainService{},
+		ForkchoiceFetcher:      &chainMock.ChainService{},
 		BeaconDB:               beaconDB,
 		ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 	}

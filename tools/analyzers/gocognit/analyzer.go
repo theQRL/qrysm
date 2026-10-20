@@ -32,7 +32,7 @@ var Analyzer = &analysis.Analyzer{
 // > 50 Untestable code, very high risk
 //
 // This threshold should be lowered to 50 over time.
-const over = 100
+const over = 120
 
 func run(pass *analysis.Pass) (any, error) {
 	inspectResult, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)

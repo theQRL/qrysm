@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	v "github.com/theQRL/qrysm/beacon-chain/core/validators"
 	"github.com/theQRL/qrysm/beacon-chain/state"
@@ -182,7 +183,15 @@ func TestProcessProposerSlashings_AppliesCorrectStatusZond(t *testing.T) {
 			newStateVals[1].ExitEpoch, beaconState.Validators()[1].ExitEpoch)
 	}
 
-	require.Equal(t, uint64(38750000000000), newState.Balances()[1])
+	// The slashed validator loses effective_balance / MIN_SLASHING_PENALTY_QUOTIENT;
+	// the block proposer (whistleblower) earns effective_balance / WHISTLEBLOWER_REWARD_QUOTIENT.
+	blockProposer, err := helpers.BeaconProposerIndex(context.Background(), beaconState)
+	require.NoError(t, err)
+	wantSlashed := uint64(38750000000000)
+	if blockProposer == proposerIdx {
+		wantSlashed += uint64(40000000000000) / params.BeaconConfig().WhistleBlowerRewardQuotient
+	}
+	require.Equal(t, wantSlashed, newState.Balances()[1])
 	require.Equal(t, uint64(40000000000000), newState.Balances()[2])
 }
 
@@ -197,11 +206,15 @@ func TestVerifyProposerSlashing(t *testing.T) {
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 	rand1, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig1 := rand1.Sign([]byte("foo")).Marshal()
+	lsig1, err := rand1.Sign([]byte("foo"))
+	require.NoError(t, err)
+	sig1 := lsig1.Marshal()
 
 	rand2, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	sig2 := rand2.Sign([]byte("bar")).Marshal()
+	lsig2, err := rand2.Sign([]byte("bar"))
+	require.NoError(t, err)
+	sig2 := lsig2.Marshal()
 
 	tests := []struct {
 		name    string
@@ -287,12 +300,16 @@ func TestVerifyProposerSlashing(t *testing.T) {
 			if tt.args.slashing.Header_1.Signature == nil {
 				sr, err := signing.ComputeSigningRoot(tt.args.slashing.Header_1.Header, d)
 				require.NoError(t, err)
-				tt.args.slashing.Header_1.Signature = sk.Sign(sr[:]).Marshal()
+				lsig3, err := sk.Sign(sr[:])
+				require.NoError(t, err)
+				tt.args.slashing.Header_1.Signature = lsig3.Marshal()
 			}
 			if tt.args.slashing.Header_2.Signature == nil {
 				sr, err := signing.ComputeSigningRoot(tt.args.slashing.Header_2.Header, d)
 				require.NoError(t, err)
-				tt.args.slashing.Header_2.Signature = sk.Sign(sr[:]).Marshal()
+				lsig4, err := sk.Sign(sr[:])
+				require.NoError(t, err)
+				tt.args.slashing.Header_2.Signature = lsig4.Marshal()
 			}
 			if err := blocks.VerifyProposerSlashing(tt.args.beaconState, tt.args.slashing); (err != nil || tt.wantErr != "") && err.Error() != tt.wantErr {
 				t.Errorf("VerifyProposerSlashing() error = %v, wantErr %v", err, tt.wantErr)

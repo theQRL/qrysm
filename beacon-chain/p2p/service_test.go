@@ -12,13 +12,16 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	noise "github.com/libp2p/go-libp2p/p2p/security/noise"
+	libp2ptcp "github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	testifyrequire "github.com/stretchr/testify/require"
 	"github.com/theQRL/go-qrl/p2p/discover"
 	"github.com/theQRL/go-qrl/p2p/qnode"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/config/params"
@@ -61,8 +64,8 @@ func (mockListener) RequestQNR(*qnode.Node) (*qnode.Node, error) {
 	panic("implement me")
 }
 
-func (mockListener) LocalNode() *qnode.LocalNode {
-	panic("implement me")
+func (m mockListener) LocalNode() *qnode.LocalNode {
+	return m.localNode
 }
 
 func (mockListener) RandomNodes() qnode.Iterator {
@@ -74,7 +77,14 @@ func createHost(t *testing.T, port int) (host.Host, *ecdsa.PrivateKey, net.IP) {
 	ipAddr := net.ParseIP("127.0.0.1")
 	listen, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", ipAddr, port))
 	require.NoError(t, err, "Failed to p2p listen")
-	h, err := libp2p.New([]libp2p.Option{privKeyOption(pkey), libp2p.ListenAddrs(listen), libp2p.Security(noise.ID, noise.New)}...)
+	// Disable TCP reuseport to avoid simultaneous-open / Noise handshake
+	// races in tests that spin up multiple local hosts. (upstream PR #16395)
+	h, err := libp2p.New(
+		privKeyOption(pkey),
+		libp2p.ListenAddrs(listen),
+		libp2p.Security(noise.ID, noise.New),
+		libp2p.Transport(libp2ptcp.NewTCPTransport, libp2ptcp.DisableReuseport()),
+	)
 	require.NoError(t, err)
 	return h, pkey, ipAddr
 }
@@ -83,10 +93,10 @@ func TestService_Stop_SetsStartedToFalse(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	s, err := NewService(context.Background(), &Config{StateNotifier: &mock.MockStateNotifier{}})
 	require.NoError(t, err)
-	s.started = true
+	s.started.Store(true)
 	s.dv5Listener = &mockListener{}
 	assert.NoError(t, s.Stop())
-	assert.Equal(t, false, s.started)
+	assert.Equal(t, false, s.Started())
 }
 
 func TestService_Stop_DontPanicIfDv5ListenerIsNotInited(t *testing.T) {
@@ -117,7 +127,7 @@ func TestService_Start_OnlyStartsOnce(t *testing.T) {
 	var vr [32]byte
 	require.NoError(t, cs.SetClock(startup.NewClock(time.Now(), vr)))
 	time.Sleep(time.Second * 2)
-	assert.Equal(t, true, s.started, "Expected service to be started")
+	assert.Equal(t, true, s.Started(), "Expected service to be started")
 	s.Start()
 	require.LogsContain(t, hook, "Attempted to start p2p service when it was already started")
 	require.NoError(t, s.Stop())
@@ -126,14 +136,15 @@ func TestService_Start_OnlyStartsOnce(t *testing.T) {
 
 func TestService_Status_NotRunning(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	s := &Service{started: false}
+	s := &Service{}
 	s.dv5Listener = &mockListener{}
 	assert.ErrorContains(t, "not running", s.Status(), "Status returned wrong error")
 }
 
 func TestService_Status_NoGenesisTimeSet(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	s := &Service{started: true}
+	s := &Service{}
+	s.started.Store(true)
 	s.dv5Listener = &mockListener{}
 	assert.ErrorContains(t, "no genesis time set", s.Status(), "Status returned wrong error")
 
@@ -259,8 +270,9 @@ func TestListenForNewNodes(t *testing.T) {
 
 	require.NoError(t, cs.SetClock(startup.NewClock(genesisTime, gvr)))
 
-	time.Sleep(4 * time.Second)
-	assert.Equal(t, 5, len(s.host.Network().Peers()), "Not all peers added to peerstore")
+	testifyrequire.Eventually(t, func() bool {
+		return len(s.host.Network().Peers()) == 5
+	}, 15*time.Second, 100*time.Millisecond, "Not all peers added to peerstore")
 	require.NoError(t, s.Stop())
 	exitRoutine <- true
 }
@@ -309,7 +321,7 @@ func TestService_JoinLeaveTopic(t *testing.T) {
 
 	assert.Equal(t, 0, len(s.joinedTopics))
 
-	topic := fmt.Sprintf(AttestationSubnetTopicFormat, fd, 42) + "/" + encoder.ProtocolSuffixSSZSnappy
+	topic := fmt.Sprintf(AttestationSubnetTopicFormat, fd, 3) + "/" + encoder.ProtocolSuffixSSZSnappy
 	topicHandle, err := s.JoinTopic(topic)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(s.joinedTopics))
@@ -389,4 +401,42 @@ func TestService_connectWithPeer(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestService_connectWithPeer_NoDownscoreOnCallerContext checks that a dial
+// aborted because the caller's context ended is not held against the peer,
+// while a dial that fails on its own still is. Subnet peer searches used to
+// dial with an already-expired search context, which made every candidate
+// fail instantly and get downscored until the only peers advertising the
+// subnet were marked bad.
+func TestService_connectWithPeer_NoDownscoreOnCallerContext(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	h, _, _ := createHost(t, 34568)
+	defer func() {
+		require.NoError(t, h.Close())
+	}()
+	// A peer that is never reachable: a valid host whose listener is closed.
+	target, _, _ := createHost(t, 34569)
+	info := peer.AddrInfo{ID: target.ID(), Addrs: target.Addrs()}
+	require.NoError(t, target.Close())
+
+	s := &Service{
+		host: h,
+		peers: peers.NewStatus(context.Background(), &peers.StatusConfig{
+			ScorerParams: &scorers.Config{},
+		}),
+	}
+
+	// Caller context already done: the dial fails, the peer is not downscored.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	require.NotNil(t, s.connectWithPeer(ctx, info))
+	_, err := s.peers.Scorers().BadResponsesScorer().Count(info.ID)
+	require.ErrorIs(t, err, peerdata.ErrPeerUnknown, "peer must not have been scored")
+
+	// Live caller context: the dial fails on its own, the peer is downscored.
+	require.NotNil(t, s.connectWithPeer(context.Background(), info))
+	count, err := s.peers.Scorers().BadResponsesScorer().Count(info.ID)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
 }

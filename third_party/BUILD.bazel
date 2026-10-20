@@ -1,9 +1,9 @@
 exports_files([
     "com_github_atlassian_bazel_tools-gometalinter-depset.patch",
     "com_github_grpc_ecosystem_grpc_gateway_v2-googleapis.patch",
-    "com_github_libp2p_go_libp2p_pubsub-gogo.patch",
     "com_github_theqrl_go_bitfield-alias.patch",
     "com_github_prysmaticlabs_prombbolt-alias.patch",
+    "com_github_prysmaticlabs_fastssz-validation.patch",
     "com_github_theqrl_go_qrl_secp256k1.patch",
     "distroless-debian_archive-bzlmod-alias.patch",
     "io_bazel_rules_go_bzlmod_facts.patch",

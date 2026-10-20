@@ -5,6 +5,7 @@ import (
 
 	"github.com/theQRL/go-bitfield"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
@@ -15,6 +16,7 @@ import (
 type fields struct {
 	root                  [32]byte
 	sig                   [field_params.MLDSA87SignatureLength]byte
+	randao                [field_params.RandaoRevealLength]byte
 	deposits              []*qrysmpb.Deposit
 	atts                  []*qrysmpb.Attestation
 	proposerSlashings     []*qrysmpb.ProposerSlashing
@@ -303,7 +305,7 @@ func Test_initBlockBodyFromProtoBlindedZond(t *testing.T) {
 func bodyPbZond() *qrysmpb.BeaconBlockBodyZond {
 	f := getFields()
 	return &qrysmpb.BeaconBlockBodyZond{
-		RandaoReveal: f.sig[:],
+		RandaoReveal: f.randao[:],
 		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
@@ -323,7 +325,7 @@ func bodyPbZond() *qrysmpb.BeaconBlockBodyZond {
 func bodyPbBlindedZond() *qrysmpb.BlindedBeaconBlockBodyZond {
 	f := getFields()
 	return &qrysmpb.BlindedBeaconBlockBodyZond{
-		RandaoReveal: f.sig[:],
+		RandaoReveal: f.randao[:],
 		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
@@ -346,7 +348,7 @@ func bodyZond(t *testing.T) *BeaconBlockBody {
 	require.NoError(t, err)
 	return &BeaconBlockBody{
 		version:      version.Zond,
-		randaoReveal: f.sig,
+		randaoReveal: f.randao,
 		executionData: &qrysmpb.ExecutionData{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
@@ -370,7 +372,7 @@ func bodyBlindedZond(t *testing.T) *BeaconBlockBody {
 	return &BeaconBlockBody{
 		version:      version.Zond,
 		isBlinded:    true,
-		randaoReveal: f.sig,
+		randaoReveal: f.randao,
 		executionData: &qrysmpb.ExecutionData{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
@@ -388,15 +390,17 @@ func bodyBlindedZond(t *testing.T) *BeaconBlockBody {
 }
 
 func getFields() fields {
-	b20 := make([]byte, 20)
+	b64 := make([]byte, field_params.FeeRecipientLength)
 	b2592 := make([]byte, 2592)
 	b256 := make([]byte, 256)
 	var root [32]byte
+	var withdrawalRecipient [field_params.WithdrawalRecipientLength]byte
 	var sig [field_params.MLDSA87SignatureLength]byte
-	b20[0], b20[5], b20[10] = 'q', 'u', 'x'
+	b64[0], b64[5], b64[10] = 'q', 'u', 'x'
 	b2592[0], b2592[5], b2592[10] = 'b', 'a', 'r'
 	b256[0], b256[5], b256[10] = 'x', 'y', 'z'
 	root[0], root[5], root[10] = 'a', 'b', 'c'
+	withdrawalRecipient[0], withdrawalRecipient[5], withdrawalRecipient[10] = 'a', 'b', 'c'
 	sig[0], sig[5], sig[10] = 'd', 'e', 'f'
 	deposits := make([]*qrysmpb.Deposit, 16)
 	for i := range deposits {
@@ -406,13 +410,14 @@ func getFields() fields {
 			deposits[i].Proof[j] = root[:]
 		}
 		deposits[i].Data = &qrysmpb.Deposit_Data{
-			PublicKey:             b2592,
-			WithdrawalCredentials: root[:],
-			Amount:                128,
-			Signature:             sig[:],
+			PublicKey:           b2592,
+			WithdrawalRecipient: withdrawalRecipient[:],
+			Amount:              128,
+			RandaoCommitment:    make([]byte, field_params.RandaoCommitmentLength),
+			Signature:           sig[:],
 		}
 	}
-	atts := make([]*qrysmpb.Attestation, 128)
+	atts := make([]*qrysmpb.Attestation, params.BeaconConfig().MaxAttestations)
 	for i := range atts {
 		atts[i] = &qrysmpb.Attestation{}
 		atts[i].Signatures = [][]byte{sig[:]}
@@ -506,7 +511,7 @@ func getFields() fields {
 	}
 	execPayloadZond := &enginev1.ExecutionPayloadZond{
 		ParentHash:    root[:],
-		FeeRecipient:  b20,
+		FeeRecipient:  b64,
 		StateRoot:     root[:],
 		ReceiptsRoot:  root[:],
 		LogsBloom:     b256,
@@ -526,14 +531,14 @@ func getFields() fields {
 		Withdrawals: []*enginev1.Withdrawal{
 			{
 				Index:   128,
-				Address: b20,
+				Address: b64,
 				Amount:  128,
 			},
 		},
 	}
 	execPayloadHeaderZond := &enginev1.ExecutionPayloadHeaderZond{
 		ParentHash:       root[:],
-		FeeRecipient:     b20,
+		FeeRecipient:     b64,
 		StateRoot:        root[:],
 		ReceiptsRoot:     root[:],
 		LogsBloom:        b256,
@@ -552,6 +557,7 @@ func getFields() fields {
 	return fields{
 		root:                  root,
 		sig:                   sig,
+		randao:                [field_params.RandaoRevealLength]byte(sig[:field_params.RandaoRevealLength]),
 		deposits:              deposits,
 		atts:                  atts,
 		proposerSlashings:     []*qrysmpb.ProposerSlashing{proposerSlashing},

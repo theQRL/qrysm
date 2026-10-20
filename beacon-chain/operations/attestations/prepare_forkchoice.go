@@ -49,13 +49,14 @@ func (s *Service) prepareForkChoiceAtts() {
 			}
 		case <-s.ctx.Done():
 			log.Debug("Context closed, exiting routine")
+			ticker.Done()
 			return
 		}
 	}
 }
 
-// This gets the attestations from the unaggregated, aggregated and block
-// pool. Then finds the common data, aggregate and batch them for fork choice.
+// This gets the gossip attestations from the unaggregated and aggregated
+// pools. Then finds the common data, aggregate and batch them for fork choice.
 // The resulting attestations are saved in the fork choice pool.
 func (s *Service) batchForkChoiceAtts(ctx context.Context) error {
 	ctx, span := trace.StartSpan(ctx, "Operations.attestations.batchForkChoiceAtts")
@@ -64,8 +65,9 @@ func (s *Service) batchForkChoiceAtts(ctx context.Context) error {
 	if err := s.cfg.Pool.AggregateUnaggregatedAttestations(ctx); err != nil {
 		return err
 	}
-	atts := append(s.cfg.Pool.AggregatedAttestations(), s.cfg.Pool.BlockAttestations()...)
-	atts = append(atts, s.cfg.Pool.ForkchoiceAttestations()...)
+	// The chain service retries included attestations directly from the block
+	// pool. Keep their age exemption separate from any gossip participants.
+	atts := append(s.cfg.Pool.AggregatedAttestations(), s.cfg.Pool.ForkchoiceAttestations()...)
 
 	attsByDataRoot := make(map[[32]byte][]*qrysmpb.Attestation, len(atts))
 
@@ -88,12 +90,6 @@ func (s *Service) batchForkChoiceAtts(ctx context.Context) error {
 
 	for _, atts := range attsByDataRoot {
 		if err := s.aggregateAndSaveForkChoiceAtts(atts); err != nil {
-			return err
-		}
-	}
-
-	for _, a := range s.cfg.Pool.BlockAttestations() {
-		if err := s.cfg.Pool.DeleteBlockAttestation(a); err != nil {
 			return err
 		}
 	}

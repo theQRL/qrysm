@@ -516,7 +516,8 @@ func TestBlocksQueue_onDataReceivedEvent(t *testing.T) {
 		})
 		assert.ErrorContains(t, beaconsync.ErrInvalidFetchedData.Error(), err)
 		assert.Equal(t, stateScheduled, updatedState)
-		assert.LogsContain(t, hook, "msg=\"Peer is penalized for invalid blocks\" pid=ZiCa prefix=initial-sync score=-2")
+		assert.LogsContain(t, hook, "Downscore peer")
+		assert.LogsContain(t, hook, "reason=invalidBlocks")
 	})
 
 	t.Run("transition ok", func(t *testing.T) {
@@ -1370,4 +1371,114 @@ func TestBlocksQueue_stuckWhenHeadIsSetToOrphanedBlock(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, true, beaconDB.HasBlock(ctx, blkRoot) || mc.HasBlock(ctx, blkRoot), "slot %d", blk.Block.Slot)
 	}
+}
+
+// TestBlocksQueue_onProcessSkippedEvent_ExploresForkBelowFinalizedSlot is the
+// regression test for upstream #17324. In modeStopOnFinalizedEpoch the queue
+// never explored alternative forks, so a node whose head sits on an orphaned
+// branch below the network's finalized slot kept resetting to head+1 and
+// refetching the same unextendable range forever.
+func TestBlocksQueue_onProcessSkippedEvent_ExploresForkBelowFinalizedSlot(t *testing.T) {
+	beaconDB := dbtest.SetupDB(t)
+	p2p := p2pt.NewTestP2P(t)
+
+	// chain1 is a 1000-block dead end that we have fully imported; chain2
+	// forks off it at slot 804 and is the branch the network finalized.
+	chain1 := extendBlockSequence(t, []*qrysmpb.SignedBeaconBlockZond{}, 1000)
+	forkedSlot := primitives.Slot(804)
+	chain2 := extendBlockSequence(t, chain1[:forkedSlot], 400)
+	localFinalizedSlot := primitives.Slot(255)
+	localFinalizedEpoch := slots.ToEpoch(localFinalizedSlot)
+
+	genesisBlock := chain1[0]
+	util.SaveBlock(t, context.Background(), beaconDB, genesisBlock)
+	genesisRoot, err := genesisBlock.Block.HashTreeRoot()
+	require.NoError(t, err)
+
+	st, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	mc := &mock.ChainService{
+		State: st,
+		Root:  genesisRoot[:],
+		DB:    beaconDB,
+		FinalizedCheckPoint: &qrysmpb.Checkpoint{
+			Epoch: localFinalizedEpoch,
+			Root:  fmt.Appendf(nil, "finalized_root %d", localFinalizedEpoch),
+		},
+		Genesis:        time.Now(),
+		ValidatorsRoot: [32]byte{},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	fetcher := newBlocksFetcher(
+		ctx,
+		&blocksFetcherConfig{
+			chain: mc,
+			p2p:   p2p,
+			db:    beaconDB,
+			clock: startup.NewClock(mc.Genesis, mc.ValidatorsRoot),
+		},
+	)
+	fetcher.rateLimiter = leakybucket.NewCollector(6400, 6400, 1*time.Second, false)
+
+	// Import the dead-end branch so that the head is its tip.
+	for _, blk := range chain1[1:] {
+		parentRoot := bytesutil.ToBytes32(blk.Block.ParentRoot)
+		if beaconDB.HasBlock(ctx, parentRoot) || mc.HasBlock(ctx, parentRoot) {
+			util.SaveBlock(t, ctx, beaconDB, blk)
+			require.NoError(t, st.SetSlot(blk.Block.Slot))
+		}
+	}
+	require.Equal(t, primitives.Slot(len(chain1)-1), mc.HeadSlot())
+
+	// The peer serves chain2 and has finalized a slot above our head, so our
+	// whole branch beyond the fork point is below network finality.
+	peerFinalizedSlot := primitives.Slot(1152)
+	require.Equal(t, true, peerFinalizedSlot > mc.HeadSlot())
+	forkedPeer := connectPeerHavingBlocks(t, p2p, chain2, peerFinalizedSlot, p2p.Peers())
+	defer func() {
+		p2p.Peers().SetConnectionState(forkedPeer, peers.PeerDisconnected)
+	}()
+
+	queue := newBlocksQueue(ctx, &blocksQueueConfig{
+		blocksFetcher:       fetcher,
+		chain:               mc,
+		highestExpectedSlot: primitives.Slot(len(chain2) - 1),
+		mode:                modeStopOnFinalizedEpoch,
+	})
+
+	// All machines are stuck in skipped state starting right after our head.
+	startSlot := mc.HeadSlot() + 1
+	blocksPerRequest := queue.blocksFetcher.blocksPerPeriod
+	machineSlots := make([]primitives.Slot, 0)
+	for i := startSlot; i < startSlot.Add(blocksPerRequest*lookaheadSteps); i += primitives.Slot(blocksPerRequest) {
+		queue.smm.addStateMachine(i).setState(stateSkipped)
+		machineSlots = append(machineSlots, i)
+	}
+
+	// The epoch has been reset enough times: the handler must search for an
+	// alternative branch instead of resetting to head+1 once more.
+	hook := logTest.NewGlobal()
+	defer hook.Reset()
+	queue.staleEpochs[slots.ToEpoch(startSlot)] = maxResetAttempts
+	handlerFn := queue.onProcessSkippedEvent(ctx)
+	updatedState, err := handlerFn(queue.smm.machines[machineSlots[len(machineSlots)-1]], nil)
+	require.NoError(t, err)
+	assert.Equal(t, stateSkipped, updatedState)
+	assert.LogsContain(t, hook, "Searching for alternative blocks")
+	assert.LogsDoNotContain(t, hook, "No alternative blocks found for peer")
+
+	// The machines were rebuilt from the fork point with the peer's blocks,
+	// not from head+1.
+	_, stillAtHead := queue.smm.findStateMachine(startSlot)
+	assert.Equal(t, false, stillAtHead, "queue was reset to head+1 again")
+	firstFSM, ok := queue.smm.findStateMachine(forkedSlot)
+	require.Equal(t, true, ok, "no state machine at the fork slot")
+	require.Equal(t, stateDataParsed, firstFSM.state)
+	require.Equal(t, forkedPeer, firstFSM.pid)
+	require.Equal(t, forkedSlot, firstFSM.blks[0].Block().Slot())
+	forkRoot, err := chain2[forkedSlot].Block.HashTreeRoot()
+	require.NoError(t, err)
+	assert.Equal(t, forkRoot, firstFSM.blks[0].Root())
 }

@@ -141,7 +141,7 @@ func TestSecondTraceTxReading(t *testing.T) {
 	}
 
 	{
-		exp, err := common.NewAddressFromString("Q3c307fefd3d71c3ca8a3c26539ef4d47c61b6565")
+		exp, err := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000003c307fefd3d71c3ca8a3c26539ef4d47c61b6565")
 		if err != nil {
 			t.Fatalf("err reading address: %v", err)
 		}

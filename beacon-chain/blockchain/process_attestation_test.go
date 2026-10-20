@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/state"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
@@ -145,6 +146,30 @@ func TestStore_OnAttestation_Ok_DoublyLinkedTree(t *testing.T) {
 	require.NoError(t, service.OnAttestation(ctx, att[0], 0))
 }
 
+func TestService_GetRecentPreState(t *testing.T) {
+	service, _ := minimalTestService(t)
+	ctx := context.Background()
+
+	s, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	ckRoot := bytesutil.PadTo([]byte{'A'}, fieldparams.RootLength)
+	cp0 := &qrysmpb.Checkpoint{Epoch: 0, Root: ckRoot}
+	require.NoError(t, s.SetFinalizedCheckpoint(cp0))
+
+	headSlot := params.BeaconConfig().SlotsPerEpoch - 1 // last slot of epoch 0
+	st, root, err := prepareForkchoiceState(ctx, headSlot, [32]byte(ckRoot), [32]byte{}, [32]byte{'R'}, cp0, cp0)
+	require.NoError(t, err)
+	require.NoError(t, service.cfg.ForkChoiceStore.InsertNode(ctx, st, root))
+	service.head = &head{
+		root:  [32]byte(ckRoot),
+		state: s,
+		slot:  headSlot,
+	}
+	// Requesting epoch 1 (> headEpoch 0) exercises the new fast-path that uses
+	// the head state + next-slot cache instead of falling through to regen.
+	require.NotNil(t, service.getRecentPreState(ctx, &qrysmpb.Checkpoint{Epoch: 1, Root: ckRoot}))
+}
+
 func TestStore_SaveCheckpointState(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx := tr.ctx
@@ -154,8 +179,8 @@ func TestStore_SaveCheckpointState(t *testing.T) {
 	err = s.SetFinalizedCheckpoint(&qrysmpb.Checkpoint{Root: bytesutil.PadTo([]byte{'A'}, fieldparams.RootLength)})
 	require.NoError(t, err)
 	val := &qrysmpb.Validator{
-		PublicKey:             bytesutil.PadTo([]byte("foo"), 2592),
-		WithdrawalCredentials: bytesutil.PadTo([]byte("bar"), fieldparams.RootLength),
+		PublicKey:           bytesutil.PadTo([]byte("foo"), 2592),
+		WithdrawalRecipient: bytesutil.PadTo([]byte("bar"), fieldparams.WithdrawalRecipientLength),
 	}
 	err = s.SetValidators([]*qrysmpb.Validator{val})
 	require.NoError(t, err)
@@ -263,6 +288,73 @@ func TestStore_UpdateCheckpointState(t *testing.T) {
 	require.DeepSSZEqual(t, returned.ToProtoUnsafe(), cached.ToProtoUnsafe())
 }
 
+func TestUpdateFinalized_EvictsCheckpointStateCache(t *testing.T) {
+	service, tr := minimalTestService(t)
+	ctx := tr.ctx
+
+	currentFinalizedBeaconBlock := util.NewBeaconBlockZond()
+	currentFinalizedBeaconBlock.Block.Slot = params.BeaconConfig().SlotsPerEpoch
+	currentFinalizedBlock := util.SaveBlock(t, ctx, service.cfg.BeaconDB, currentFinalizedBeaconBlock)
+	currentFinalizedRoot, err := currentFinalizedBlock.Block().HashTreeRoot()
+	require.NoError(t, err)
+	currentFinalized := &qrysmpb.Checkpoint{
+		Epoch: 1,
+		Root:  currentFinalizedRoot[:],
+	}
+	require.NoError(t, service.cfg.BeaconDB.SaveGenesisBlockRoot(ctx, bytesutil.ToBytes32(currentFinalized.Root)))
+	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{
+		Root: currentFinalized.Root,
+		Slot: params.BeaconConfig().SlotsPerEpoch,
+	}))
+	require.NoError(t, service.cfg.BeaconDB.SaveFinalizedCheckpoint(ctx, currentFinalized))
+
+	cp1 := &qrysmpb.Checkpoint{Epoch: 1, Root: bytesutil.PadTo([]byte{'A'}, fieldparams.RootLength)}
+	st1, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	require.NoError(t, st1.SetSlot(params.BeaconConfig().SlotsPerEpoch))
+	require.NoError(t, service.checkpointStateCache.AddCheckpointState(cp1, st1))
+
+	cp2 := &qrysmpb.Checkpoint{Epoch: 2, Root: bytesutil.PadTo([]byte{'B'}, fieldparams.RootLength)}
+	st2, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	require.NoError(t, st2.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(2)))
+	require.NoError(t, service.checkpointStateCache.AddCheckpointState(cp2, st2))
+
+	cp5 := &qrysmpb.Checkpoint{Epoch: 5, Root: bytesutil.PadTo([]byte{'C'}, fieldparams.RootLength)}
+	st5, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	require.NoError(t, st5.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(5)))
+	require.NoError(t, service.checkpointStateCache.AddCheckpointState(cp5, st5))
+
+	newFinalizedBeaconBlock := util.NewBeaconBlockZond()
+	newFinalizedBeaconBlock.Block.Slot = params.BeaconConfig().SlotsPerEpoch.Mul(3)
+	newFinalizedBeaconBlock.Block.ParentRoot = currentFinalized.Root
+	newFinalizedBlock := util.SaveBlock(t, ctx, service.cfg.BeaconDB, newFinalizedBeaconBlock)
+	newFinalizedRoot, err := newFinalizedBlock.Block().HashTreeRoot()
+	require.NoError(t, err)
+	newFinalized := &qrysmpb.Checkpoint{Epoch: 3, Root: newFinalizedRoot[:]}
+	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{
+		Root: newFinalized.Root,
+		Slot: params.BeaconConfig().SlotsPerEpoch.Mul(3),
+	}))
+
+	_, err = service.updateFinalized(ctx, newFinalized)
+	require.NoError(t, err)
+
+	cached, err := service.checkpointStateCache.StateByCheckpoint(cp1)
+	require.NoError(t, err)
+	assert.Equal(t, state.BeaconState(nil), cached)
+
+	cached, err = service.checkpointStateCache.StateByCheckpoint(cp2)
+	require.NoError(t, err)
+	assert.Equal(t, state.BeaconState(nil), cached)
+
+	cached, err = service.checkpointStateCache.StateByCheckpoint(cp5)
+	require.NoError(t, err)
+	assert.NotNil(t, cached)
+	assert.Equal(t, st5.Slot(), cached.Slot())
+}
+
 func TestAttEpoch_MatchPrevEpoch(t *testing.T) {
 	ctx := context.Background()
 
@@ -292,7 +384,7 @@ func TestVerifyBeaconBlock_NoBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	d := util.HydrateAttestationData(&qrysmpb.AttestationData{})
-	require.Equal(t, errBlockNotFoundInCacheOrDB, service.verifyBeaconBlock(ctx, d))
+	require.ErrorIs(t, service.verifyBeaconBlock(ctx, d), errBlockNotFoundInCacheOrDB)
 }
 
 func TestVerifyBeaconBlock_futureBlock(t *testing.T) {

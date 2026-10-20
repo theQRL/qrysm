@@ -1,0 +1,17 @@
+load("//tools:qrysm_image.bzl", "qrysm_image_upload")
+
+qrysm_image_upload(
+    name = "push_oci_image",
+    binary = [
+        "//cmd/beacon-chain",
+        "//cmd/client-stats",
+        "//cmd/qrysmctl",
+        "//cmd/staking-deposit-cli/deposit",
+        "//cmd/validator",
+    ],
+    entrypoint = None,
+    package_dir = "/usr/local/bin",
+    repository = "index.docker.io/qrledger/qrysm",
+    symlinks = {},
+    tags = ["alltools-manual"],
+)

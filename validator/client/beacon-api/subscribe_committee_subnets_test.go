@@ -76,14 +76,16 @@ func TestSubscribeCommitteeSubnets_Valid(t *testing.T) {
 		slots.ToEpoch(subscribeSlots[0]),
 		validatorIndices,
 	).Return(
-		[]*validator.AttesterDuty{
-			{
-				CommitteesAtSlot: strconv.FormatUint(committeesAtSlot[0], 10),
-				Slot:             strconv.FormatUint(uint64(subscribeSlots[0]), 10),
-			},
-			{
-				CommitteesAtSlot: strconv.FormatUint(committeesAtSlot[1], 10),
-				Slot:             strconv.FormatUint(uint64(subscribeSlots[1]), 10),
+		&validator.GetAttesterDutiesResponse{
+			Data: []*validator.AttesterDuty{
+				{
+					CommitteesAtSlot: strconv.FormatUint(committeesAtSlot[0], 10),
+					Slot:             strconv.FormatUint(uint64(subscribeSlots[0]), 10),
+				},
+				{
+					CommitteesAtSlot: strconv.FormatUint(committeesAtSlot[1], 10),
+					Slot:             strconv.FormatUint(uint64(subscribeSlots[1]), 10),
+				},
 			},
 		},
 		nil,
@@ -94,10 +96,12 @@ func TestSubscribeCommitteeSubnets_Valid(t *testing.T) {
 		slots.ToEpoch(subscribeSlots[2]),
 		validatorIndices,
 	).Return(
-		[]*validator.AttesterDuty{
-			{
-				CommitteesAtSlot: strconv.FormatUint(committeesAtSlot[2], 10),
-				Slot:             strconv.FormatUint(uint64(subscribeSlots[2]), 10),
+		&validator.GetAttesterDutiesResponse{
+			Data: []*validator.AttesterDuty{
+				{
+					CommitteesAtSlot: strconv.FormatUint(committeesAtSlot[2], 10),
+					Slot:             strconv.FormatUint(uint64(subscribeSlots[2]), 10),
+				},
 			},
 		},
 		nil,
@@ -266,7 +270,7 @@ func TestSubscribeCommitteeSubnets_Error(t *testing.T) {
 					gomock.Any(),
 					gomock.Any(),
 				).Return(
-					[]*validator.AttesterDuty{testCase.attesterDuty},
+					&validator.GetAttesterDutiesResponse{Data: []*validator.AttesterDuty{testCase.attesterDuty}},
 					testCase.dutiesError,
 				).Times(1)
 			}

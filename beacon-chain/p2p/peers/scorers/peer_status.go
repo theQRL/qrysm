@@ -85,8 +85,8 @@ func (s *PeerStatusScorer) isBadPeer(pid peer.ID) bool {
 		p2ptypes.ErrInvalidFinalizedRoot,
 		p2ptypes.ErrInvalidRequest,
 	}
-	for _, err := range terminalErrs {
-		if errors.Is(peerData.ChainStateValidationError, err) {
+	for _, terminalErr := range terminalErrs {
+		if errors.Is(peerData.ChainStateValidationError, terminalErr) {
 			return true
 		}
 	}
@@ -118,7 +118,9 @@ func (s *PeerStatusScorer) SetPeerStatus(pid peer.ID, chainState *pb.Status, val
 	peerData.ChainStateValidationError = validationError
 
 	// Update maximum known head slot (scores will be calculated with respect to that maximum value).
-	if chainState != nil && chainState.HeadSlot > s.highestPeerHeadSlot {
+	// Only raise the denominator from statuses that passed validation, so a peer cannot inflate it
+	// with a bogus head slot and drive honest peers' scores toward zero.
+	if validationError == nil && chainState != nil && chainState.HeadSlot > s.highestPeerHeadSlot {
 		s.highestPeerHeadSlot = chainState.HeadSlot
 	}
 }

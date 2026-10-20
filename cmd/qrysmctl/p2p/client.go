@@ -45,7 +45,10 @@ type client struct {
 }
 
 func newClient(beaconEndpoints []string, clientPort uint) (*client, error) {
-	ipAdd := ipAddr()
+	ipAdd, err := ipAddr()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not determine an external ipv4 address")
+	}
 	priv, err := privKey()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not set up p2p private key")
@@ -89,7 +92,7 @@ func newClient(beaconEndpoints []string, clientPort uint) (*client, error) {
 
 func (c *client) Close() {
 	if err := c.host.Close(); err != nil {
-		panic(err)
+		log.WithError(err).Error("Could not close the p2p host")
 	}
 }
 
@@ -189,12 +192,12 @@ func (c *client) initializeMockChainService(ctx context.Context) (*mockChain, er
 }
 
 // Retrieves an external ipv4 address and converts into a libp2p formatted value.
-func ipAddr() net.IP {
+func ipAddr() (net.IP, error) {
 	ip, err := network.ExternalIP()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return net.ParseIP(ip)
+	return net.ParseIP(ip), nil
 }
 
 // Determines a private key for p2p networking from the p2p service's

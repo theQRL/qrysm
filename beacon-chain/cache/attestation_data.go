@@ -40,18 +40,23 @@ var (
 // data to resolve via Get.
 var ErrAlreadyInProgress = errors.New("already in progress")
 
+// ErrAttestationDataStale means the head changed while a response was being
+// computed. The caller must release its in-progress request and retry.
+var ErrAttestationDataStale = errors.New("attestation data invalidated by head change")
+
 // AttestationCache is used to store the cached results of an AttestationData request.
 type AttestationCache struct {
 	cache      *cache.FIFO
 	lock       sync.RWMutex
-	inProgress map[string]bool
+	inProgress map[string]uint64
+	generation uint64
 }
 
 // NewAttestationCache initializes the map and underlying cache.
 func NewAttestationCache() *AttestationCache {
 	return &AttestationCache{
 		cache:      cache.NewFIFO(wrapperToKey),
-		inProgress: make(map[string]bool),
+		inProgress: make(map[string]uint64),
 	}
 }
 
@@ -77,8 +82,9 @@ func (c *AttestationCache) Get(ctx context.Context, req *qrysmpb.AttestationData
 		}
 
 		c.lock.RLock()
-		if !c.inProgress[s] {
-			c.lock.RUnlock()
+		if _, pending := c.inProgress[s]; !pending {
+			// Keep the read and its copy atomic with Clear and Put.
+			defer c.lock.RUnlock()
 			break
 		}
 		c.lock.RUnlock()
@@ -112,10 +118,10 @@ func (c *AttestationCache) MarkInProgress(req *qrysmpb.AttestationDataRequest) e
 	if e != nil {
 		return e
 	}
-	if c.inProgress[s] {
+	if _, pending := c.inProgress[s]; pending {
 		return ErrAlreadyInProgress
 	}
-	c.inProgress[s] = true
+	c.inProgress[s] = c.generation
 	return nil
 }
 
@@ -134,6 +140,15 @@ func (c *AttestationCache) MarkNotInProgress(req *qrysmpb.AttestationDataRequest
 
 // Put the response in the cache.
 func (c *AttestationCache) Put(_ context.Context, req *qrysmpb.AttestationDataRequest, res *qrysmpb.AttestationData) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	key, err := reqToKey(req)
+	if err != nil {
+		return err
+	}
+	if generation, pending := c.inProgress[key]; pending && generation != c.generation {
+		return ErrAttestationDataStale
+	}
 	data := &attestationReqResWrapper{
 		req,
 		res,
@@ -145,6 +160,23 @@ func (c *AttestationCache) Put(_ context.Context, req *qrysmpb.AttestationDataRe
 
 	attestationCacheSize.Set(float64(len(c.cache.List())))
 	return nil
+}
+
+// Clear evicts every cached response. It is called when the head changes:
+// entries are keyed by slot only, so a response produced against the previous
+// head would otherwise keep being served for the rest of the slot after a
+// block for that slot has been imported. Pending producers retain their slot
+// reservation, but their writes are rejected so they cannot restore old data.
+func (c *AttestationCache) Clear() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.generation++
+	for _, item := range c.cache.List() {
+		// Delete only fails when the key function does, which cannot happen
+		// for items that were accepted by AddIfNotPresent.
+		_ = c.cache.Delete(item)
+	}
+	attestationCacheSize.Set(float64(len(c.cache.List())))
 }
 
 func wrapperToKey(i any) (string, error) {
@@ -162,6 +194,9 @@ func wrapperToKey(i any) (string, error) {
 }
 
 func reqToKey(req *qrysmpb.AttestationDataRequest) (string, error) {
+	if req == nil {
+		return "", errors.New("nil attestation data request")
+	}
 	return fmt.Sprintf("%d", req.Slot), nil
 }
 

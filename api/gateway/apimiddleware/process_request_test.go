@@ -252,7 +252,7 @@ func TestProcessMiddlewareResponseFields(t *testing.T) {
 		require.Equal(t, true, errJson == nil)
 		assert.Equal(t, "0x666f6f", container.TestHex)
 		assert.Equal(t, "0x", container.TestEmptyHex)
-		assert.Equal(t, "Q0000000000000000000000000000000000666F6f", container.TestAddress)
+		assert.Equal(t, "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000666F6f", container.TestAddress)
 		assert.Equal(t, "Q", container.TestEmptyAddress)
 		assert.Equal(t, "4196", container.TestUint256)
 		assert.Equal(t, "test enum", container.TestEnum)
@@ -281,7 +281,7 @@ func TestWriteMiddlewareResponseHeadersAndBody(t *testing.T) {
 		response := &http.Response{
 			Header: http.Header{
 				"Foo": []string{"foo"},
-				grpc.WithPrefix(grpc.HttpCodeMetadataKey): []string{"204"},
+				grpc.WithPrefix(grpc.HttpCodeMetadataKey): []string{"200"},
 				grpc.WithPrefix(api.VersionHeader):        []string{"zond"},
 			},
 		}
@@ -304,14 +304,14 @@ func TestWriteMiddlewareResponseHeadersAndBody(t *testing.T) {
 		v, ok = writer.Header()["Qrl-Consensus-Version"]
 		require.Equal(t, true, ok, "header not found")
 		assert.Equal(t, "zond", v[0])
-		assert.Equal(t, 204, writer.Code)
+		assert.Equal(t, 200, writer.Code)
 		assert.DeepEqual(t, responseJson, writer.Body.Bytes())
 	})
 
 	t.Run("GET_no_grpc_status_code_header", func(t *testing.T) {
 		response := &http.Response{
 			Header:     http.Header{},
-			StatusCode: 204,
+			StatusCode: 200,
 		}
 		container := defaultResponseContainer()
 		responseJson, err := json.Marshal(container)
@@ -320,7 +320,7 @@ func TestWriteMiddlewareResponseHeadersAndBody(t *testing.T) {
 
 		errJson := WriteMiddlewareResponseHeadersAndBody(response, responseJson, writer)
 		require.Equal(t, true, errJson == nil)
-		assert.Equal(t, 204, writer.Code)
+		assert.Equal(t, 200, writer.Code)
 	})
 
 	t.Run("GET_invalid_status_code", func(t *testing.T) {
@@ -346,7 +346,7 @@ func TestWriteMiddlewareResponseHeadersAndBody(t *testing.T) {
 	t.Run("POST", func(t *testing.T) {
 		response := &http.Response{
 			Header:     http.Header{},
-			StatusCode: 204,
+			StatusCode: 200,
 		}
 		container := defaultResponseContainer()
 		responseJson, err := json.Marshal(container)
@@ -355,13 +355,13 @@ func TestWriteMiddlewareResponseHeadersAndBody(t *testing.T) {
 
 		errJson := WriteMiddlewareResponseHeadersAndBody(response, responseJson, writer)
 		require.Equal(t, true, errJson == nil)
-		assert.Equal(t, 204, writer.Code)
+		assert.Equal(t, 200, writer.Code)
 	})
 
 	t.Run("POST_with_response_body", func(t *testing.T) {
 		response := &http.Response{
 			Header:     http.Header{},
-			StatusCode: 204,
+			StatusCode: 200,
 		}
 		container := defaultResponseContainer()
 		responseJson, err := json.Marshal(container)
@@ -371,7 +371,7 @@ func TestWriteMiddlewareResponseHeadersAndBody(t *testing.T) {
 
 		errJson := WriteMiddlewareResponseHeadersAndBody(response, responseJson, writer)
 		require.Equal(t, true, errJson == nil)
-		assert.Equal(t, 204, writer.Code)
+		assert.Equal(t, 200, writer.Code)
 		assert.DeepEqual(t, responseJson, writer.Body.Bytes())
 	})
 

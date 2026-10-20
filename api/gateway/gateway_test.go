@@ -8,9 +8,12 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
+	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	testifyrequire "github.com/stretchr/testify/require"
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/testing/assert"
@@ -95,10 +98,15 @@ func TestGateway_StartStop(t *testing.T) {
 	require.NoError(t, err)
 
 	g.Start()
-	go func() {
-		require.LogsContain(t, hook, "Starting gRPC gateway")
-		require.LogsDoNotContain(t, hook, "Starting API middleware")
-	}()
+	testifyrequire.Eventually(t, func() bool {
+		for _, entry := range hook.AllEntries() {
+			if entry.Message == "Starting gRPC gateway" {
+				return true
+			}
+		}
+		return false
+	}, time.Second, 10*time.Millisecond)
+	require.LogsDoNotContain(t, hook, "Starting API middleware")
 	err = g.Stop()
 	require.NoError(t, err)
 }
@@ -125,4 +133,46 @@ func TestGateway_NilHandler_NotFoundHandlerRegistered(t *testing.T) {
 	writer := httptest.NewRecorder()
 	g.cfg.router.ServeHTTP(writer, &http.Request{Method: "GET", Host: "localhost", URL: &url.URL{Path: "/foo"}})
 	assert.Equal(t, http.StatusNotFound, writer.Code)
+}
+
+func TestWithTimeout_DisablesGlobalGrpcGatewayTimeout(t *testing.T) {
+	originalTimeout := gwruntime.DefaultContextTimeout
+	defer func() {
+		gwruntime.DefaultContextTimeout = originalTimeout
+	}()
+	gwruntime.DefaultContextTimeout = time.Minute
+
+	g := &Gateway{cfg: &config{}}
+	require.NoError(t, WithTimeout(5)(g))
+	assert.Equal(t, 5*time.Second, g.cfg.timeout)
+	assert.Equal(t, time.Duration(0), gwruntime.DefaultContextTimeout)
+}
+
+func TestGateway_WithRequestTimeout(t *testing.T) {
+	t.Run("applies timeout to non-event routes", func(t *testing.T) {
+		g := &Gateway{cfg: &config{timeout: 5 * time.Second}}
+		handler := g.withRequestTimeout(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+			deadline, ok := req.Context().Deadline()
+			require.Equal(t, true, ok)
+			remaining := time.Until(deadline)
+			assert.Equal(t, true, remaining > 0)
+			assert.Equal(t, true, remaining <= 5*time.Second)
+		}))
+
+		req := httptest.NewRequest(http.MethodGet, "http://example.com/qrl/v1/beacon/states/head", nil)
+		handler.ServeHTTP(httptest.NewRecorder(), req)
+	})
+
+	t.Run("skips timeout for event routes", func(t *testing.T) {
+		g := &Gateway{cfg: &config{timeout: 5 * time.Second}}
+		handler := g.withRequestTimeout(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+			_, ok := req.Context().Deadline()
+			assert.Equal(t, false, ok)
+		}))
+
+		for _, path := range []string{"/qrl/v1/events", "/internal/qrl/v1/events", "/api/qrl/v1/events"} {
+			req := httptest.NewRequest(http.MethodGet, "http://example.com"+path, nil)
+			handler.ServeHTTP(httptest.NewRecorder(), req)
+		}
+	})
 }

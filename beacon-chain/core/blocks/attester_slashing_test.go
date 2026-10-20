@@ -95,6 +95,46 @@ func TestProcessAttesterSlashings_IndexedAttestationFailedToVerify(t *testing.T)
 	assert.ErrorContains(t, "validator indices count exceeds MAX_VALIDATORS_PER_COMMITTEE", err)
 }
 
+func TestProcessAttesterSlashings_OutOfRangeIndexRejected(t *testing.T) {
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 8)
+	numValidators := uint64(beaconState.NumValidators())
+
+	// Both attestations name validator 0 (genuinely double voting) plus an
+	// index one past the registry. The out-of-range signature is garbage: before
+	// the bounds check it was verified against the all-zero key returned by
+	// PubkeyAtIndex, which is universally forgeable.
+	att1 := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
+		Data: &qrysmpb.AttestationData{
+			Source: &qrysmpb.Checkpoint{Epoch: 1},
+		},
+		AttestingIndices: []uint64{0, numValidators},
+	})
+	domain, err := signing.Domain(beaconState.Fork(), 0, params.BeaconConfig().DomainBeaconAttester, beaconState.GenesisValidatorsRoot())
+	require.NoError(t, err)
+	signingRoot, err := signing.ComputeSigningRoot(att1.Data, domain)
+	require.NoError(t, err)
+	lsig1, err := privKeys[0].Sign(signingRoot[:])
+	require.NoError(t, err)
+	att1.Signatures = [][]byte{lsig1.Marshal(), make([]byte, len(lsig1.Marshal()))}
+
+	att2 := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
+		AttestingIndices: []uint64{0, numValidators},
+	})
+	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
+	require.NoError(t, err)
+	lsig2, err := privKeys[0].Sign(signingRoot[:])
+	require.NoError(t, err)
+	att2.Signatures = [][]byte{lsig2.Marshal(), make([]byte, len(lsig2.Marshal()))}
+
+	require.NoError(t, beaconState.SetSlot(2*params.BeaconConfig().SlotsPerEpoch))
+	slashings := []*qrysmpb.AttesterSlashing{{Attestation_1: att1, Attestation_2: att2}}
+
+	_, err = blocks.ProcessAttesterSlashings(context.Background(), beaconState, slashings, v.SlashValidator)
+	assert.ErrorContains(t, "out of range", err)
+	err = blocks.VerifyAttesterSlashing(context.Background(), beaconState, slashings[0])
+	assert.ErrorContains(t, "out of range", err)
+}
+
 func TestProcessAttesterSlashings_AppliesCorrectStatusZond(t *testing.T) {
 	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 100)
 	for _, vv := range beaconState.Validators() {
@@ -111,8 +151,12 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusZond(t *testing.T) {
 	require.NoError(t, err)
 	signingRoot, err := signing.ComputeSigningRoot(att1.Data, domain)
 	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 := privKeys[0].Sign(signingRoot[:]).Marshal()
-	sig1 := privKeys[1].Sign(signingRoot[:]).Marshal()
+	lsig1, err := privKeys[0].Sign(signingRoot[:])
+	require.NoError(t, err)
+	sig0 := lsig1.Marshal()
+	lsig2, err := privKeys[1].Sign(signingRoot[:])
+	require.NoError(t, err)
+	sig1 := lsig2.Marshal()
 	att1.Signatures = [][]byte{sig0, sig1}
 
 	att2 := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
@@ -120,8 +164,12 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusZond(t *testing.T) {
 	})
 	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
 	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 = privKeys[0].Sign(signingRoot[:]).Marshal()
-	sig1 = privKeys[1].Sign(signingRoot[:]).Marshal()
+	lsig3, err := privKeys[0].Sign(signingRoot[:])
+	require.NoError(t, err)
+	sig0 = lsig3.Marshal()
+	lsig4, err := privKeys[1].Sign(signingRoot[:])
+	require.NoError(t, err)
+	sig1 = lsig4.Marshal()
 	att2.Signatures = [][]byte{sig0, sig1}
 
 	slashings := []*qrysmpb.AttesterSlashing{

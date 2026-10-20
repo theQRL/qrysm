@@ -1,6 +1,7 @@
 package signing
 
 import (
+	"reflect"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -77,7 +78,11 @@ func ComputeDomainAndSign(st state.ReadOnlyBeaconState, epoch primitives.Epoch, 
 	if err != nil {
 		return nil, err
 	}
-	return key.Sign(sr[:]).Marshal(), nil
+	sig, err := key.Sign(sr[:])
+	if err != nil {
+		return nil, err
+	}
+	return sig.Marshal(), nil
 }
 
 // ComputeSigningRoot computes the root of the object by calculating the hash tree root of the signing data with the given domain.
@@ -93,12 +98,20 @@ func ComputeDomainAndSign(st state.ReadOnlyBeaconState, epoch primitives.Epoch, 
 //	       domain=domain,
 //	   ))
 func ComputeSigningRoot(object fssz.HashRoot, domain []byte) ([32]byte, error) {
+	// An interface containing a typed nil pointer is not itself nil.
+	v := reflect.ValueOf(object)
+	if !v.IsValid() || (v.Kind() == reflect.Ptr && v.IsNil()) {
+		return [32]byte{}, errors.New("nil signing object")
+	}
 	return SigningData(object.HashTreeRoot, domain)
 }
 
 // SigningData computes the signing data by utilising the provided root function and then
 // returning the signing data of the container object.
 func SigningData(rootFunc func() ([32]byte, error), domain []byte) ([32]byte, error) {
+	if rootFunc == nil {
+		return [32]byte{}, errors.New("nil signing root function")
+	}
 	objRoot, err := rootFunc()
 	if err != nil {
 		return [32]byte{}, err
@@ -145,22 +158,7 @@ func VerifySigningRoot(obj fssz.HashRoot, pub, signature, domain []byte) error {
 
 // VerifyBlockHeaderSigningRoot verifies the signing root of a block header given its public key, signature and domain.
 func VerifyBlockHeaderSigningRoot(blkHdr *qrysmpb.BeaconBlockHeader, pub, signature, domain []byte) error {
-	publicKey, err := ml_dsa_87.PublicKeyFromBytes(pub)
-	if err != nil {
-		return errors.Wrap(err, "could not convert bytes to public key")
-	}
-	sig, err := ml_dsa_87.SignatureFromBytes(signature)
-	if err != nil {
-		return errors.Wrap(err, "could not convert bytes to signature")
-	}
-	root, err := SigningData(blkHdr.HashTreeRoot, domain)
-	if err != nil {
-		return errors.Wrap(err, "could not compute signing root")
-	}
-	if !sig.Verify(publicKey, root[:]) {
-		return ErrSigFailedToVerify
-	}
-	return nil
+	return VerifySigningRoot(blkHdr, pub, signature, domain)
 }
 
 // VerifyBlockSigningRoot verifies the signing root of a block given its public key, signature and domain.
@@ -205,8 +203,9 @@ func BlockSignatureBatch(pub, signature, domain []byte, rootFunc func() ([32]byt
 	}, nil
 }
 
-// ComputeDomain returns the domain version for ML-DSA-87 private key to sign and verify with a zeroed 4-byte
-// array as the fork version.
+// ComputeDomain returns the ML-DSA-87 signature domain. Nil inputs default to the
+// configured genesis fork version and a zero genesis validators root, respectively.
+// Fork versions must be 4 bytes and genesis validators roots must be 32 bytes.
 //
 // def compute_domain(domain_type: DomainType, fork_version: Version=None, genesis_validators_root: Root=None) -> Domain:
 //
@@ -226,10 +225,7 @@ func ComputeDomain(domainType [DomainByteLength]byte, forkVersion, genesisValida
 	if genesisValidatorsRoot == nil {
 		genesisValidatorsRoot = params.BeaconConfig().ZeroHash[:]
 	}
-	var forkBytes [ForkVersionByteLength]byte
-	copy(forkBytes[:], forkVersion)
-
-	forkDataRoot, err := computeForkDataRoot(forkBytes[:], genesisValidatorsRoot)
+	forkDataRoot, err := computeForkDataRoot(forkVersion, genesisValidatorsRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -260,8 +256,17 @@ func domain(domainType [DomainByteLength]byte, forkDataRoot []byte) []byte {
 //	       genesis_validators_root=genesis_validators_root,
 //	   ))
 func computeForkDataRoot(version, root []byte) ([32]byte, error) {
+	// Validate before looking up the concatenated cache key so malformed lengths
+	// cannot alias a cached (4-byte version, 32-byte root) pair.
+	if len(version) != ForkVersionByteLength {
+		return [32]byte{}, fssz.ErrBytesLengthFn("--.CurrentVersion", len(version), ForkVersionByteLength)
+	}
+	if len(root) != 32 {
+		return [32]byte{}, fssz.ErrBytesLengthFn("--.GenesisValidatorsRoot", len(root), 32)
+	}
+	cacheKey := string(version) + string(root)
 	digestMapLock.RLock()
-	if val, ok := digestMap[string(version)+string(root)]; ok {
+	if val, ok := digestMap[cacheKey]; ok {
 		digestMapLock.RUnlock()
 		return val, nil
 	}
@@ -277,7 +282,7 @@ func computeForkDataRoot(version, root []byte) ([32]byte, error) {
 	// as this is a hot path and doesn't need
 	// to be constantly computed.
 	digestMapLock.Lock()
-	digestMap[string(version)+string(root)] = r
+	digestMap[cacheKey] = r
 	digestMapLock.Unlock()
 	return r, nil
 }

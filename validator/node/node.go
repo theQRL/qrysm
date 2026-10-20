@@ -23,7 +23,6 @@ import (
 	"github.com/gorilla/mux"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
-	fastssz "github.com/prysmaticlabs/fastssz"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
@@ -67,6 +66,7 @@ type ValidatorClient struct {
 	cancel            context.CancelFunc
 	db                *kv.Store
 	services          *runtime.ServiceRegistry // Lifecycle and service store.
+	closeOnce         sync.Once
 	lock              sync.RWMutex
 	wallet            *wallet.Wallet
 	walletInitialized *event.Feed
@@ -121,8 +121,6 @@ func NewValidatorClient(cliCtx *cli.Context) (*ValidatorClient, error) {
 		}
 	}
 
-	configureFastSSZHashingAlgorithm()
-
 	if err := validatorClient.initializeFromCLI(cliCtx); err != nil {
 		return nil, err
 	}
@@ -165,13 +163,21 @@ func (c *ValidatorClient) Start() {
 
 // Close handles graceful shutdown of the system.
 func (c *ValidatorClient) Close() {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.closeOnce.Do(func() {
+		c.lock.Lock()
+		defer c.lock.Unlock()
 
-	c.services.StopAll()
-	log.Info("Stopping Qrysm validator")
-	c.cancel()
-	close(c.stop)
+		if c.services != nil {
+			c.services.StopAll()
+		}
+		log.Info("Stopping Qrysm validator")
+		if c.cancel != nil {
+			c.cancel()
+		}
+		if c.stop != nil {
+			close(c.stop)
+		}
+	})
 }
 
 func (c *ValidatorClient) initializeFromCLI(cliCtx *cli.Context) error {
@@ -684,6 +690,8 @@ func (c *ValidatorClient) registerRPCService(cliCtx *cli.Context) error {
 		ClientGrpcRetryDelay:     grpcRetryDelay,
 		ClientGrpcHeaders:        strings.Split(grpcHeaders, ","),
 		ClientWithCert:           clientCert,
+		BeaconApiTimeout:         time.Second * 30,
+		BeaconApiEndpoint:        cliCtx.String(flags.BeaconRESTApiProviderFlag.Name),
 	})
 	return c.services.RegisterService(server)
 }
@@ -847,8 +855,4 @@ func unmarshalFromFile(ctx context.Context, from string, to any) error {
 	}
 
 	return nil
-}
-
-func configureFastSSZHashingAlgorithm() {
-	fastssz.EnableVectorizedHTR = true
 }

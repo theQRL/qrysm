@@ -12,6 +12,7 @@ go_library(
         "//cmd",
         "//cmd/staking-deposit-cli/deposit/flags",
         "//cmd/staking-deposit-cli/stakingdeposit",
+        "//config/fieldparams",
         "//config/params",
         "//contracts/deposit",
         "//encoding/bytesutil",

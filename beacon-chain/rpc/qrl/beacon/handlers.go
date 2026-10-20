@@ -53,8 +53,7 @@ func (s *Server) PublishBlindedBlock(w http.ResponseWriter, r *http.Request) {
 	if shared.IsSyncing(r.Context(), w, s.SyncChecker, s.HeadFetcher, s.TimeFetcher, s.OptimisticModeFetcher) {
 		return
 	}
-	isSSZ := http2.SszRequested(r)
-	if isSSZ {
+	if http2.IsRequestSsz(r) {
 		s.publishBlindedBlockSSZ(ctx, w, r)
 	} else {
 		s.publishBlindedBlock(ctx, w, r)
@@ -129,8 +128,7 @@ func (s *Server) PublishBlock(w http.ResponseWriter, r *http.Request) {
 	if shared.IsSyncing(r.Context(), w, s.SyncChecker, s.HeadFetcher, s.TimeFetcher, s.OptimisticModeFetcher) {
 		return
 	}
-	isSSZ := http2.SszRequested(r)
-	if isSSZ {
+	if http2.IsRequestSsz(r) {
 		s.publishBlockSSZ(ctx, w, r)
 	} else {
 		s.publishBlock(ctx, w, r)
@@ -233,15 +231,60 @@ func (s *Server) validateBroadcast(ctx context.Context, r *http.Request, blk *qr
 }
 
 func (s *Server) validateConsensus(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) error {
+	// Apply the same future-slot rule as block import before any state work:
+	// validation below advances the parent state to the block's slot, so a
+	// block naming a far-future slot would otherwise trigger unbounded slot
+	// processing before its signature is ever checked.
+	if err := slots.VerifyTime(
+		uint64(s.GenesisTimeFetcher.GenesisTime().Unix()),
+		blk.Block().Slot(),
+		params.BeaconNetworkConfig().MaximumGossipClockDisparity,
+	); err != nil {
+		return errors.Wrap(err, "block slot is in the future")
+	}
 	parentBlockRoot := blk.Block().ParentRoot()
+	// Mirror block import and gossip validation, which only build on a parent
+	// that is in fork choice. Fork choice prunes everything that does not
+	// descend from the finalized block, so this is exactly the
+	// finalized-descendant rule, and it bounds the slots processed below to the
+	// non-finalized span of the chain whichever known parent the block names.
+	if !s.FinalizationFetcher.InForkchoice(parentBlockRoot) {
+		return errors.New("parent block is not a descendant of the finalized checkpoint")
+	}
 	parentBlock, err := s.Blocker.Block(ctx, parentBlockRoot[:])
 	if err != nil {
 		return errors.Wrap(err, "could not get parent block")
 	}
+	if err := blocks.BeaconBlockIsNil(parentBlock); err != nil {
+		return errors.Wrap(err, "could not validate parent block")
+	}
 	parentStateRoot := parentBlock.Block().StateRoot()
-	parentState, err := s.Stater.State(ctx, parentStateRoot[:])
-	if err != nil {
-		return errors.Wrap(err, "could not get parent state")
+	// Check if the parent post-state is already cached in the next-slot cache.
+	parentState := transition.NextSlotState(parentBlockRoot[:], blk.Block().Slot())
+	if parentState == nil {
+		// The state isn't advanced in the NSC. If the parent block is the
+		// canonical head, advance the head state to the block's slot —
+		// looking up by parent state root via Stater can fail because the
+		// post-state root is only computed after slot processing.
+		headRoot, err := s.HeadFetcher.HeadRoot(ctx)
+		if err != nil {
+			return errors.Wrap(err, "could not get head root")
+		}
+		if bytes.Equal(headRoot, parentBlockRoot[:]) {
+			parentState, err = s.HeadFetcher.HeadState(ctx)
+			if err != nil {
+				return errors.Wrap(err, "could not get head state")
+			}
+			parentState, err = transition.ProcessSlots(ctx, parentState, blk.Block().Slot())
+			if err != nil {
+				return errors.Wrap(err, "could not process slots to get parent state")
+			}
+		} else {
+			parentState, err = s.Stater.State(ctx, parentStateRoot[:])
+			if err != nil {
+				return errors.Wrap(err, "could not get parent state")
+			}
+		}
 	}
 	_, err = transition.ExecuteStateTransition(ctx, parentState, blk)
 	if err != nil {
@@ -385,13 +428,13 @@ func (s *Server) GetStateFork(w http.ResponseWriter, r *http.Request) {
 	}
 	st, err := s.Stater.State(ctx, []byte(stateId))
 	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
+		shared.WriteStateFetchError(w, err)
 		return
 	}
 	fork := st.Fork()
 	isOptimistic, err := helpers.IsOptimistic(ctx, []byte(stateId), s.OptimisticModeFetcher, s.Stater, s.ChainInfoFetcher, s.BeaconDB)
 	if err != nil {
-		http2.HandleError(w, errors.Wrap(err, "Could not check if slot's block is optimistic").Error(), http.StatusInternalServerError)
+		helpers.HandleIsOptimisticError(w, err)
 		return
 	}
 	blockRoot, err := st.LatestBlockHeader().HashTreeRoot()
@@ -463,6 +506,15 @@ func (s *Server) GetCommittees(w http.ResponseWriter, r *http.Request) {
 		http2.HandleError(w, "Could not get epoch end slot: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Validate that the provided slot belongs to the specified epoch, as required by the Beacon API spec.
+	if rawSlot != "" {
+		if sl < uint64(startSlot) || sl > uint64(endSlot) {
+			http2.HandleError(w, fmt.Sprintf("Slot %d does not belong in epoch %d", sl, epoch), http.StatusBadRequest)
+			return
+		}
+	}
+
 	committeesPerSlot := corehelpers.SlotCommitteeCount(activeCount)
 	committees := make([]*shared.Committee, 0)
 	for slot := startSlot; slot <= endSlot; slot++ {
@@ -493,7 +545,7 @@ func (s *Server) GetCommittees(w http.ResponseWriter, r *http.Request) {
 
 	isOptimistic, err := helpers.IsOptimistic(ctx, []byte(stateId), s.OptimisticModeFetcher, s.Stater, s.ChainInfoFetcher, s.BeaconDB)
 	if err != nil {
-		http2.HandleError(w, "Could not check if slot's block is optimistic: "+err.Error(), http.StatusInternalServerError)
+		helpers.HandleIsOptimisticError(w, err)
 		return
 	}
 
@@ -563,6 +615,11 @@ func (s *Server) GetBlockHeaders(w http.ResponseWriter, r *http.Request) {
 			http2.HandleError(w, errors.Wrapf(err, "Could not retrieve blocks for slot %d", slot).Error(), http.StatusInternalServerError)
 			return
 		}
+	}
+
+	if len(blks) == 0 {
+		http2.HandleError(w, "No blocks found", http.StatusNotFound)
+		return
 	}
 
 	isOptimistic := false
@@ -688,7 +745,7 @@ func (s *Server) GetFinalityCheckpoints(w http.ResponseWriter, r *http.Request) 
 	}
 	isOptimistic, err := helpers.IsOptimistic(ctx, []byte(stateId), s.OptimisticModeFetcher, s.Stater, s.ChainInfoFetcher, s.BeaconDB)
 	if err != nil {
-		http2.HandleError(w, "Could not check if slot's block is optimistic: "+err.Error(), http.StatusInternalServerError)
+		helpers.HandleIsOptimisticError(w, err)
 		return
 	}
 	blockRoot, err := st.LatestBlockHeader().HashTreeRoot()

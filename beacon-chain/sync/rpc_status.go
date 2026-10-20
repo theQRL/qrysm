@@ -25,10 +25,16 @@ import (
 	"github.com/theQRL/qrysm/time/slots"
 )
 
+// maxFutureStatusHeadSlot is the number of slots a peer's reported head slot may
+// lead our current slot before the status is rejected as invalid.
+const maxFutureStatusHeadSlot = 1
+
 // maintainPeerStatuses by infrequently polling peers for their latest status.
 func (s *Service) maintainPeerStatuses() {
-	// Run twice per epoch.
-	interval := time.Duration(params.BeaconConfig().SlotsPerEpoch.Div(2).Mul(params.BeaconConfig().SecondsPerSlot)) * time.Second
+	// Run twice per epoch, retaining half-second precision so a one-slot
+	// epoch does not round down to zero, even with one-second slots.
+	cfg := params.BeaconConfig()
+	interval := time.Duration(cfg.SlotsPerEpoch.Mul(cfg.SecondsPerSlot)) * (time.Second / 2)
 	async.RunEvery(s.ctx, interval, func() {
 		wg := new(sync.WaitGroup)
 		for _, pid := range s.cfg.p2p.Peers().Connected() {
@@ -58,12 +64,12 @@ func (s *Service) maintainPeerStatuses() {
 				}
 				if qrysmTime.Now().After(lastUpdated.Add(interval)) {
 					if err := s.reValidatePeer(s.ctx, id); err != nil {
-						log.WithField("peer", id).WithError(err).Debug("Could not revalidate peer")
-						s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(id)
-						log.WithFields(logrus.Fields{
-							"pid":   id,
-							"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(id),
-						}).Debug("Peer is penalized for failure to revalidate peer")
+						// Revalidation can fail for benign reasons (peer is
+						// gracefully shutting down, EOF on stream, transient
+						// network blip). Don't penalize the peer here — only
+						// log. Real failures are caught downstream by the
+						// status / fork-digest validation paths.
+						log.WithField("peer", id).WithError(err).Debug("Cannot re-validate peer")
 					}
 				}
 			}(pid)
@@ -157,29 +163,17 @@ func (s *Service) sendRPCStatusRequest(ctx context.Context, id peer.ID) error {
 	pid := stream.Conn().RemotePeer()
 	code, errMsg, err := ReadStatusCode(stream, s.cfg.p2p.Encoding())
 	if err != nil {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-		log.WithFields(logrus.Fields{
-			"pid":   pid,
-			"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-		}).Debug("Peer is penalized for error while reading status code")
+		s.downscorePeer(pid, "statusRequestReadStatusCodeError")
 		return err
 	}
 
 	if code != 0 {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-		log.WithFields(logrus.Fields{
-			"pid":   id,
-			"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-		}).Debug("Peer is penalized for unsuccessful status")
+		s.downscorePeer(pid, "statusRequestNonNullStatusCode")
 		return errors.New(errMsg)
 	}
 	msg := &pb.Status{}
 	if err := s.cfg.p2p.Encoding().DecodeWithMaxLength(stream, msg); err != nil {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-		log.WithFields(logrus.Fields{
-			"pid":   pid,
-			"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-		}).Debug("Peer is penalized for decoding error")
+		s.downscorePeer(pid, "statusRequestDecodeError")
 		return err
 	}
 
@@ -198,7 +192,7 @@ func (s *Service) reValidatePeer(ctx context.Context, id peer.ID) error {
 		return err
 	}
 	// Do not return an error for ping requests.
-	if err := s.sendPingRequest(ctx, id); err != nil {
+	if err := s.sendPingRequest(ctx, id); err != nil && !isUnwantedError(err) {
 		log.WithError(err).Debug("Could not ping peer")
 	}
 	return nil
@@ -245,18 +239,14 @@ func (s *Service) statusRPCHandler(ctx context.Context, msg any, stream libp2pco
 			return nil
 		default:
 			respCode = responseCodeInvalidRequest
-			s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(remotePeer)
-			log.WithFields(logrus.Fields{
-				"pid":   remotePeer,
-				"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(remotePeer),
-			}).Debug("Peer is penalized for invalid request")
+			s.downscorePeer(remotePeer, "statusRpcHandlerInvalidMessage")
 		}
 
 		originalErr := err
 		resp, err := s.generateErrorResponse(respCode, err.Error())
 		if err != nil {
 			log.WithError(err).Debug("Could not generate a response error")
-		} else if _, err := stream.Write(resp); err != nil {
+		} else if _, err := stream.Write(resp); err != nil && !isUnwantedError(err) {
 			// The peer may already be ignoring us, as we disagree on fork version, so log this as debug only.
 			log.WithError(err).Debug("Could not write to stream")
 		}
@@ -294,7 +284,7 @@ func (s *Service) respondWithStatus(ctx context.Context, stream network.Stream) 
 		HeadSlot:       s.cfg.chain.HeadSlot(),
 	}
 
-	if _, err := stream.Write([]byte{responseCodeSuccess}); err != nil {
+	if _, err := stream.Write([]byte{responseCodeSuccess}); err != nil && !isUnwantedError(err) {
 		log.WithError(err).Debug("Could not write to stream")
 	}
 	_, err = s.cfg.p2p.Encoding().EncodeWithMaxLength(stream, resp)
@@ -302,6 +292,9 @@ func (s *Service) respondWithStatus(ctx context.Context, stream network.Stream) 
 }
 
 func (s *Service) validateStatusMessage(ctx context.Context, msg *pb.Status) error {
+	if msg.HeadSlot > s.cfg.clock.CurrentSlot()+maxFutureStatusHeadSlot {
+		return errors.Wrap(p2ptypes.ErrInvalidRequest, "head slot too far in the future")
+	}
 	forkDigest, err := s.currentForkDigest()
 	if err != nil {
 		return err

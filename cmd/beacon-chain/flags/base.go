@@ -126,12 +126,6 @@ var (
 		Usage: "The required number of valid peers to connect with before syncing.",
 		Value: 3,
 	}
-	// ContractDeploymentBlock is the block in which the execution deposit contract was deployed.
-	ContractDeploymentBlock = &cli.IntFlag{
-		Name:  "contract-deployment-block",
-		Usage: "The execution block in which the deposit contract was deployed.",
-		Value: 11184524,
-	}
 	// SetGCPercent is the percentage of current live allocations at which the garbage collector is to run.
 	SetGCPercent = &cli.IntFlag{
 		Name:  "gc-percent",
@@ -142,8 +136,8 @@ var (
 	// section of beaconDB.
 	SlotsPerArchivedPoint = &cli.IntFlag{
 		Name:  "slots-per-archive-point",
-		Usage: "The slot durations of when an archived state gets saved in the beaconDB.",
-		Value: 2048,
+		Usage: "The slot durations of when an archived state gets saved in the beaconDB. Lower values increase archive migration cost and database pressure.",
+		Value: int(params.MainnetConfig().SlotsPerArchivedPoint),
 	}
 	// BlockBatchLimit specifies the requested block batch size.
 	BlockBatchLimit = &cli.IntFlag{
@@ -208,7 +202,13 @@ var (
 	MinPeersPerSubnet = &cli.Uint64Flag{
 		Name:  "minimum-peers-per-subnet",
 		Usage: "Sets the minimum number of peers that a node will attempt to peer with that are subscribed to a subnet.",
-		Value: 6,
+		Value: 4,
+	}
+	// MaxConcurrentDials defines a flag to set the maximum number of peers that a node will attempt to dial with from discovery.
+	MaxConcurrentDials = &cli.Uint64Flag{
+		Name: "max-concurrent-dials",
+		Usage: "Sets the maximum number of peers that a node will attempt to dial with from discovery. By default we will dial as " +
+			"many peers as possible.",
 	}
 	// SuggestedFeeRecipient specifies the fee recipient for the transaction fees.
 	SuggestedFeeRecipient = &cli.StringFlag{

@@ -10,11 +10,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	// MaxBodySize is the default cap on HTTP response body reads (8MB).
+	MaxBodySize int64 = 1 << 23
+	// MaxErrBodySize caps body reads of non-200 responses to keep error
+	// messages bounded (128KB).
+	MaxErrBodySize int64 = 1 << 17
+)
+
 // Client is a wrapper object around the HTTP client.
 type Client struct {
-	hc      *http.Client
-	baseURL *url.URL
-	token   string
+	hc          *http.Client
+	baseURL     *url.URL
+	token       string
+	maxBodySize int64
 }
 
 // NewClient constructs a new client with the provided options (ex WithTimeout).
@@ -26,8 +35,9 @@ func NewClient(host string, opts ...ClientOpt) (*Client, error) {
 		return nil, err
 	}
 	c := &Client{
-		hc:      &http.Client{},
-		baseURL: u,
+		hc:          &http.Client{},
+		baseURL:     u,
+		maxBodySize: MaxBodySize,
 	}
 	for _, o := range opts {
 		o(c)
@@ -76,6 +86,9 @@ func (c *Client) Get(ctx context.Context, path string, opts ...ReqOption) ([]byt
 	if err != nil {
 		return nil, err
 	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 	for _, o := range opts {
 		o(req)
 	}
@@ -89,9 +102,22 @@ func (c *Client) Get(ctx context.Context, path string, opts ...ReqOption) ([]byt
 	if r.StatusCode != http.StatusOK {
 		return nil, Non200Err(r)
 	}
-	b, err := io.ReadAll(r.Body)
+	if r.ContentLength > c.maxBodySize {
+		return nil, errors.Wrapf(ErrResponseTooLarge, "limit is %d bytes", c.maxBodySize)
+	}
+	b, err := io.ReadAll(io.LimitReader(r.Body, c.maxBodySize))
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading http response body")
+	}
+	// Probe one extra byte at the limit so a missing or underreported
+	// Content-Length cannot turn an oversized response into truncated data.
+	if int64(len(b)) == c.maxBodySize {
+		var extra [1]byte
+		if n, err := io.ReadFull(r.Body, extra[:]); n > 0 {
+			return nil, errors.Wrapf(ErrResponseTooLarge, "limit is %d bytes", c.maxBodySize)
+		} else if err != io.EOF {
+			return nil, errors.Wrap(err, "error reading http response body")
+		}
 	}
 	return b, nil
 }

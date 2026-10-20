@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"math/big"
 	"strings"
 
@@ -26,13 +27,13 @@ import (
 )
 
 var (
-	depositEventSignature = hash.Keccak256([]byte("DepositEvent(bytes,bytes,bytes,bytes,bytes)"))
+	depositEventSignatureHash = hash.Keccak256([]byte("DepositEvent(bytes,bytes,bytes,bytes,bytes,bytes)"))
+	depositEventSignature     = common.HashToLogTopic(common.Hash(depositEventSignatureHash))
 )
 
 const executionDataSavingInterval = 1000
 const maxTolerableDifference = 50
 const defaultExecutionHeaderReqLimit = uint64(1000)
-const depositLogRequestLimit = 10000
 const additiveFactorMultiplier = 0.10
 const multiplicativeDecreaseDivisor = 2
 
@@ -50,6 +51,8 @@ func clientTimedOutError(err error) bool {
 // GenesisExecutionChainInfo retrieves the genesis time and execution block number of the beacon chain
 // from the deposit contract.
 func (s *Service) GenesisExecutionChainInfo() (uint64, *big.Int) {
+	s.serviceLock.RLock()
+	defer s.serviceLock.RUnlock()
 	return s.chainStartData.GenesisTime, big.NewInt(int64(s.chainStartData.GenesisBlock))
 }
 
@@ -84,6 +87,13 @@ func (s *Service) ProcessExecutionBlock(ctx context.Context, blkNum *big.Int) er
 func (s *Service) ProcessLog(ctx context.Context, depositLog *gqrltypes.Log) error {
 	s.processingLock.RLock()
 	defer s.processingLock.RUnlock()
+	// A well-formed log carries at least the event-signature topic. Guard against a
+	// malformed log so a hostile or buggy execution client cannot panic this path;
+	// startup deposit-log processing (processPastLogs) is not wrapped in panic recovery.
+	if len(depositLog.Topics) == 0 {
+		log.Debug("Skipping deposit log with no topics")
+		return nil
+	}
 	// Process logs according to their event signature.
 	if depositLog.Topics[0] == depositEventSignature {
 		if err := s.ProcessDepositLog(ctx, depositLog); err != nil {
@@ -102,7 +112,7 @@ func (s *Service) ProcessLog(ctx context.Context, depositLog *gqrltypes.Log) err
 // the execution chain by trying to ascertain which participant deposited
 // in the contract.
 func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gqrltypes.Log) error {
-	pubkey, withdrawalCredentials, amount, signature, merkleTreeIndex, err := contracts.UnpackDepositLogData(depositLog.Data)
+	pubkey, withdrawalRecipient, amount, randaoCommitment, signature, merkleTreeIndex, err := contracts.UnpackDepositLogData(depositLog.Data)
 	if err != nil {
 		return errors.Wrap(err, "Could not unpack log")
 	}
@@ -110,7 +120,17 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gqrltypes.L
 	// This can happen sometimes when we receive the same log twice from the
 	// execution network, and prevents us from updating our trie
 	// with the same log twice, causing an inconsistent state root.
-	index := int64(binary.LittleEndian.Uint64(merkleTreeIndex)) // lint:ignore uintcast -- MerkleTreeIndex should not exceed int64 in your lifetime.
+	// A well-formed merkle index is 8 little-endian bytes. Reject a malformed value
+	// rather than letting binary.LittleEndian.Uint64 panic on a short slice from a
+	// hostile or buggy execution client (this path has no panic recovery on startup).
+	if len(merkleTreeIndex) != 8 {
+		return errors.Errorf("malformed deposit merkle index length: %d", len(merkleTreeIndex))
+	}
+	unsignedIndex := binary.LittleEndian.Uint64(merkleTreeIndex)
+	if unsignedIndex > math.MaxInt64 {
+		return errors.Errorf("deposit merkle index overflows int64: %d", unsignedIndex)
+	}
+	index := int64(unsignedIndex) // lint:ignore uintcast -- checked for overflow above.
 	if index <= s.lastReceivedMerkleIndex {
 		return nil
 	}
@@ -119,15 +139,26 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gqrltypes.L
 		missedDepositLogsCount.Inc()
 		return errors.Errorf("received incorrect merkle index: wanted %d but got %d", s.lastReceivedMerkleIndex+1, index)
 	}
-	s.lastReceivedMerkleIndex = index
+	if len(amount) != 8 {
+		return errors.Errorf("malformed deposit amount length: %d", len(amount))
+	}
+	var snapshotTrie *depositsnapshot.DepositTree
+	if features.Get().EnableEIP4881 {
+		var ok bool
+		snapshotTrie, ok = s.depositTrie.(*depositsnapshot.DepositTree)
+		if !ok {
+			return errors.Errorf("wrong trie type initialized: %T", s.depositTrie)
+		}
+	}
 
 	// We then decode the deposit input in order to create a deposit object
 	// we can store in our persistent DB.
 	depositData := &qrysmpb.Deposit_Data{
-		Amount:                bytesutil.FromBytes8(amount),
-		PublicKey:             pubkey,
-		Signature:             signature,
-		WithdrawalCredentials: withdrawalCredentials,
+		Amount:              bytesutil.FromBytes8(amount),
+		PublicKey:           pubkey,
+		RandaoCommitment:    randaoCommitment,
+		Signature:           signature,
+		WithdrawalRecipient: withdrawalRecipient,
 	}
 
 	depositHash, err := depositData.HashTreeRoot()
@@ -135,11 +166,28 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gqrltypes.L
 		return errors.Wrap(err, "unable to determine hashed value of deposit")
 	}
 	// Defensive check to validate incoming index.
-	if s.depositTrie.NumOfItems() != int(index) {
+	items := s.depositTrie.NumOfItems()
+	switch items {
+	case int(index):
+		if err = s.depositTrie.Insert(depositHash[:], int(index)); err != nil {
+			return err
+		}
+	case int(index) + 1:
+		// A previous attempt inserted the leaf but failed before caching it.
+		// Reuse that work only if this log contains the same deposit.
+		root, err := s.depositTrie.HashTreeRoot()
+		if err != nil {
+			return errors.Wrap(err, "unable to determine root of deposit trie")
+		}
+		proof, err := s.depositTrie.MerkleProof(int(index))
+		if err != nil {
+			return errors.Wrap(err, "unable to verify previously inserted deposit")
+		}
+		if !trie.VerifyMerkleProofWithDepth(root[:], depositHash[:], uint64(index), proof, params.BeaconConfig().DepositContractTreeDepth) {
+			return errors.New("deposit does not match previously inserted leaf")
+		}
+	default:
 		return errors.Errorf("invalid deposit index received: wanted %d but got %d", s.depositTrie.NumOfItems(), index)
-	}
-	if err = s.depositTrie.Insert(depositHash[:], int(index)); err != nil {
-		return err
 	}
 	deposit := &qrysmpb.Deposit{
 		Data: depositData,
@@ -154,11 +202,8 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gqrltypes.L
 	if err != nil {
 		return errors.Wrap(err, "unable to insert deposit into cache")
 	}
-	root, err = s.depositTrie.HashTreeRoot()
-	if err != nil {
-		return errors.Wrap(err, "unable to determine root of deposit trie")
-	}
 	s.cfg.depositCache.InsertPendingDeposit(ctx, deposit, depositLog.BlockNumber, index, root)
+	s.lastReceivedMerkleIndex = index
 
 	log.WithFields(logrus.Fields{
 		"executionBlock":  depositLog.BlockNumber,
@@ -168,14 +213,10 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gqrltypes.L
 	validDepositsCount.Inc()
 	// Notify users what is going on, from time to time.
 
-	if features.Get().EnableEIP4881 {
+	if snapshotTrie != nil {
 		// We finalize the trie here so that old deposits are not kept around, as they make
 		// deposit tree htr computation expensive.
-		dTrie, ok := s.depositTrie.(*depositsnapshot.DepositTree)
-		if !ok {
-			return errors.Errorf("wrong trie type initialized: %T", dTrie)
-		}
-		if err := dTrie.Finalize(index, depositLog.BlockHash, depositLog.BlockNumber); err != nil {
+		if err := snapshotTrie.Finalize(index, depositLog.BlockHash, depositLog.BlockNumber); err != nil {
 			log.WithError(err).Error("Could not finalize trie")
 		}
 	}
@@ -186,20 +227,19 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gqrltypes.L
 // processPastLogs processes all the past logs from the deposit contract and
 // updates the deposit trie with the data from each individual log.
 func (s *Service) processPastLogs(ctx context.Context) error {
+	s.latestExecutionDataLock.RLock()
 	currentBlockNum := s.latestExecutionData.LastRequestedBlock
-	deploymentBlock := params.BeaconNetworkConfig().ContractDeploymentBlock
-	// Start from the deployment block if our last requested block
-	// is behind it. This is as the deposit logs can only start from the
-	// block of the deployment of the deposit contract.
-	if deploymentBlock > currentBlockNum {
-		currentBlockNum = deploymentBlock
-	}
-	// To store all blocks.
-	rawLogCount, err := s.depositContractCaller.GetDepositCount(&bind.CallOpts{})
+	s.latestExecutionDataLock.RUnlock()
+	// Verify the deposit contract is available before scanning logs.
+	rawLogCount, err := s.depositContractCaller.GetDepositCount(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return err
 	}
-	logCount := binary.LittleEndian.Uint64(rawLogCount)
+	// get_deposit_count returns 8 little-endian bytes; reject a malformed value
+	// rather than panicking in binary.LittleEndian.Uint64 on a short slice.
+	if len(rawLogCount) < 8 {
+		return errors.Errorf("malformed deposit count length: %d", len(rawLogCount))
+	}
 
 	latestFollowHeight, err := s.followedBlockHeight(ctx)
 	if err != nil {
@@ -207,13 +247,17 @@ func (s *Service) processPastLogs(ctx context.Context) error {
 	}
 
 	batchSize := s.cfg.executionHeaderReqLimit
-	additiveFactor := uint64(float64(batchSize) * additiveFactorMultiplier)
+	additiveFactor := max(uint64(1), uint64(float64(batchSize)*additiveFactorMultiplier))
 
-	for currentBlockNum < latestFollowHeight {
-		currentBlockNum, batchSize, err = s.processBlockInBatch(ctx, currentBlockNum, latestFollowHeight, batchSize, additiveFactor, logCount)
+	for currentBlockNum <= latestFollowHeight {
+		currentBlockNum, batchSize, err = s.processBlockInBatch(ctx, currentBlockNum, latestFollowHeight, batchSize, additiveFactor)
 		if err != nil {
 			return err
 		}
+		if currentBlockNum == latestFollowHeight {
+			break
+		}
+		currentBlockNum++
 	}
 
 	s.latestExecutionDataLock.Lock()
@@ -251,39 +295,34 @@ func (s *Service) processPastLogs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) processBlockInBatch(ctx context.Context, currentBlockNum uint64, latestFollowHeight uint64, batchSize uint64, additiveFactor uint64, logCount uint64) (uint64, uint64, error) {
+func (s *Service) processBlockInBatch(ctx context.Context, currentBlockNum uint64, latestFollowHeight uint64, batchSize uint64, additiveFactor uint64) (uint64, uint64, error) {
+	if batchSize == 0 {
+		return 0, 0, errors.New("batch size is zero")
+	}
+	if currentBlockNum > latestFollowHeight {
+		return 0, 0, errors.New("batch starts after followed block")
+	}
 	start := currentBlockNum
-	// Appropriately bound the request, as we do not
-	// want request blocks beyond the current follow distance.
-	end := min(currentBlockNum+batchSize, latestFollowHeight)
-	query := qrl.FilterQuery{
-		Addresses: []common.Address{
-			s.cfg.depositContractAddr,
-		},
-		FromBlock: big.NewInt(0).SetUint64(start),
-		ToBlock:   big.NewInt(0).SetUint64(end),
-	}
-	remainingLogs := logCount - uint64(s.lastReceivedMerkleIndex+1)
-	// only change the end block if the remaining logs are below the required log limit.
-	// reset our query and end block in this case.
-	withinLimit := remainingLogs < depositLogRequestLimit
-	aboveFollowHeight := end >= latestFollowHeight
-	if withinLimit && aboveFollowHeight {
-		query.ToBlock = big.NewInt(0).SetUint64(latestFollowHeight)
-		end = latestFollowHeight
-	}
-	logs, err := s.httpLogger.FilterLogs(ctx, query)
-	if err != nil {
-		if tooMuchDataRequestedError(err) {
-			if batchSize == 0 {
-				return 0, 0, errors.New("batch size is zero")
-			}
-
-			// multiplicative decrease
-			batchSize /= multiplicativeDecreaseDivisor
-			return currentBlockNum, batchSize, nil
+	var end uint64
+	var logs []gqrltypes.Log
+	for {
+		// Both filter bounds are inclusive. A batch of one must request one block.
+		end = start + min(batchSize-1, latestFollowHeight-start)
+		query := qrl.FilterQuery{
+			Addresses: []common.Address{s.cfg.depositContractAddr},
+			FromBlock: new(big.Int).SetUint64(start),
+			ToBlock:   new(big.Int).SetUint64(end),
 		}
-		return 0, 0, err
+		var err error
+		logs, err = s.httpLogger.FilterLogs(ctx, query)
+		if err != nil {
+			if tooMuchDataRequestedError(err) && batchSize > 1 {
+				batchSize = max(uint64(1), batchSize/multiplicativeDecreaseDivisor)
+				continue
+			}
+			return 0, 0, err
+		}
+		break
 	}
 
 	s.latestExecutionDataLock.RLock()
@@ -332,12 +371,15 @@ func (s *Service) requestBatchedHeadersAndLogs(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if requestedBlock > s.latestExecutionData.LastRequestedBlock &&
-		requestedBlock-s.latestExecutionData.LastRequestedBlock > maxTolerableDifference {
-		log.Infof("Falling back to historical headers and logs sync. Current difference is %d", requestedBlock-s.latestExecutionData.LastRequestedBlock)
+	s.latestExecutionDataLock.RLock()
+	lastRequestedBlock := s.latestExecutionData.LastRequestedBlock
+	s.latestExecutionDataLock.RUnlock()
+	if requestedBlock > lastRequestedBlock &&
+		requestedBlock-lastRequestedBlock > maxTolerableDifference {
+		log.Infof("Falling back to historical headers and logs sync. Current difference is %d", requestedBlock-lastRequestedBlock)
 		return s.processPastLogs(ctx)
 	}
-	for i := s.latestExecutionData.LastRequestedBlock + 1; i <= requestedBlock; i++ {
+	for i := lastRequestedBlock + 1; i <= requestedBlock; i++ {
 		// Cache execution block header here.
 		_, err := s.BlockHashByHeight(ctx, big.NewInt(0).SetUint64(i))
 		if err != nil {

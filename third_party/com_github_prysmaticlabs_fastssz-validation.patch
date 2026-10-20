@@ -1,0 +1,271 @@
+diff --git a/sszgen/main.go b/sszgen/main.go
+--- a/sszgen/main.go
++++ b/sszgen/main.go
+@@ -229,6 +229,16 @@
+ 	opts []string
+ 	// isFixed allows us to explicitly mark fixed at parse time
+ 	fixed bool
++	// bitvectorBits retains the logical size so unused padding bits can be rejected.
++	bitvectorBits uint64
++}
++
++func (v *Value) validateBitvector(value, exit string) string {
++	if v.bitvectorBits%8 == 0 {
++		return ""
++	}
++	mask := uint64(255) ^ ((uint64(1) << (v.bitvectorBits % 8)) - 1)
++	return fmt.Sprintf("if %s[%d]&0x%02x != 0 { err = ssz.ErrInvalidEncoding; %s }\n", value, v.s-1, mask, exit)
+ }
+ 
+ func (v *Value) isListElem() bool {
+@@ -1148,7 +1158,11 @@
+ 			if !tailDim.IsVector() {
+ 				return nil, fmt.Errorf("bitvector tag parse failed (no ssz-size for last dim) %s, err=%s", name, err)
+ 			}
+-			return &Value{t: TypeBytes, fixed: true, s: uint64(tailDim.VectorLen())}, nil
++			bitSize, err := strconv.ParseUint(strings.TrimPrefix(sel, "Bitvector"), 10, 64)
++			if err != nil || bitSize == 0 || (bitSize-1)/8+1 != uint64(tailDim.VectorLen()) {
++				return nil, fmt.Errorf("invalid bitvector size for %s", sel)
++			}
++			return &Value{t: TypeBytes, fixed: true, s: uint64(tailDim.VectorLen()), bitvectorBits: bitSize}, nil
+ 		}
+ 		// external reference
+ 		vv, err := e.encodeItem(sel, tags)
+diff --git a/sszgen/unmarshal.go b/sszgen/unmarshal.go
+--- a/sszgen/unmarshal.go
++++ b/sszgen/unmarshal.go
+@@ -33,7 +33,7 @@
+ 		if v.c {
+ 			return fmt.Sprintf("copy(::.%s[:], %s)", v.name, dst)
+ 		}
+-		validate := ""
++		validate := v.validateBitvector(dst, "return err")
+ 		if !v.isFixed() {
+ 			// dynamic bytes, we need to validate the size of the buffer
+ 			validate = fmt.Sprintf("if len(%s) > %d { return ssz.ErrBytesLength }\n", dst, v.m)
+@@ -42,7 +42,7 @@
+ 		tmpl := `{{.validate}}if cap(::.{{.name}}) == 0 {
+ 			::.{{.name}} = make([]byte, 0, len({{.dst}}))
+ 		}
+-		::.{{.name}} = append(::.{{.name}}, {{.dst}}...)`
++		::.{{.name}} = append(::.{{.name}}[:0], {{.dst}}...)`
+ 		return execTmpl(tmpl, map[string]interface{}{
+ 			"validate": validate,
+ 			"name":     v.name,
+@@ -66,7 +66,7 @@
+ 		if cap(::.{{.name}}) == 0 {
+ 			::.{{.name}} = make([]byte, 0, len({{.dst}}))
+ 		}
+-		::.{{.name}} = append(::.{{.name}}, {{.dst}}...)`
++		::.{{.name}} = append(::.{{.name}}[:0], {{.dst}}...)`
+ 		return execTmpl(tmpl, map[string]interface{}{
+ 			"name": v.name,
+ 			"dst":  dst,
+@@ -137,6 +137,10 @@
+ 	tmpl := `num, err := ssz.DecodeDynamicLength(buf, {{.max}})
+ 	if err != nil {
+ 		return err
++	}
++	// The offset table must fit before allocating the element slice.
++	if num > len(buf)/4 {
++		return ssz.ErrOffset
+ 	}
+ 	{{.create}}
+ 	err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
+diff --git a/sszgen/marshal.go b/sszgen/marshal.go
+--- a/sszgen/marshal.go
++++ b/sszgen/marshal.go
+@@ -14 +14,5 @@
+-		return ssz.MarshalSSZ(::)
++		{{if .dynamic}}// SSZ offsets cannot represent encodings of 2^32 bytes or more.
++		if uint64(::.SizeSSZ()) > 0xffffffff {
++			return nil, ssz.ErrSize
++		}
++		{{end}}return ssz.MarshalSSZ(::)
+@@ -20 +24,5 @@
+-		{{.offset}}
++		{{if .dynamic}}if uint64(::.SizeSSZ()) > 0xffffffff {
++			err = ssz.ErrSize
++			return
++		}
++		{{end}}{{.offset}}
+@@ -26,0 +35 @@
++		"dynamic": !v.isFixed(),
+@@ -48,7 +57,7 @@
+ 		tmpl := `{{.validate}}dst = append(dst, ::.{{.name}}...)`
+ 
+ 		return execTmpl(tmpl, map[string]interface{}{
+-			"validate": v.validate(),
++			"validate": v.validate() + v.validateBitvector("::."+v.name, "return"),
+ 			"name":     name,
+ 		})
+ 
+@@ -56,7 +65,10 @@
+ 		return fmt.Sprintf("dst = ssz.MarshalUint(dst, ::.%s)", v.name)
+ 
+ 	case TypeBitList:
+-		return fmt.Sprintf("%sdst = append(dst, ::.%s...)", v.validate(), v.name)
++		return fmt.Sprintf(`if err = ssz.ValidateBitlist(::.%s, %d); err != nil {
++            return
++        }
++        dst = append(dst, ::.%s...)`, v.name, v.m, v.name)
+ 
+ 	case TypeBool:
+ 		return fmt.Sprintf("dst = ssz.MarshalBool(dst, ::.%s)", v.name)
+diff --git a/sszgen/hash.go b/sszgen/hash.go
+--- a/sszgen/hash.go
++++ b/sszgen/hash.go
+@@ -135,7 +135,7 @@
+ 		if v.isFixed() {
+ 			tmpl := `{{.validate}}hh.PutBytes({{.name}})`
+ 			return execTmpl(tmpl, map[string]interface{}{
+-				"validate": v.validate(),
++				"validate": v.validate() + v.validateBitvector(name, "return"),
+ 				"name":     name,
+ 				"size":     v.s,
+ 			})
+@@ -161,8 +161,7 @@
+ 		return fmt.Sprintf("ssz.PutUint(hh, %s)", name)
+ 
+ 	case TypeBitList:
+-		tmpl := `if len({{.name}}) == 0 {
+-			err = ssz.ErrEmptyBitlist
++		tmpl := `if err = ssz.ValidateBitlist({{.name}}, {{.size}}); err != nil {
+ 			return
+ 		}
+ 		hh.PutBitlist({{.name}}, {{.size}})
+diff --git a/sszgen/generator/generator.go b/sszgen/generator/generator.go
+--- a/sszgen/generator/generator.go
++++ b/sszgen/generator/generator.go
+@@ -159,6 +159,16 @@
+ 	noPtr bool
+ 	// isFixed allows us to explicitly mark fixed at parse time
+ 	fixed bool
++	// bitvectorBits retains the logical size so unused padding bits can be rejected.
++	bitvectorBits uint64
++}
++
++func (v *Value) validateBitvector(value, exit string) string {
++	if v.bitvectorBits%8 == 0 {
++		return ""
++	}
++	mask := uint64(255) ^ ((uint64(1) << (v.bitvectorBits % 8)) - 1)
++	return fmt.Sprintf("if %s[%d]&0x%02x != 0 { err = ssz.ErrInvalidEncoding; %s }\n", value, v.s-1, mask, exit)
+ }
+ 
+ func (v *Value) isListElem() bool {
+@@ -1037,7 +1047,11 @@
+ 			if !tailDim.IsVector() {
+ 				return nil, fmt.Errorf("bitvector tag parse failed (no ssz-size for last dim) %s, err=%s", name, err)
+ 			}
+-			return &Value{t: TypeBytes, fixed: true, s: uint64(tailDim.VectorLen())}, nil
++			bitSize, err := strconv.ParseUint(strings.TrimPrefix(sel, "Bitvector"), 10, 64)
++			if err != nil || bitSize == 0 || (bitSize-1)/8+1 != uint64(tailDim.VectorLen()) {
++				return nil, fmt.Errorf("invalid bitvector size for %s", sel)
++			}
++			return &Value{t: TypeBytes, fixed: true, s: uint64(tailDim.VectorLen()), bitvectorBits: bitSize}, nil
+ 		}
+ 		// external reference
+ 		vv, err := e.encodeItem(sel, tags)
+diff --git a/sszgen/generator/unmarshal.go b/sszgen/generator/unmarshal.go
+--- a/sszgen/generator/unmarshal.go
++++ b/sszgen/generator/unmarshal.go
+@@ -31,14 +31,14 @@
+ 		if v.c {
+ 			return fmt.Sprintf("copy(::.%s[:], %s)", v.name, dst)
+ 		}
+-		validate := ""
++		validate := v.validateBitvector(dst, "return err")
+ 		if !v.isFixed() {
+ 			validate = fmt.Sprintf("if len(%s) > %d { return ssz.ErrBytesLength }\n", dst, v.m)
+ 		}
+ 		tmpl := `{{.validate}}if cap(::.{{.name}}) == 0 {
+ 			::.{{.name}} = make([]byte, 0, len({{.dst}}))
+ 		}
+-		::.{{.name}} = append(::.{{.name}}, {{.dst}}...)`
++		::.{{.name}} = append(::.{{.name}}[:0], {{.dst}}...)`
+ 		return execTmpl(tmpl, map[string]interface{}{
+ 			"validate": validate,
+ 			"name":     v.name,
+@@ -61,7 +61,7 @@
+ 		if cap(::.{{.name}}) == 0 {
+ 			::.{{.name}} = make([]byte, 0, len({{.dst}}))
+ 		}
+-		::.{{.name}} = append(::.{{.name}}, {{.dst}}...)`
++		::.{{.name}} = append(::.{{.name}}[:0], {{.dst}}...)`
+ 		return execTmpl(tmpl, map[string]interface{}{
+ 			"name": v.name,
+ 			"dst":  dst,
+@@ -125,6 +125,10 @@
+ 	tmpl := `num, err := ssz.DecodeDynamicLength(buf, {{.max}})
+ 	if err != nil {
+ 		return err
++	}
++	// The offset table must fit before allocating the element slice.
++	if num > len(buf)/4 {
++		return ssz.ErrOffset
+ 	}
+ 	{{.create}}
+ 	err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
+diff --git a/sszgen/generator/marshal.go b/sszgen/generator/marshal.go
+--- a/sszgen/generator/marshal.go
++++ b/sszgen/generator/marshal.go
+@@ -11 +11,5 @@
+-		return ssz.MarshalSSZ(::)
++		{{if .dynamic}}// SSZ offsets cannot represent encodings of 2^32 bytes or more.
++		if uint64(::.SizeSSZ()) > 0xffffffff {
++			return nil, ssz.ErrSize
++		}
++		{{end}}return ssz.MarshalSSZ(::)
+@@ -17 +21,5 @@
+-		{{.offset}}
++		{{if .dynamic}}if uint64(::.SizeSSZ()) > 0xffffffff {
++			err = ssz.ErrSize
++			return
++		}
++		{{end}}{{.offset}}
+@@ -23,0 +32 @@
++		"dynamic": !v.isFixed(),
+@@ -44,7 +53,7 @@
+ 		tmpl := `{{.validate}}dst = append(dst, ::.{{.name}}...)`
+ 
+ 		return execTmpl(tmpl, map[string]interface{}{
+-			"validate": v.validate(),
++			"validate": v.validate() + v.validateBitvector("::."+v.name, "return"),
+ 			"name":     name,
+ 		})
+ 
+@@ -52,7 +61,10 @@
+ 		return fmt.Sprintf("dst = ssz.MarshalUint(dst, ::.%s)", v.name)
+ 
+ 	case TypeBitList:
+-		return fmt.Sprintf("%sdst = append(dst, ::.%s...)", v.validate(), v.name)
++		return fmt.Sprintf(`if err = ssz.ValidateBitlist(::.%s, %d); err != nil {
++            return
++        }
++        dst = append(dst, ::.%s...)`, v.name, v.m, v.name)
+ 
+ 	case TypeBool:
+ 		return fmt.Sprintf("dst = ssz.MarshalBool(dst, ::.%s)", v.name)
+diff --git a/sszgen/generator/hash.go b/sszgen/generator/hash.go
+--- a/sszgen/generator/hash.go
++++ b/sszgen/generator/hash.go
+@@ -105,7 +105,7 @@
+ 		if v.isFixed() {
+ 			tmpl := `{{.validate}}hh.PutBytes({{.name}})`
+ 			return execTmpl(tmpl, map[string]interface{}{
+-				"validate": v.validate(),
++				"validate": v.validate() + v.validateBitvector(name, "return"),
+ 				"name":     name,
+ 			})
+ 		}
+@@ -126,8 +126,7 @@
+ 	case TypeUint:
+ 		return fmt.Sprintf("ssz.PutUint(hh, %s)", name)
+ 	case TypeBitList:
+-		tmpl := `if len({{.name}}) == 0 {
+-			err = ssz.ErrEmptyBitlist
++		tmpl := `if err = ssz.ValidateBitlist({{.name}}, {{.size}}); err != nil {
+ 			return
+ 		}
+ 		hh.PutBitlist({{.name}}, {{.size}})

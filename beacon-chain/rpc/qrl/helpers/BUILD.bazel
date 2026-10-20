@@ -25,6 +25,7 @@ go_library(
         "//consensus-types/primitives",
         "//consensus-types/validator",
         "//encoding/bytesutil",
+        "//network/http",
         "//time/slots",
         "@com_github_pkg_errors//:errors",
         "@com_github_theqrl_go_qrl//common/hexutil",
@@ -36,6 +37,7 @@ go_library(
 go_test(
     name = "helpers_test",
     srcs = [
+        "error_handling_test.go",
         "http_test.go",
         "sync_test.go",
         "validator_status_test.go",
@@ -46,6 +48,7 @@ go_test(
         "//beacon-chain/blockchain/testing",
         "//beacon-chain/db/testing",
         "//beacon-chain/forkchoice/doubly-linked-tree",
+        "//beacon-chain/rpc/lookup",
         "//beacon-chain/rpc/testutil",
         "//beacon-chain/state",
         "//beacon-chain/state/state-native",
@@ -64,6 +67,7 @@ go_test(
         "//testing/require",
         "//testing/util",
         "@com_github_grpc_ecosystem_grpc_gateway_v2//runtime",
+        "@com_github_pkg_errors//:errors",
         "@com_github_theqrl_go_qrl//common/hexutil",
         "@org_golang_google_grpc//:go_default_library",
     ],

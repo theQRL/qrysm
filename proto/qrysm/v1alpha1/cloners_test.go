@@ -3,6 +3,7 @@ package qrl_test
 import (
 	"math/rand"
 	"reflect"
+	"slices"
 	"testing"
 
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
@@ -119,6 +120,56 @@ func TestCopyIndexedAttestation(t *testing.T) {
 	assert.NotEmpty(t, got, "Copied indexed attestation has empty fields")
 }
 
+func TestCopyIndexedAttestation_PreservesSignatures(t *testing.T) {
+	if got := v1alpha1.CopyIndexedAttestation(nil); got != nil {
+		t.Fatal("nil attestation must copy to nil")
+	}
+	for _, tc := range []struct {
+		name    string
+		indices []uint64
+	}{
+		{name: "nil indices"},
+		{name: "empty indices", indices: []uint64{}},
+		{name: "populated indices", indices: []uint64{7, 9}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Copying must preserve even incomplete attestations. Validation of
+			// the relationship between indices and signatures happens separately.
+			src := &v1alpha1.IndexedAttestation{
+				AttestingIndices: tc.indices,
+				Data:             genAttData(),
+				Signatures:       [][]byte{bytes(4627), bytes(4627)},
+			}
+			before, err := src.MarshalSSZ()
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantRoot, err := src.HashTreeRoot()
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := v1alpha1.CopyIndexedAttestation(src)
+			if !reflect.DeepEqual(src.Signatures, got.Signatures) {
+				t.Fatal("copy changed signatures")
+			}
+			after, err := got.MarshalSSZ()
+			if err != nil || !slices.Equal(before, after) {
+				t.Fatalf("copy changed SSZ encoding: %v", err)
+			}
+			gotRoot, err := got.HashTreeRoot()
+			if err != nil || gotRoot != wantRoot {
+				t.Fatalf("copy changed SSZ root: %v", err)
+			}
+			got.Signatures[0][0] ^= 0xff
+			got.Signatures[1] = nil
+			after, err = src.MarshalSSZ()
+			if err != nil || !slices.Equal(before, after) {
+				t.Fatalf("mutating copied signatures changed source: %v", err)
+			}
+		})
+	}
+}
+
 func TestCopyAttestations(t *testing.T) {
 	atts := genAttestations(10)
 
@@ -187,6 +238,12 @@ func TestCopyValidator(t *testing.T) {
 		t.Errorf("CopyValidator() = %v, want %v", got, v)
 	}
 	assert.NotEmpty(t, got, "Copied validator has empty fields")
+}
+
+func TestCopyValidator_Nil(t *testing.T) {
+	if got := v1alpha1.CopyValidator(nil); got != nil {
+		t.Fatalf("CopyValidator(nil) = %v, want nil", got)
+	}
 }
 
 func TestCopySyncCommitteeMessage(t *testing.T) {
@@ -466,10 +523,12 @@ func genSignedBeaconBlockHeader() *v1alpha1.SignedBeaconBlockHeader {
 
 func genDepositData() *v1alpha1.Deposit_Data {
 	return &v1alpha1.Deposit_Data{
-		PublicKey:             bytes(32),
-		WithdrawalCredentials: bytes(32),
-		Amount:                20000,
-		Signature:             bytes(32),
+		PublicKey:           bytes(32),
+		WithdrawalRecipient: bytes(64),
+		Amount:              20000,
+		Signature:           bytes(32),
+
+		RandaoCommitment: bytes(32),
 	}
 }
 
@@ -513,13 +572,14 @@ func genSignedVoluntaryExits(num int) []*v1alpha1.SignedVoluntaryExit {
 func genValidator() *v1alpha1.Validator {
 	return &v1alpha1.Validator{
 		PublicKey:                  bytes(32),
-		WithdrawalCredentials:      bytes(32),
+		WithdrawalRecipient:        bytes(64),
 		EffectiveBalance:           12345,
 		Slashed:                    true,
 		ActivationEligibilityEpoch: 14322,
 		ActivationEpoch:            14325,
 		ExitEpoch:                  23425,
 		WithdrawableEpoch:          30000,
+		RandaoCommitment:           bytes(32),
 	}
 }
 
@@ -542,7 +602,7 @@ func genSyncAggregate() *v1alpha1.SyncAggregate {
 
 func genBeaconBlockBodyZond() *v1alpha1.BeaconBlockBodyZond {
 	return &v1alpha1.BeaconBlockBodyZond{
-		RandaoReveal:      bytes(4627),
+		RandaoReveal:      bytes(32),
 		ExecutionData:     genExecutionData(),
 		Graffiti:          bytes(32),
 		ProposerSlashings: genProposerSlashings(5),
@@ -574,7 +634,7 @@ func genSignedBeaconBlockZond() *v1alpha1.SignedBeaconBlockZond {
 
 func genBlindedBeaconBlockBodyZond() *v1alpha1.BlindedBeaconBlockBodyZond {
 	return &v1alpha1.BlindedBeaconBlockBodyZond{
-		RandaoReveal:           bytes(4627),
+		RandaoReveal:           bytes(32),
 		ExecutionData:          genExecutionData(),
 		Graffiti:               bytes(32),
 		ProposerSlashings:      genProposerSlashings(5),
@@ -616,7 +676,7 @@ func genSyncCommitteeMessage() *v1alpha1.SyncCommitteeMessage {
 func genPayloadZond() *enginev1.ExecutionPayloadZond {
 	return &enginev1.ExecutionPayloadZond{
 		ParentHash:    bytes(32),
-		FeeRecipient:  bytes(20),
+		FeeRecipient:  bytes(64),
 		StateRoot:     bytes(32),
 		ReceiptsRoot:  bytes(32),
 		LogsBloom:     bytes(256),
@@ -649,7 +709,7 @@ func genPayloadZond() *enginev1.ExecutionPayloadZond {
 func genPayloadHeaderZond() *enginev1.ExecutionPayloadHeaderZond {
 	return &enginev1.ExecutionPayloadHeaderZond{
 		ParentHash:       bytes(32),
-		FeeRecipient:     bytes(20),
+		FeeRecipient:     bytes(64),
 		StateRoot:        bytes(32),
 		ReceiptsRoot:     bytes(32),
 		LogsBloom:        bytes(256),

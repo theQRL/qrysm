@@ -59,6 +59,18 @@ func (s *Service) AddConnectionHandler(reqFunc, goodByeFunc func(ctx context.Con
 	s.host.Network().Notify(&network.NotifyBundle{
 		ConnectedF: func(net network.Network, conn network.Conn) {
 			remotePeer := conn.RemotePeer()
+			direction := conn.Stat().Direction
+
+			// libp2p occasionally fires ConnectedF right after DisconnectedF for the
+			// same outbound peer. Skip the redundant handshake when we are the dialer
+			// and the disconnect happened within the suppression window.
+			if direction == network.DirOutbound {
+				if err := s.wasDisconnectedTooRecently(remotePeer); err != nil {
+					log.WithError(err).WithField("peer", remotePeer).Debug("Skipping connection handler")
+					return
+				}
+			}
+
 			disconnectFromPeer := func() {
 				s.peers.SetConnectionState(remotePeer, peers.PeerDisconnecting)
 				// Only attempt a goodbye if we are still connected to the peer.
@@ -84,6 +96,11 @@ func (s *Service) AddConnectionHandler(reqFunc, goodByeFunc func(ctx context.Con
 					return
 				}
 				s.peers.Add(nil /* QNR */, remotePeer, conn.RemoteMultiaddr(), conn.Stat().Direction)
+				// Mark the connection as being established before the checks
+				// below: the IP colocation tracker only counts connected and
+				// connecting peers, so this is what makes several simultaneous
+				// connections from one IP count against each other.
+				s.peers.SetConnectionState(remotePeer, peers.PeerConnecting)
 				// Defensive check in the event we still get a bad peer.
 				if s.peers.IsBad(remotePeer) {
 					log.WithField("reason", "bad peer").Trace("Ignoring connection request")
@@ -109,8 +126,13 @@ func (s *Service) AddConnectionHandler(reqFunc, goodByeFunc func(ctx context.Con
 					// Wait for peer to initiate handshake
 					time.Sleep(timeForStatus)
 
-					// Exit if we are disconnected with the peer.
+					// Exit if we are disconnected with the peer. Clean up first: we set
+					// PeerConnecting above, which counts toward the IP-colocation limit,
+					// so a bare return would strand the peer in PeerConnecting and leak
+					// the colocation count (eventually gating honest peers on that IP and
+					// blocking future handshakes with this peer).
 					if s.host.Network().Connectedness(remotePeer) != network.Connected {
+						disconnectFromPeer()
 						return
 					}
 
@@ -137,8 +159,7 @@ func (s *Service) AddConnectionHandler(reqFunc, goodByeFunc func(ctx context.Con
 					return
 				}
 
-				s.peers.SetConnectionState(conn.RemotePeer(), peers.PeerConnecting)
-				if err := reqFunc(context.TODO(), conn.RemotePeer()); err != nil && err != io.EOF {
+				if err := reqFunc(context.TODO(), conn.RemotePeer()); err != nil && !errors.Is(err, io.EOF) {
 					log.WithError(err).Trace("Handshake failed")
 					disconnectFromPeer()
 					return
@@ -171,6 +192,13 @@ func (s *Service) AddDisconnectionHandler(handler func(ctx context.Context, id p
 					log.WithError(err).Error("Disconnect handler failed")
 				}
 				s.peers.SetConnectionState(conn.RemotePeer(), peers.PeerDisconnected)
+
+				if err := s.recordPeerDisconnection(conn.RemotePeer()); err != nil {
+					// DisconnectedF fired twice in quick succession (libp2p quirk).
+					log.WithError(err).Trace("Failed to set peer disconnection time")
+					return
+				}
+
 				// Only log disconnections if we were fully connected.
 				if priorState == peers.PeerConnected {
 					log.WithField("activePeers", len(s.peers.Active())).Debug("Peer disconnected")

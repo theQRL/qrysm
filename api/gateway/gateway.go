@@ -65,6 +65,13 @@ type Gateway struct {
 	startFailure error
 }
 
+// Event streams are intentionally long-lived and must not inherit the generic API timeout.
+var timeoutExemptPaths = []string{
+	"/qrl/v1/events",
+	"/internal/qrl/v1/events",
+	"/api/qrl/v1/events",
+}
+
 // New returns a new instance of the Gateway.
 func New(ctx context.Context, opts ...Option) (*Gateway, error) {
 	g := &Gateway{
@@ -109,6 +116,7 @@ func (g *Gateway) Start() {
 	}
 
 	corsMux := g.corsMiddleware(g.cfg.router)
+	handler := g.withRequestTimeout(corsMux)
 
 	if g.cfg.apiMiddlewareEndpointFactory != nil && !g.cfg.apiMiddlewareEndpointFactory.IsNil() {
 		g.registerApiMiddleware()
@@ -122,7 +130,7 @@ func (g *Gateway) Start() {
 
 	g.server = &http.Server{
 		Addr:              g.cfg.gatewayAddr,
-		Handler:           corsMux,
+		Handler:           handler,
 		ReadHeaderTimeout: time.Second,
 	}
 
@@ -175,6 +183,30 @@ func (g *Gateway) corsMiddleware(h http.Handler) http.Handler {
 		AllowedHeaders:   []string{"*"},
 	})
 	return c.Handler(h)
+}
+
+func (g *Gateway) withRequestTimeout(next http.Handler) http.Handler {
+	if g.cfg.timeout == 0 {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if g.isTimeoutExemptPath(req.URL.Path) {
+			next.ServeHTTP(w, req)
+			return
+		}
+		ctx, cancel := context.WithTimeout(req.Context(), g.cfg.timeout)
+		defer cancel()
+		next.ServeHTTP(w, req.WithContext(ctx))
+	})
+}
+
+func (*Gateway) isTimeoutExemptPath(path string) bool {
+	for _, exemptPath := range timeoutExemptPaths {
+		if path == exemptPath {
+			return true
+		}
+	}
+	return false
 }
 
 // dial the gRPC server.

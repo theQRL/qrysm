@@ -19,8 +19,6 @@ import (
 	"github.com/theQRL/qrysm/time/slots"
 )
 
-var _ = SlashingChecker(&Service{})
-
 func TestMain(m *testing.M) {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(io.Discard)
@@ -61,4 +59,28 @@ func TestService_StartStop_ChainInitialized(t *testing.T) {
 	require.NoError(t, srv.Stop())
 	require.NoError(t, srv.Status())
 	require.LogsContain(t, hook, "received chain initialization")
+}
+
+// Stopping the service before the chain clock is known must neither
+// dereference a nil clock nor race the run goroutine: Stop waits for run, and
+// run exits as soon as the clock wait is cancelled.
+func TestService_StopBeforeChainStart(t *testing.T) {
+	slasherDB := dbtest.SetupSlasherDB(t)
+	s, err := New(context.Background(), &ServiceConfig{
+		Database:    slasherDB,
+		ClockWaiter: startup.NewClockSynchronizer(),
+	})
+	require.NoError(t, err)
+	s.latestEpochWrittenForValidator[1] = 3
+
+	s.Start()
+	done := make(chan error, 1)
+	go func() { done <- s.Stop() }()
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("Stop did not return")
+	}
+	require.ErrorIs(t, s.ctx.Err(), context.Canceled)
 }

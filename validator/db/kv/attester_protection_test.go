@@ -100,7 +100,7 @@ func TestStore_CheckSlashableAttestation_DoubleVote(t *testing.T) {
 			slashingKind, err := validatorDB.CheckSlashableAttestation(
 				ctx,
 				pubKeys[0],
-				tt.incomingSigningRoot,
+				tt.incomingSigningRoot[:],
 				tt.incomingAttestation,
 			)
 			if tt.want {
@@ -133,7 +133,7 @@ func TestStore_CheckSlashableAttestation_SurroundVote_MultipleTargetsPerSource(t
 	// our first attestation. Given there can be multiple attested target epochs per
 	// source epoch, we expect our logic to be able to catch this slashable offense.
 	evilAtt := createAttestation(firstAtt.Data.Source.Epoch-1, firstAtt.Data.Target.Epoch+1)
-	slashable, err := validatorDB.CheckSlashableAttestation(ctx, pubKeys[0], [32]byte{2}, evilAtt)
+	slashable, err := validatorDB.CheckSlashableAttestation(ctx, pubKeys[0], []byte{2}, evilAtt)
 	require.NotNil(t, err)
 	assert.Equal(t, SurroundingVote, slashable)
 }
@@ -171,31 +171,31 @@ func TestStore_CheckSlashableAttestation_SurroundVote_54kEpochs(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		signingRoot [32]byte
+		signingRoot []byte
 		attestation *qrysmpb.IndexedAttestation
 		want        SlashingKind
 	}{
 		{
 			name:        "surround vote at half of the weak subjectivity period",
-			signingRoot: [32]byte{},
+			signingRoot: []byte{},
 			attestation: createAttestation(numEpochs/2, numEpochs),
 			want:        SurroundingVote,
 		},
 		{
 			name:        "spanning genesis to weak subjectivity period surround vote",
-			signingRoot: [32]byte{},
+			signingRoot: []byte{},
 			attestation: createAttestation(0, numEpochs),
 			want:        SurroundingVote,
 		},
 		{
 			name:        "simple surround vote at end of weak subjectivity period",
-			signingRoot: [32]byte{},
+			signingRoot: []byte{},
 			attestation: createAttestation(numEpochs-3, numEpochs),
 			want:        SurroundingVote,
 		},
 		{
 			name:        "non-slashable vote",
-			signingRoot: [32]byte{},
+			signingRoot: []byte{},
 			attestation: createAttestation(numEpochs, numEpochs+1),
 			want:        NotSlashable,
 		},
@@ -335,11 +335,11 @@ func TestStore_SaveAttestationsForPubKey(t *testing.T) {
 	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 	atts := make([]*qrysmpb.IndexedAttestation, 0)
-	signingRoots := make([][32]byte, 0)
+	signingRoots := make([][]byte, 0)
 	for i := primitives.Epoch(1); i < 10; i++ {
 		atts = append(atts, createAttestation(i-1, i))
-		var sr [32]byte
-		copy(sr[:], fmt.Sprintf("%d", i))
+		var sr []byte
+		copy(sr, fmt.Sprintf("%d", i))
 		signingRoots = append(signingRoots, sr)
 	}
 	err := validatorDB.SaveAttestationsForPubKey(
@@ -361,7 +361,7 @@ func TestStore_SaveAttestationsForPubKey(t *testing.T) {
 		slashingKind, err := validatorDB.CheckSlashableAttestation(
 			ctx,
 			pubKeys[0],
-			[32]byte{},
+			[]byte{},
 			att,
 		)
 		require.NotNil(t, err)
@@ -477,6 +477,44 @@ func TestSaveAttestationForPubKey_BatchWrites_LowCapacity_TimerReached(t *testin
 	require.NoError(t, err)
 }
 
+// TestFlushAttestationRecords_SignalsOnlyFlushedRecords verifies the per-record
+// acknowledgement that closes the slashing-safety race: a flush must signal only the
+// records it actually persisted, never other pending waiters. Under the previous
+// broadcast-feed approach every waiter was woken by any flush, so a caller could
+// return (and broadcast its attestation) before its own record was written.
+func TestFlushAttestationRecords_SignalsOnlyFlushedRecords(t *testing.T) {
+	ctx := t.Context()
+	pubKeys := [][field_params.MLDSA87PubkeyLength]byte{{1}}
+	validatorDB := setupDB(t, pubKeys)
+
+	flushed := &AttestationRecord{
+		PubKey:      pubKeys[0],
+		Source:      0,
+		Target:      1,
+		SigningRoot: bytesutil.PadTo([]byte("a"), 32),
+		done:        make(chan saveAttestationsResponse, 1),
+	}
+	pending := &AttestationRecord{
+		done: make(chan saveAttestationsResponse, 1),
+	}
+
+	validatorDB.flushAttestationRecords(ctx, []*AttestationRecord{flushed})
+
+	// The flushed record's caller is notified with no error.
+	select {
+	case res := <-flushed.done:
+		require.NoError(t, res.err)
+	default:
+		t.Fatal("expected the flushed record's done channel to be signaled")
+	}
+	// A record that was not part of this flush must not be signaled.
+	select {
+	case <-pending.done:
+		t.Fatal("a record not in the flushed batch must not be signaled")
+	default:
+	}
+}
+
 func BenchmarkStore_CheckSlashableAttestation_Surround_SafeAttestation_54kEpochs(b *testing.B) {
 	numValidators := 1
 	numEpochs := primitives.Epoch(54000)
@@ -542,7 +580,7 @@ func benchCheckSurroundVote(
 
 	for b.Loop() {
 		for _, pubKey := range pubKeys {
-			slashingKind, err := validatorDB.CheckSlashableAttestation(ctx, pubKey, [32]byte{}, surroundingVote)
+			slashingKind, err := validatorDB.CheckSlashableAttestation(ctx, pubKey, []byte{}, surroundingVote)
 			if shouldSurround {
 				require.NotNil(b, err)
 				assert.Equal(b, SurroundingVote, slashingKind)

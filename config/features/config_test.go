@@ -4,6 +4,7 @@ import (
 	"flag"
 	"testing"
 
+	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/urfave/cli/v2"
@@ -45,4 +46,35 @@ func TestConfigureBeaconConfig(t *testing.T) {
 	require.NoError(t, ConfigureBeaconChain(context))
 	c := Get()
 	assert.Equal(t, true, c.EnableSlasher)
+}
+
+func TestConfigureBeaconChain_VerboseSignatureVerification(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	t.Cleanup(InitWithReset(&Flags{}))
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		enabled bool
+	}{
+		{name: "default"},
+		{name: "opt_in", args: []string{"--enable-verbose-sig-verification"}, enabled: true},
+		{name: "explicit_false", args: []string{"--enable-verbose-sig-verification=false"}},
+		{name: "legacy_disable", args: []string{"--disable-verbose-sig-verification"}},
+		{name: "legacy_false", args: []string{"--disable-verbose-sig-verification=false"}},
+		{name: "disable_overrides_enable", args: []string{"--enable-verbose-sig-verification", "--disable-verbose-sig-verification"}},
+		{name: "false_does_not_override_enable", args: []string{"--enable-verbose-sig-verification", "--disable-verbose-sig-verification=false"}, enabled: true},
+		{name: "dev_mode_default", args: []string{"--" + devModeFlag.Name}},
+		{name: "dev_mode_opt_in", args: []string{"--" + devModeFlag.Name, "--enable-verbose-sig-verification"}, enabled: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			set := flag.NewFlagSet("test", flag.ContinueOnError)
+			for _, f := range BeaconChainFlags {
+				require.NoError(t, f.Apply(set))
+			}
+			require.NoError(t, set.Parse(tc.args))
+			ctx := cli.NewContext(&cli.App{}, set, nil)
+			require.NoError(t, ConfigureBeaconChain(ctx))
+			require.Equal(t, tc.enabled, Get().EnableVerboseSigVerification)
+		})
+	}
 }

@@ -56,7 +56,11 @@ func (vs *Server) SubmitAggregateSelectionProof(ctx context.Context, req *qrysmp
 	}
 
 	// Check if the validator is an aggregator
-	isAggregator, err := helpers.IsAggregator(uint64(len(committee)), req.SlotSignature)
+	selectionSeed, err := helpers.AggregatorSelectionSeed(st, epoch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not get aggregator selection seed: %v", err)
+	}
+	isAggregator, err := helpers.IsAggregator(uint64(len(committee)), selectionSeed[:], req.Slot, req.CommitteeIndex, validatorIndex)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get aggregator status: %v", err)
 	}

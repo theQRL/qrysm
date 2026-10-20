@@ -99,7 +99,8 @@ func IsOptimistic(
 		if len(stateIdString) >= 2 && stateIdString[:2] == "0x" {
 			id, err := hexutil.Decode(stateIdString)
 			if err != nil {
-				return false, err
+				e := lookup.NewStateIdParseError(err)
+				return false, &e
 			}
 			return isStateRootOptimistic(ctx, id, optimisticModeFetcher, stateFetcher, chainInfo, database)
 		} else if len(stateId) == 32 {
@@ -170,7 +171,7 @@ func isStateRootOptimistic(
 ) (bool, error) {
 	st, err := stateFetcher.State(ctx, stateId)
 	if err != nil {
-		return true, errors.Wrap(err, "could not fetch state")
+		return true, lookup.NewFetchStateError(err)
 	}
 	if st.Slot() == chainInfo.HeadSlot() {
 		return optimisticModeFetcher.IsOptimistic(ctx)
@@ -180,7 +181,7 @@ func isStateRootOptimistic(
 		return true, errors.Wrapf(err, "could not get block roots for slot %d", st.Slot())
 	}
 	if !has {
-		return true, errors.New("no block roots returned from the database")
+		return true, lookup.NewBlockRootsNotFoundError()
 	}
 	for _, r := range roots {
 		b, err := database.Block(ctx, r)

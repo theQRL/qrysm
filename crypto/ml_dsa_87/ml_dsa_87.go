@@ -20,7 +20,7 @@ func SignatureFromBytes(sig []byte) (Signature, error) {
 	return ml_dsa_87t.SignatureFromBytes(sig)
 }
 
-// VerifySignature verifies a single signature. For performance reason, always use VerifyMultipleSignatures if possible.
+// VerifySignature verifies a single ML-DSA-87 signature.
 func VerifySignature(sig []byte, msg [32]byte, pubKey common.PublicKey) (bool, error) {
 	return ml_dsa_87t.VerifySignature(sig, msg, pubKey)
 }

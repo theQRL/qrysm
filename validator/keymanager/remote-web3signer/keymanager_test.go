@@ -53,27 +53,19 @@ func TestKeymanager_Sign(t *testing.T) {
 	}
 	ctx := context.Background()
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	config := &SetupConfig{
 		BaseEndpoint:          "http://example.com",
 		GenesisValidatorsRoot: root,
 		PublicKeysURL:         "http://example2.com/api/v1/consensus/publicKeys",
 	}
 	km, err := NewKeymanager(ctx, config)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	km.client = client
 	desiredSigBytes, err := hexutil.Decode(client.Signature)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	desiredSig, err := ml_dsa_87.SignatureFromBytes(desiredSigBytes)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	type args struct {
 		request *validatorpb.SignRequest
 	}
@@ -188,29 +180,21 @@ func TestKeymanager_Sign(t *testing.T) {
 func TestKeymanager_FetchValidatingPublicKeys_HappyPath_WithKeyList(t *testing.T) {
 	ctx := context.Background()
 	decodedKey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	keys := [][field_params.MLDSA87PubkeyLength]byte{
 		bytesutil.ToBytes2592(decodedKey),
 	}
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	config := &SetupConfig{
 		BaseEndpoint:          "http://example.com",
 		GenesisValidatorsRoot: root,
 		ProvidedPublicKeys:    keys,
 	}
 	km, err := NewKeymanager(ctx, config)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	resp, err := km.FetchValidatingPublicKeys(ctx)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Nil(t, err)
 	assert.EqualValues(t, resp, keys)
@@ -222,30 +206,22 @@ func TestKeymanager_FetchValidatingPublicKeys_HappyPath_WithExternalURL(t *testi
 		PublicKeys: []string{"0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820"},
 	}
 	decodedKey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	keys := [][field_params.MLDSA87PubkeyLength]byte{
 		bytesutil.ToBytes2592(decodedKey),
 	}
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	config := &SetupConfig{
 		BaseEndpoint:          "http://example.com",
 		GenesisValidatorsRoot: root,
 		PublicKeysURL:         "http://example2.com/api/v1/consensus/publicKeys",
 	}
 	km, err := NewKeymanager(ctx, config)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	km.client = client
 	resp, err := km.FetchValidatingPublicKeys(ctx)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Nil(t, err)
 	assert.EqualValues(t, resp, keys)
@@ -258,18 +234,14 @@ func TestKeymanager_FetchValidatingPublicKeys_WithExternalURL_ThrowsError(t *tes
 		isThrowingError: true,
 	}
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	config := &SetupConfig{
 		BaseEndpoint:          "http://example.com",
 		GenesisValidatorsRoot: root,
 		PublicKeysURL:         "http://example2.com/api/v1/consensus/publicKeys",
 	}
 	km, err := NewKeymanager(ctx, config)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	km.client = client
 	resp, err := km.FetchValidatingPublicKeys(ctx)
 	assert.NotNil(t, err)
@@ -280,17 +252,13 @@ func TestKeymanager_FetchValidatingPublicKeys_WithExternalURL_ThrowsError(t *tes
 func TestKeymanager_AddPublicKeys(t *testing.T) {
 	ctx := context.Background()
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	config := &SetupConfig{
 		BaseEndpoint:          "http://example.com",
 		GenesisValidatorsRoot: root,
 	}
 	km, err := NewKeymanager(ctx, config)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	pubkey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
 	require.NoError(t, err)
 	publicKeys := [][field_params.MLDSA87PubkeyLength]byte{
@@ -311,17 +279,13 @@ func TestKeymanager_AddPublicKeys(t *testing.T) {
 func TestKeymanager_DeletePublicKeys(t *testing.T) {
 	ctx := context.Background()
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	config := &SetupConfig{
 		BaseEndpoint:          "http://example.com",
 		GenesisValidatorsRoot: root,
 	}
 	km, err := NewKeymanager(ctx, config)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
+	require.NoError(t, err)
 	pubkey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
 	require.NoError(t, err)
 	publicKeys := [][field_params.MLDSA87PubkeyLength]byte{

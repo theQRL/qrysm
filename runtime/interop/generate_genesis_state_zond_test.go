@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/container/trie"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
@@ -13,9 +14,14 @@ import (
 )
 
 func TestGenerateGenesisStateZond(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	if fieldparams.Preset == "minimal" {
+		params.OverrideBeaconConfig(params.MinimalSpecConfig().Copy())
+	}
+
 	ep := &enginev1.ExecutionPayloadZond{
 		ParentHash:    make([]byte, 32),
-		FeeRecipient:  make([]byte, 20),
+		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:     make([]byte, 32),
 		ReceiptsRoot:  make([]byte, 32),
 		LogsBloom:     make([]byte, 256),
@@ -36,6 +42,13 @@ func TestGenerateGenesisStateZond(t *testing.T) {
 	}
 	g, _, err := GenerateGenesisStateZond(context.Background(), 0, params.BeaconConfig().MinGenesisActiveValidatorCount, ep, e1d)
 	require.NoError(t, err)
+	// The interop genesis must carry participation arrays sized to the
+	// validator registry, or the first attestation-bearing block fails to
+	// process (index >= len(epochParticipation)).
+	require.Equal(t, int(params.BeaconConfig().MinGenesisActiveValidatorCount), len(g.Validators))
+	require.Equal(t, len(g.Validators), len(g.PreviousEpochParticipation), "PreviousEpochParticipation not sized to the validator registry")
+	require.Equal(t, len(g.Validators), len(g.CurrentEpochParticipation), "CurrentEpochParticipation not sized to the validator registry")
+	require.Equal(t, len(g.Validators), len(g.InactivityScores))
 
 	tr, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
 	require.NoError(t, err)

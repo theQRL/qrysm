@@ -103,6 +103,7 @@
   "cryptorand": {
     "only_files": {
       "beacon-chain/.*": "",
+      "cmd/.*": "",
       "shared/.*": "",
       "slasher/.*": "",
       "validator/.*": ""
@@ -307,7 +308,8 @@
       ".*/.*_test\\.go": "Tests are OK",
       ".*/main\\.go": "main methods are OK",
       "external/.*": "Third party code",
-      "pkg/.*": "Excluded pkg directory"
+      "pkg/.*": "Excluded pkg directory",
+      ".*cmd/staking-deposit-cli/.*": "CLI helpers panic on user input"
     }
   },
   "logcapitalization": {

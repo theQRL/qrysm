@@ -58,7 +58,10 @@ func (c *AttCaches) aggregateUnaggregatedAtts(ctx context.Context, unaggregatedA
 				return errors.New("could not aggregate unaggregated attestations")
 			}
 			if helpers.IsAggregated(aggregated) {
-				if err := c.SaveAggregatedAttestations([]*qrysmpb.Attestation{aggregated}); err != nil {
+				// These votes passed the proposal pool's seen check. A copy
+				// in forkchoice, or its processing history, must not discard
+				// votes that were recovered after a reorg.
+				if err := c.saveAggregatedAttestation(aggregated); err != nil {
 					return err
 				}
 			} else {
@@ -111,7 +114,7 @@ func (c *AttCaches) aggregateParallel(atts map[[32]byte][]*qrysmpb.Attestation, 
 					continue
 				}
 				if helpers.IsAggregated(aggregated) {
-					if err := c.SaveAggregatedAttestations([]*qrysmpb.Attestation{aggregated}); err != nil {
+					if err := c.saveAggregatedAttestation(aggregated); err != nil {
 						log.WithError(err).Error("Could not save aggregated attestation")
 						continue
 					}
@@ -163,6 +166,12 @@ func (c *AttCaches) SaveAggregatedAttestation(att *qrysmpb.Attestation) error {
 		return nil
 	}
 
+	return c.saveAggregatedAttestation(att)
+}
+
+// saveAggregatedAttestation merges a vote into the proposal pool without
+// consulting inclusion history or the independent forkchoice queue.
+func (c *AttCaches) saveAggregatedAttestation(att *qrysmpb.Attestation) error {
 	r, err := hashFn(att.Data)
 	if err != nil {
 		return errors.Wrap(err, "could not tree hash attestation")
@@ -245,22 +254,23 @@ func (c *AttCaches) DeleteAggregatedAttestation(att *qrysmpb.Attestation) error 
 		return errors.Wrap(err, "could not tree hash attestation data")
 	}
 
-	if err := c.insertSeenBit(att); err != nil {
-		return err
-	}
-
 	c.aggregatedAttLock.Lock()
-	defer c.aggregatedAttLock.Unlock()
 	attList, ok := c.aggregatedAtt[r]
 	if !ok {
+		c.aggregatedAttLock.Unlock()
 		return nil
 	}
-
 	filtered := make([]*qrysmpb.Attestation, 0)
+	removed := make([]*qrysmpb.Attestation, 0)
 	for _, a := range attList {
-		if c, err := att.AggregationBits.Contains(a.AggregationBits); err != nil {
+		covered, err := att.AggregationBits.Contains(a.AggregationBits)
+		if err != nil {
+			c.aggregatedAttLock.Unlock()
 			return err
-		} else if !c {
+		}
+		if covered {
+			removed = append(removed, a)
+		} else {
 			filtered = append(filtered, a)
 		}
 	}
@@ -269,7 +279,17 @@ func (c *AttCaches) DeleteAggregatedAttestation(att *qrysmpb.Attestation) error 
 	} else {
 		c.aggregatedAtt[r] = filtered
 	}
+	c.aggregatedAttLock.Unlock()
 
+	// Every entry in the pool was authenticated in its target state before it
+	// was saved, so the removed entries are seen. att itself may only have
+	// been validated in the state of a block that included it; fork choice
+	// marks it through MarkAppliedAttestation once it verifies the vote.
+	for _, a := range removed {
+		if err := c.markSeen(a); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -295,16 +315,16 @@ func (c *AttCaches) HasAggregatedAttestation(att *qrysmpb.Attestation) (bool, er
 		}
 	}
 
-	c.blockAttLock.RLock()
-	defer c.blockAttLock.RUnlock()
-	if atts, ok := c.blockAtt[r]; ok {
-		for _, a := range atts {
-			if c, err := a.AggregationBits.Contains(att.AggregationBits); err != nil {
-				return false, err
-			} else if c {
-				return true, nil
-			}
-		}
+	// Pending included votes are not consulted: they have not been verified
+	// against their target state, and one carrying invalid signatures must not
+	// suppress a genuine aggregate for the same data and bits. An applied
+	// included vote marks its participants seen when it leaves the pool.
+	seen, err := c.hasSeenAggregatedBit(att)
+	if err != nil {
+		return false, err
+	}
+	if seen {
+		return true, nil
 	}
 
 	return false, nil

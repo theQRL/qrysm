@@ -9,14 +9,13 @@ import (
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	bytesutil2 "github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/math"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
-
-var errNilValue = errors.New("nil value")
 
 func (b *SignedBeaconBlockZond) ToGeneric() (*qrysmpb.GenericSignedBeaconBlock, error) {
 	if b == nil {
@@ -79,7 +78,7 @@ func (b *BeaconBlockZond) ToConsensus() (*qrysmpb.BeaconBlockZond, error) {
 	if err != nil {
 		return nil, NewDecodeError(err, "StateRoot")
 	}
-	randaoReveal, err := DecodeHexWithLength(b.Body.RandaoReveal, fieldparams.MLDSA87SignatureLength)
+	randaoReveal, err := DecodeHexWithLength(b.Body.RandaoReveal, fieldparams.RandaoRevealLength)
 	if err != nil {
 		return nil, NewDecodeError(err, "Body.RandaoReveal")
 	}
@@ -330,7 +329,7 @@ func (b *BlindedBeaconBlockZond) ToConsensus() (*qrysmpb.BlindedBeaconBlockZond,
 	if err != nil {
 		return nil, NewDecodeError(err, "StateRoot")
 	}
-	randaoReveal, err := DecodeHexWithLength(b.Body.RandaoReveal, fieldparams.MLDSA87SignatureLength)
+	randaoReveal, err := DecodeHexWithLength(b.Body.RandaoReveal, fieldparams.RandaoRevealLength)
 	if err != nil {
 		return nil, NewDecodeError(err, "Body.RandaoReveal")
 	}
@@ -827,7 +826,7 @@ func AttesterSlashingsToConsensus(src []*AttesterSlashing) ([]*qrysmpb.AttesterS
 			a1Sigs[j] = a1Sig
 		}
 
-		err = VerifyMaxLength(s.Attestation1.AttestingIndices, 2048)
+		err = VerifyMaxLength(s.Attestation1.AttestingIndices, int(params.BeaconConfig().MaxValidatorsPerCommittee))
 		if err != nil {
 			return nil, NewDecodeError(err, fmt.Sprintf("[%d].Attestation1.AttestingIndices", i))
 		}
@@ -853,7 +852,7 @@ func AttesterSlashingsToConsensus(src []*AttesterSlashing) ([]*qrysmpb.AttesterS
 			a2Sigs[j] = a2Sig
 		}
 
-		err = VerifyMaxLength(s.Attestation2.AttestingIndices, 2048)
+		err = VerifyMaxLength(s.Attestation2.AttestingIndices, int(params.BeaconConfig().MaxValidatorsPerCommittee))
 		if err != nil {
 			return nil, NewDecodeError(err, fmt.Sprintf("[%d].Attestation2.AttestingIndices", i))
 		}
@@ -950,7 +949,7 @@ func AttsToConsensus(src []*Attestation) ([]*qrysmpb.Attestation, error) {
 	if src == nil {
 		return nil, errNilValue
 	}
-	err := VerifyMaxLength(src, 128)
+	err := VerifyMaxLength(src, int(params.BeaconConfig().MaxAttestations))
 	if err != nil {
 		return nil, err
 	}
@@ -984,6 +983,9 @@ func DepositsToConsensus(src []*Deposit) ([]*qrysmpb.Deposit, error) {
 
 	deposits := make([]*qrysmpb.Deposit, len(src))
 	for i, d := range src {
+		if d == nil {
+			return nil, NewDecodeError(errNilValue, fmt.Sprintf("[%d]", i))
+		}
 		if d.Data == nil {
 			return nil, NewDecodeError(errNilValue, fmt.Sprintf("[%d].Data", i))
 		}
@@ -1004,13 +1006,17 @@ func DepositsToConsensus(src []*Deposit) ([]*qrysmpb.Deposit, error) {
 		if err != nil {
 			return nil, NewDecodeError(err, fmt.Sprintf("[%d].Pubkey", i))
 		}
-		withdrawalCreds, err := DecodeHexWithLength(d.Data.WithdrawalCredentials, fieldparams.RootLength)
+		withdrawalRecipient, err := DecodeHexWithLength(d.Data.WithdrawalRecipient, fieldparams.WithdrawalRecipientLength)
 		if err != nil {
-			return nil, NewDecodeError(err, fmt.Sprintf("[%d].WithdrawalCredentials", i))
+			return nil, NewDecodeError(err, fmt.Sprintf("[%d].WithdrawalRecipient", i))
 		}
 		amount, err := strconv.ParseUint(d.Data.Amount, 10, 64)
 		if err != nil {
 			return nil, NewDecodeError(err, fmt.Sprintf("[%d].Amount", i))
+		}
+		randaoCommitment, err := DecodeHexWithLength(d.Data.RandaoCommitment, fieldparams.RandaoCommitmentLength)
+		if err != nil {
+			return nil, NewDecodeError(err, fmt.Sprintf("[%d].RandaoCommitment", i))
 		}
 		sig, err := DecodeHexWithLength(d.Data.Signature, fieldparams.MLDSA87SignatureLength)
 		if err != nil {
@@ -1019,10 +1025,11 @@ func DepositsToConsensus(src []*Deposit) ([]*qrysmpb.Deposit, error) {
 		deposits[i] = &qrysmpb.Deposit{
 			Proof: proof,
 			Data: &qrysmpb.Deposit_Data{
-				PublicKey:             pubkey,
-				WithdrawalCredentials: withdrawalCreds,
-				Amount:                amount,
-				Signature:             sig,
+				PublicKey:           pubkey,
+				WithdrawalRecipient: withdrawalRecipient,
+				Amount:              amount,
+				RandaoCommitment:    randaoCommitment,
+				Signature:           sig,
 			},
 		}
 	}
@@ -1039,10 +1046,11 @@ func DepositsFromConsensus(src []*qrysmpb.Deposit) ([]*Deposit, error) {
 		deposits[i] = &Deposit{
 			Proof: proof,
 			Data: &DepositData{
-				Pubkey:                hexutil.Encode(d.Data.PublicKey),
-				WithdrawalCredentials: hexutil.Encode(d.Data.WithdrawalCredentials),
-				Amount:                fmt.Sprintf("%d", d.Data.Amount),
-				Signature:             hexutil.Encode(d.Data.Signature),
+				Pubkey:              hexutil.Encode(d.Data.PublicKey),
+				WithdrawalRecipient: hexutil.Encode(d.Data.WithdrawalRecipient),
+				Amount:              fmt.Sprintf("%d", d.Data.Amount),
+				RandaoCommitment:    hexutil.Encode(d.Data.RandaoCommitment),
+				Signature:           hexutil.Encode(d.Data.Signature),
 			},
 		}
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/beacon-chain/sync/backfill"
 	"github.com/theQRL/qrysm/config/params"
@@ -38,7 +39,8 @@ type StateManager interface {
 	SaveFinalizedState(fSlot primitives.Slot, fRoot [32]byte, fState state.BeaconState)
 	MigrateToCold(ctx context.Context, fRoot [32]byte) error
 	StateByRoot(ctx context.Context, blockRoot [32]byte) (state.BeaconState, error)
-	ActiveNonSlashedBalancesByRoot(context.Context, [32]byte) ([]uint64, error)
+	BalancesByCheckpoint(context.Context, *forkchoicetypes.Checkpoint) (*forkchoicetypes.JustifiedBalances, error)
+	StateByRootIfCached(blockRoot [32]byte) state.BeaconState
 	StateByRootIfCachedNoCopy(blockRoot [32]byte) state.BeaconState
 	StateByRootInitialSync(ctx context.Context, blockRoot [32]byte) (state.BeaconState, error)
 }
@@ -67,7 +69,8 @@ type saveHotStateDbConfig struct {
 }
 
 // This tracks the finalized point. It's also the point where slot and the block root of
-// cold and hot sections of the DB splits.
+// cold and hot sections of the DB splits: slot is the cold-state migration cursor,
+// MigrateToCold archives the points from it up to the next finalized slot.
 type finalizedInfo struct {
 	slot  primitives.Slot
 	root  [32]byte
@@ -103,7 +106,7 @@ func New(beaconDB db.NoHeadAccessDatabase, fc forkchoice.ForkChoicer, opts ...St
 	}
 	fc.Lock()
 	defer fc.Unlock()
-	fc.SetBalancesByRooter(s.ActiveNonSlashedBalancesByRoot)
+	fc.SetBalancesByRooter(s.BalancesByCheckpoint)
 	return s
 }
 
@@ -141,7 +144,26 @@ func (s *State) Resume(ctx context.Context, fState state.BeaconState) (state.Bea
 		}
 	}()
 
-	s.finalizedInfo = &finalizedInfo{slot: fState.Slot(), root: fRoot, state: fState.Copy()}
+	// The migration cursor lives only in memory and MigrateToCold runs in the
+	// background, so a shutdown or crash can lose the archived points between
+	// the last completed migration and the finalized slot restarted from. Resume
+	// the cursor from the last archived point that is actually in the DB; the
+	// migration skips points whose state already exists, so this is cheap.
+	cursor, err := s.migrationCursor(ctx, fState.Slot())
+	if err != nil {
+		return nil, errors.Wrap(err, "could not find the migration cursor")
+	}
+	if cursor < fState.Slot() {
+		log.WithField("finalizedSlot", fState.Slot()).WithField("resumeFrom", cursor).
+			Info("Resuming cold state migration from the last archived point")
+	}
+	// Update the fields under the lock rather than replacing the struct: other
+	// services may already be serving requests that read the finalized info.
+	s.finalizedInfo.lock.Lock()
+	s.finalizedInfo.slot = cursor
+	s.finalizedInfo.root = fRoot
+	s.finalizedInfo.state = fState.Copy()
+	s.finalizedInfo.lock.Unlock()
 
 	// Pre-populate the pubkey cache with the validator public keys from the finalized state.
 	// This process takes about 30 seconds on mainnet with 450,000 validators.
@@ -162,6 +184,108 @@ func (s *State) Resume(ctx context.Context, fState state.BeaconState) (state.Bea
 	})
 
 	return fState, nil
+}
+
+// migrationCursor returns the slot the cold state migration resumes from: the
+// last archived point whose archive is on disk before the first missing one
+// (so a gap is filled rather than hidden and the first migration step can be
+// reconstructed from the archive at the cursor), capped by the cursor recorded
+// by the last completed migration when there is one at or below the finalized
+// slot. The archived states on disk are the ground truth: an archive can be
+// lost below the recorded cursor (an older release's cleanup removed the
+// archive of a skipped archived slot), and the scan is cheap, one lookup per
+// archived point.
+func (s *State) migrationCursor(ctx context.Context, finalizedSlot primitives.Slot) (primitives.Slot, error) {
+	scanned, err := s.lastReconstructableArchivedPoint(ctx, finalizedSlot)
+	if err != nil {
+		return 0, err
+	}
+	cursor, found, err := s.beaconDB.StateMigrationCursor(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not read the state migration cursor")
+	}
+	if found && cursor <= finalizedSlot && cursor < scanned {
+		return cursor, nil
+	}
+	if found && cursor <= finalizedSlot && scanned < cursor {
+		log.WithField("recorded", cursor).WithField("resumeFrom", scanned).
+			Warn("An archived state below the recorded migration cursor is missing; resuming below it to rebuild it")
+	}
+	return scanned, nil
+}
+
+// lastReconstructableArchivedPoint returns the highest archived point at or
+// below slot such that every archived point from the lower bound up to it has
+// its archive on disk (the archive of a point is the state of the highest
+// canonical block at or below it). The lower bound is the checkpoint origin
+// slot on a checkpoint-synced node, since no point below the origin can be
+// migrated, and genesis otherwise; it is returned when no point qualifies.
+func (s *State) lastReconstructableArchivedPoint(ctx context.Context, slot primitives.Slot) (primitives.Slot, error) {
+	interval := s.slotsPerArchivedPoint
+	if interval == 0 {
+		return slot, nil
+	}
+	lower, err := s.migrationLowerBound(ctx)
+	if err != nil {
+		return 0, err
+	}
+	cursor := lower
+	// Point 0 is genesis, which the migration never archives.
+	first := lower
+	if rem := lower % interval; rem != 0 {
+		first = lower - rem + interval
+	}
+	if first == 0 {
+		first = interval
+	}
+	for point := first; point <= slot; point += interval {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+		root, err := s.canonicalRootAtOrBelow(ctx, point, lower)
+		if err != nil || !s.beaconDB.HasState(ctx, root) {
+			log.WithField("slot", point).WithField("resumeFrom", cursor).
+				Info("Archived point missing; resuming cold state migration from the last archived point on disk")
+			return cursor, nil
+		}
+		cursor = point
+	}
+	return cursor, nil
+}
+
+// migrationLowerBound returns the slot below which no state can be archived:
+// the checkpoint origin's slot on a checkpoint-synced node, otherwise genesis.
+func (s *State) migrationLowerBound(ctx context.Context) (primitives.Slot, error) {
+	originRoot, err := s.beaconDB.OriginCheckpointBlockRoot(ctx)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFoundOriginBlockRoot) {
+			return 0, nil
+		}
+		return 0, errors.Wrap(err, "could not read the origin checkpoint root")
+	}
+	blk, err := s.beaconDB.Block(ctx, originRoot)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not read the origin checkpoint block")
+	}
+	if blk == nil || blk.IsNil() {
+		return 0, errors.New("origin checkpoint block not found")
+	}
+	return blk.Block().Slot(), nil
+}
+
+// advanceFinalizedInfo moves the migration cursor to fSlot, never back, and
+// records fRoot and fState as the finalized state when fState is given.
+func (s *State) advanceFinalizedInfo(fSlot primitives.Slot, fRoot [32]byte, fState state.BeaconState) {
+	s.finalizedInfo.lock.Lock()
+	defer s.finalizedInfo.lock.Unlock()
+	if fSlot < s.finalizedInfo.slot {
+		return
+	}
+	s.finalizedInfo.slot = fSlot
+	if fState != nil && !fState.IsNil() {
+		s.finalizedInfo.root = fRoot
+		s.finalizedInfo.state = fState.Copy()
+	}
 }
 
 // SaveFinalizedState saves the finalized slot, root and state into memory to be used by state gen service.
@@ -186,5 +310,19 @@ func (s *State) isFinalizedRoot(r [32]byte) bool {
 func (s *State) finalizedState() state.BeaconState {
 	s.finalizedInfo.lock.RLock()
 	defer s.finalizedInfo.lock.RUnlock()
+	return s.finalizedInfo.state.Copy()
+}
+
+// finalizedStateIfRoot returns a copy of the cached finalized state only if
+// the cached finalized root matches r at the moment of the read. The root
+// comparison and the state copy happen under a single lock acquisition so a
+// concurrent SaveFinalizedState cannot swap the finalized info in between and
+// make us return a state belonging to a different root than requested.
+func (s *State) finalizedStateIfRoot(r [32]byte) state.BeaconState {
+	s.finalizedInfo.lock.RLock()
+	defer s.finalizedInfo.lock.RUnlock()
+	if r != s.finalizedInfo.root || s.finalizedInfo.state == nil {
+		return nil
+	}
 	return s.finalizedInfo.state.Copy()
 }

@@ -4,6 +4,7 @@ package ssz
 import (
 	"bytes"
 	"encoding/binary"
+	"reflect"
 
 	"github.com/minio/sha256-simd"
 	"github.com/pkg/errors"
@@ -14,9 +15,39 @@ import (
 const bytesPerChunk = 32
 
 // BitlistRoot returns the mix in length of a bitwise Merkleized bitfield.
+// A bitlist encoding must carry its length bit in a non-zero final byte; an
+// empty byte slice or a zero final byte is malformed and is rejected rather
+// than hashed as an empty bitlist. Pointer implementations of the interface
+// are validated the same way, and a nil pointer is rejected instead of
+// panicking inside its value-receiver methods.
 func BitlistRoot(bfield bitfield.Bitfield, maxCapacity uint64) ([32]byte, error) {
-	limit := (maxCapacity + 255) / 256
-	if bfield == nil || bfield.Len() == 0 {
+	if bfield == nil {
+		return [32]byte{}, errors.New("bitlist is nil")
+	}
+	if v := reflect.ValueOf(bfield); v.Kind() == reflect.Pointer && v.IsNil() {
+		return [32]byte{}, errors.New("bitlist is nil")
+	}
+	var bl bitfield.Bitlist
+	isBitlist := true
+	switch b := bfield.(type) {
+	case bitfield.Bitlist:
+		bl = b
+	case *bitfield.Bitlist:
+		bl = *b
+	default:
+		isBitlist = false
+	}
+	if isBitlist && (len(bl) == 0 || bl[len(bl)-1] == 0) {
+		return [32]byte{}, errors.New("bitlist has no length bit")
+	}
+	if bfield.Len() > maxCapacity {
+		return [32]byte{}, errors.New("bitlist exceeds maximum capacity")
+	}
+	limit := maxCapacity / 256
+	if maxCapacity%256 != 0 {
+		limit++
+	}
+	if bfield.Len() == 0 {
 		length := make([]byte, 32)
 		root, err := BitwiseMerkleize([][32]byte{}, 0, limit)
 		if err != nil {
@@ -47,6 +78,9 @@ func BitlistRoot(bfield bitfield.Bitfield, maxCapacity uint64) ([32]byte, error)
 // Note that merkleize on a single chunk is simply that chunk, i.e. the identity
 // when the number of chunks is one.
 func BitwiseMerkleize(chunks [][32]byte, count, limit uint64) ([32]byte, error) {
+	if count != uint64(len(chunks)) {
+		return [32]byte{}, errors.Errorf("chunk count %d does not match the %d chunks provided", count, len(chunks))
+	}
 	if count > limit {
 		return [32]byte{}, errors.New("merkleizing list that is too large, over limit")
 	}
@@ -59,7 +93,15 @@ func PackByChunk(serializedItems [][]byte) ([][bytesPerChunk]byte, error) {
 	// If there are no items, we return an empty chunk.
 	if len(serializedItems) == 0 {
 		return [][bytesPerChunk]byte{emptyChunk}, nil
-	} else if len(serializedItems[0]) == bytesPerChunk {
+	}
+	aligned := true
+	for _, item := range serializedItems {
+		if len(item) != bytesPerChunk {
+			aligned = false
+			break
+		}
+	}
+	if aligned {
 		// If each item has exactly BYTES_PER_CHUNK length, we return the list of serialized items.
 		chunks := make([][bytesPerChunk]byte, 0, len(serializedItems))
 		for _, c := range serializedItems {

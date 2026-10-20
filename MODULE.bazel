@@ -11,6 +11,11 @@ bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_pkg", version = "1.2.0")
 bazel_dep(name = "rules_oci", version = "1.7.4")
+# rules_oci 1.7.4 pulls in aspect_bazel_lib 2.0.3, whose bsdtar toolchain
+# downloads libarchive-tools .debs from security.ubuntu.com; Ubuntu rotates
+# those, so the pinned URL now 404s. 2.9+ fetches static bsdtar binaries from
+# github.com/aspect-build/bsdtar-prebuilt instead.
+bazel_dep(name = "aspect_bazel_lib", version = "2.14.0")
 bazel_dep(name = "protobuf", version = "29.1", repo_name = "com_google_protobuf")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "toolchains_protoc", version = "0.3.6")
@@ -622,9 +627,17 @@ register_toolchains("@qrysm_toolchains//:cc-toolchain-multiarch")
 go_deps = use_extension("@bazel_gazelle//:extensions.bzl", "go_deps")
 go_deps.config(check_direct_dependencies = "off")
 go_deps.from_file(go_mod = "//:go.mod")
+# Keep generated SSZ decoding reusable and enforce bitfield and offset bounds.
+go_deps.module_override(
+    patch_strip = 1,
+    patches = ["//third_party:com_github_prysmaticlabs_fastssz-validation.patch"],
+    path = "github.com/prysmaticlabs/fastssz",
+)
+# go-libp2p-pubsub ships pre-generated protobuf Go code; keep gazelle from
+# regenerating it from the .proto files.
 go_deps.gazelle_override(
     directives = ["gazelle:proto disable"],
-    path = "github.com/containerd/cgroups",
+    path = "github.com/libp2p/go-libp2p-pubsub",
 )
 go_deps.archive_override(
     path = "google.golang.org/genproto",
@@ -652,9 +665,4 @@ go_deps.module_override(
     patches = ["//third_party:com_github_grpc_ecosystem_grpc_gateway_v2-googleapis.patch"],
     path = "github.com/grpc-ecosystem/grpc-gateway/v2",
 )
-go_deps.module_override(
-    patch_strip = 1,
-    patches = ["//third_party:com_github_libp2p_go_libp2p_pubsub-gogo.patch"],
-    path = "github.com/libp2p/go-libp2p-pubsub",
-)
-use_repo(go_deps, "co_honnef_go_tools", "com_github_aristanetworks_goarista", "com_github_btcsuite_btcd_btcec_v2", "com_github_coreos_go_systemd", "com_github_d4l3k_messagediff", "com_github_dgraph_io_ristretto", "com_github_dustin_go_humanize", "com_github_emicklei_dot", "com_github_fsnotify_fsnotify", "com_github_gdamore_tcell_v2", "com_github_ghodss_yaml", "com_github_go_yaml_yaml", "com_github_gogo_protobuf", "com_github_golang_gddo", "com_github_golang_glog", "com_github_golang_jwt_jwt_v4", "com_github_golang_mock", "com_github_golang_snappy", "com_github_google_gofuzz", "com_github_google_uuid", "com_github_gorilla_mux", "com_github_gostaticanalysis_comment", "com_github_grpc_ecosystem_go_grpc_middleware", "com_github_grpc_ecosystem_go_grpc_prometheus", "com_github_grpc_ecosystem_grpc_gateway_v2", "com_github_hashicorp_golang_lru", "com_github_holiman_uint256", "com_github_ianlancetaylor_cgosymbolizer", "com_github_ipfs_go_log_v2", "com_github_jedisct1_go_minisign", "com_github_joonix_log", "com_github_json_iterator_go", "com_github_k0kubun_go_ansi", "com_github_kisielk_errcheck", "com_github_korovkin_limiter", "com_github_kr_pretty", "com_github_libp2p_go_libp2p", "com_github_libp2p_go_libp2p_mplex", "com_github_libp2p_go_libp2p_pubsub", "com_github_logrusorgru_aurora", "com_github_manifoldco_promptui", "com_github_mgutz_ansi", "com_github_minio_highwayhash", "com_github_minio_sha256_simd", "com_github_mohae_deepcopy", "com_github_multiformats_go_multiaddr", "com_github_naoina_toml", "com_github_onsi_ginkgo", "com_github_onsi_gomega", "com_github_patrickmn_go_cache", "com_github_paulbellamy_ratecounter", "com_github_pkg_errors", "com_github_prometheus_client_golang", "com_github_prometheus_client_model", "com_github_prometheus_prom2json", "com_github_prysmaticlabs_fastssz", "com_github_prysmaticlabs_gohashtree", "com_github_prysmaticlabs_prombbolt", "com_github_prysmaticlabs_protoc_gen_go_cast", "com_github_r3labs_sse_v2", "com_github_rivo_tview", "com_github_rs_cors", "com_github_schollz_progressbar_v3", "com_github_sirupsen_logrus", "com_github_status_im_keycard_go", "com_github_stretchr_testify", "com_github_theqrl_go_bitfield", "com_github_theqrl_go_qrl", "com_github_theqrl_go_qrllib", "com_github_thomaso_mirodin_intmath", "com_github_trailofbits_go_mutexasserts", "com_github_urfave_cli_v2", "com_github_uudashr_gocognit", "com_github_wealdtech_go_bytesutil", "in_gopkg_d4l3k_messagediff_v1", "in_gopkg_yaml_v2", "io_etcd_go_bbolt", "io_k8s_apimachinery", "io_k8s_client_go", "io_opencensus_go", "io_opencensus_go_contrib_exporter_jaeger", "org_golang_google_genproto", "org_golang_google_grpc", "org_golang_google_protobuf", "org_golang_x_crypto", "org_golang_x_exp", "org_golang_x_sync", "org_golang_x_term", "org_golang_x_text", "org_golang_x_tools", "org_uber_go_automaxprocs", "org_uber_go_mock")
+use_repo(go_deps, "co_honnef_go_tools", "com_github_aristanetworks_goarista", "com_github_btcsuite_btcd_btcec_v2", "com_github_coreos_go_systemd", "com_github_d4l3k_messagediff", "com_github_dgraph_io_ristretto", "com_github_dustin_go_humanize", "com_github_emicklei_dot", "com_github_fsnotify_fsnotify", "com_github_gdamore_tcell_v2", "com_github_ghodss_yaml", "com_github_go_yaml_yaml", "com_github_gogo_protobuf", "com_github_golang_gddo", "com_github_golang_glog", "com_github_golang_jwt_jwt_v4", "com_github_golang_mock", "com_github_golang_snappy", "com_github_google_gofuzz", "com_github_google_uuid", "com_github_gorilla_mux", "com_github_gostaticanalysis_comment", "com_github_grpc_ecosystem_go_grpc_middleware", "com_github_grpc_ecosystem_go_grpc_prometheus", "com_github_grpc_ecosystem_grpc_gateway_v2", "com_github_hashicorp_golang_lru", "com_github_holiman_uint256", "com_github_ianlancetaylor_cgosymbolizer", "com_github_ipfs_go_log_v2", "com_github_jedisct1_go_minisign", "com_github_joonix_log", "com_github_json_iterator_go", "com_github_k0kubun_go_ansi", "com_github_kisielk_errcheck", "com_github_korovkin_limiter", "com_github_kr_pretty", "com_github_libp2p_go_libp2p", "com_github_libp2p_go_libp2p_mplex", "com_github_libp2p_go_libp2p_pubsub", "com_github_libp2p_go_mplex", "com_github_logrusorgru_aurora", "com_github_manifoldco_promptui", "com_github_mgutz_ansi", "com_github_minio_highwayhash", "com_github_minio_sha256_simd", "com_github_mohae_deepcopy", "com_github_multiformats_go_multiaddr", "com_github_naoina_toml", "com_github_onsi_ginkgo", "com_github_onsi_gomega", "com_github_patrickmn_go_cache", "com_github_paulbellamy_ratecounter", "com_github_pkg_errors", "com_github_prometheus_client_golang", "com_github_prometheus_client_model", "com_github_prometheus_prom2json", "com_github_prysmaticlabs_fastssz", "com_github_prysmaticlabs_gohashtree", "com_github_prysmaticlabs_prombbolt", "com_github_prysmaticlabs_protoc_gen_go_cast", "com_github_r3labs_sse_v2", "com_github_rivo_tview", "com_github_rs_cors", "com_github_schollz_progressbar_v3", "com_github_sirupsen_logrus", "com_github_status_im_keycard_go", "com_github_stretchr_testify", "com_github_theqrl_go_bitfield", "com_github_theqrl_go_qrl", "com_github_theqrl_go_qrllib", "com_github_thomaso_mirodin_intmath", "com_github_trailofbits_go_mutexasserts", "com_github_urfave_cli_v2", "com_github_uudashr_gocognit", "com_github_wealdtech_go_bytesutil", "in_gopkg_d4l3k_messagediff_v1", "in_gopkg_yaml_v2", "io_etcd_go_bbolt", "io_k8s_apimachinery", "io_k8s_client_go", "io_opencensus_go", "io_opencensus_go_contrib_exporter_jaeger", "org_golang_google_genproto", "org_golang_google_grpc", "org_golang_google_protobuf", "org_golang_x_crypto", "org_golang_x_exp", "org_golang_x_sync", "org_golang_x_term", "org_golang_x_text", "org_golang_x_tools", "org_uber_go_automaxprocs", "org_uber_go_mock")

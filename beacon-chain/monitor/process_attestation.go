@@ -108,7 +108,7 @@ func (s *Service) processUnaggregatedAttestation(ctx context.Context, att *qrysm
 	s.RLock()
 	defer s.RUnlock()
 	root := bytesutil.ToBytes32(att.Data.BeaconBlockRoot)
-	st := s.config.StateGen.StateByRootIfCachedNoCopy(root)
+	st := s.config.StateGen.StateByRootIfCached(root)
 	if st == nil {
 		log.WithField("BeaconBlockRoot", fmt.Sprintf("%#x", bytesutil.Trunc(root[:]))).Debug(
 			"Skipping unaggregated attestation due to state not found in cache")
@@ -150,7 +150,7 @@ func (s *Service) processAggregatedAttestation(ctx context.Context, att *qrysmpb
 
 	var root [32]byte
 	copy(root[:], att.Aggregate.Data.BeaconBlockRoot)
-	st := s.config.StateGen.StateByRootIfCachedNoCopy(root)
+	st := s.config.StateGen.StateByRootIfCached(root)
 	if st == nil {
 		log.WithField("BeaconBlockRoot", fmt.Sprintf("%#x", bytesutil.Trunc(root[:]))).Debug(
 			"Skipping aggregated attestation due to state not found in cache")

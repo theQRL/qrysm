@@ -94,5 +94,5 @@ func (s *Simulator) signBlockHeader(
 		return nil, err
 	}
 	validatorPrivKey := s.srvConfig.PrivateKeysByValidatorIndex[header.Header.ProposerIndex]
-	return validatorPrivKey.Sign(signingRoot[:]), nil
+	return validatorPrivKey.Sign(signingRoot[:])
 }

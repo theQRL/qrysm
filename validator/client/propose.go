@@ -15,7 +15,6 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/crypto/rand"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
@@ -53,11 +52,11 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 	span.AddAttributes(trace.StringAttribute("validator", fmtKey))
 	log := log.WithField("pubKey", fmt.Sprintf("%#x", bytesutil.Trunc(pubKey[:])))
 
-	// Sign randao reveal, it's used to request block from beacon node
+	// Derive the randao reveal from the validator's hash onion; it's used to request block from beacon node
 	epoch := primitives.Epoch(slot / params.BeaconConfig().SlotsPerEpoch)
-	randaoReveal, err := v.signRandaoReveal(ctx, pubKey, epoch, slot)
+	randaoReveal, err := v.randaoReveal(ctx, pubKey)
 	if err != nil {
-		log.WithError(err).Error("Failed to sign randao reveal")
+		log.WithError(err).Error("Failed to derive randao reveal")
 		if v.emitAccountMetrics {
 			ValidatorProposeFailVec.WithLabelValues(fmtKey).Inc()
 		}
@@ -150,7 +149,7 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 		log.WithError(err).Error("Failed to get execution payload")
 		return
 	}
-	log = log.WithFields(logrus.Fields{
+	l := log.WithFields(logrus.Fields{
 		"payloadHash": fmt.Sprintf("%#x", bytesutil.Trunc(p.BlockHash())),
 		"parentHash":  fmt.Sprintf("%#x", bytesutil.Trunc(p.ParentHash())),
 		"blockNumber": p.BlockNumber,
@@ -161,10 +160,10 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 			log.WithError(err).Error("Failed to get execution payload transactions")
 			return
 		}
-		log = log.WithField("txCount", len(txs))
+		l = l.WithField("txCount", len(txs))
 	}
 	if p.GasLimit() != 0 {
-		log = log.WithField("gasUtilized", float64(p.GasUsed())/float64(p.GasLimit()))
+		l = l.WithField("gasUtilized", float64(p.GasUsed())/float64(p.GasLimit()))
 	}
 	if !blk.IsBlinded() {
 		withdrawals, err := p.Withdrawals()
@@ -172,12 +171,12 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 			log.WithError(err).Error("Failed to get execution payload withdrawals")
 			return
 		}
-		log = log.WithField("withdrawalCount", len(withdrawals))
+		l = l.WithField("withdrawalCount", len(withdrawals))
 	}
 
 	blkRoot := fmt.Sprintf("%#x", bytesutil.Trunc(blkResp.BlockRoot))
 	graffiti := blk.Block().Body().Graffiti()
-	log.WithFields(logrus.Fields{
+	l.WithFields(logrus.Fields{
 		"slot":            blk.Block().Slot(),
 		"blockRoot":       blkRoot,
 		"numAttestations": len(blk.Block().Body().Attestations()),
@@ -252,33 +251,25 @@ func CreateSignedVoluntaryExit(
 	return &qrysmpb.SignedVoluntaryExit{Exit: exit, Signature: sig}, nil
 }
 
-// Sign randao reveal with randao domain and private key.
-func (v *validator) signRandaoReveal(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, epoch primitives.Epoch, slot primitives.Slot) ([]byte, error) {
-	domain, err := v.domainData(ctx, epoch, params.BeaconConfig().DomainRandao[:])
-	if err != nil {
-		return nil, errors.Wrap(err, domainDataErr)
-	}
-	if domain == nil {
-		return nil, errors.New(domainDataErr)
-	}
-
-	var randaoReveal ml_dsa_87.Signature
-	sszUint := primitives.SSZUint64(epoch)
-	root, err := signing.ComputeSigningRoot(&sszUint, domain.SignatureDomain)
-	if err != nil {
-		return nil, err
-	}
-	randaoReveal, err = v.keyManager.Sign(ctx, &validatorpb.SignRequest{
-		PublicKey:       pubKey[:],
-		SigningRoot:     root[:],
-		SignatureDomain: domain.SignatureDomain,
-		Object:          &validatorpb.SignRequest_Epoch{Epoch: epoch},
-		SigningSlot:     slot,
+// randaoReveal returns the pre-image of the validator's current RANDAO
+// commitment, as recorded in the beacon node's head state.
+func (v *validator) randaoReveal(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte) ([]byte, error) {
+	resp, err := v.beaconClient.ListValidators(ctx, &qrysmpb.ListValidatorsRequest{
+		PublicKeys: [][]byte{pubKey[:]},
+		PageSize:   1,
 	})
 	if err != nil {
+		return nil, errors.Wrap(err, "could not fetch validator from head state")
+	}
+	if len(resp.ValidatorList) != 1 || resp.ValidatorList[0].Validator == nil {
+		return nil, errors.New("validator not found in head state")
+	}
+	commitment := bytesutil.ToBytes32(resp.ValidatorList[0].Validator.RandaoCommitment)
+	reveal, err := v.keyManager.RandaoReveal(ctx, pubKey, commitment)
+	if err != nil {
 		return nil, err
 	}
-	return randaoReveal.Marshal(), nil
+	return reveal[:], nil
 }
 
 // Sign block with proposer domain and private key.

@@ -19,7 +19,6 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/builder"
 	"github.com/theQRL/qrysm/beacon-chain/cache"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/beacon-chain/db/kv"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
 	rpchelpers "github.com/theQRL/qrysm/beacon-chain/rpc/qrl/helpers"
@@ -41,7 +40,7 @@ import (
 
 // GetAggregateAttestation aggregates all attestations matching the given attestation data root and slot, returning the aggregated result.
 func (s *Server) GetAggregateAttestation(w http.ResponseWriter, r *http.Request) {
-	ctx, span := trace.StartSpan(r.Context(), "validator.GetAggregateAttestation")
+	_, span := trace.StartSpan(r.Context(), "validator.GetAggregateAttestation")
 	defer span.End()
 
 	attDataRoot := r.URL.Query().Get("attestation_data_root")
@@ -56,56 +55,75 @@ func (s *Server) GetAggregateAttestation(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := s.AttestationsPool.AggregateUnaggregatedAttestations(ctx); err != nil {
-		http2.HandleError(w, "Could not aggregate unaggregated attestations: "+err.Error(), http.StatusBadRequest)
+	match, err := bestMatchingAtt(s.AttestationsPool.AggregatedAttestations(), primitives.Slot(slot), attDataRootBytes)
+	if err != nil {
+		http2.HandleError(w, "Could not get matching attestation: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	allAtts := s.AttestationsPool.AggregatedAttestations()
-	var bestMatchingAtt *qrysmpb.Attestation
-	for _, att := range allAtts {
-		if att.Data.Slot == primitives.Slot(slot) {
-			root, err := att.Data.HashTreeRoot()
-			if err != nil {
-				http2.HandleError(w, "Could not get attestation data root: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if bytes.Equal(root[:], attDataRootBytes) {
-				if bestMatchingAtt == nil || len(att.AggregationBits) > len(bestMatchingAtt.AggregationBits) {
-					bestMatchingAtt = att
-				}
-			}
+	if match == nil {
+		atts, err := s.AttestationsPool.UnaggregatedAttestations()
+		if err != nil {
+			http2.HandleError(w, "Could not get unaggregated attestations: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		match, err = bestMatchingAtt(atts, primitives.Slot(slot), attDataRootBytes)
+		if err != nil {
+			http2.HandleError(w, "Could not get matching attestation: "+err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
-	if bestMatchingAtt == nil {
+	if match == nil {
 		http2.HandleError(w, "No matching attestation found", http.StatusNotFound)
 		return
 	}
 
-	sigs := make([]string, len(bestMatchingAtt.Signatures))
-	for i, sig := range bestMatchingAtt.Signatures {
+	sigs := make([]string, len(match.Signatures))
+	for i, sig := range match.Signatures {
 		sigs[i] = hexutil.Encode(sig)
 	}
 
 	response := &AggregateAttestationResponse{
 		Data: &shared.Attestation{
-			AggregationBits: hexutil.Encode(bestMatchingAtt.AggregationBits),
+			AggregationBits: hexutil.Encode(match.AggregationBits),
 			Data: &shared.AttestationData{
-				Slot:            strconv.FormatUint(uint64(bestMatchingAtt.Data.Slot), 10),
-				CommitteeIndex:  strconv.FormatUint(uint64(bestMatchingAtt.Data.CommitteeIndex), 10),
-				BeaconBlockRoot: hexutil.Encode(bestMatchingAtt.Data.BeaconBlockRoot),
+				Slot:            strconv.FormatUint(uint64(match.Data.Slot), 10),
+				CommitteeIndex:  strconv.FormatUint(uint64(match.Data.CommitteeIndex), 10),
+				BeaconBlockRoot: hexutil.Encode(match.Data.BeaconBlockRoot),
 				Source: &shared.Checkpoint{
-					Epoch: strconv.FormatUint(uint64(bestMatchingAtt.Data.Source.Epoch), 10),
-					Root:  hexutil.Encode(bestMatchingAtt.Data.Source.Root),
+					Epoch: strconv.FormatUint(uint64(match.Data.Source.Epoch), 10),
+					Root:  hexutil.Encode(match.Data.Source.Root),
 				},
 				Target: &shared.Checkpoint{
-					Epoch: strconv.FormatUint(uint64(bestMatchingAtt.Data.Target.Epoch), 10),
-					Root:  hexutil.Encode(bestMatchingAtt.Data.Target.Root),
+					Epoch: strconv.FormatUint(uint64(match.Data.Target.Epoch), 10),
+					Root:  hexutil.Encode(match.Data.Target.Root),
 				},
 			},
 			Signatures: sigs,
 		}}
 	http2.WriteJson(w, response)
+}
+
+// bestMatchingAtt returns the attestation in atts that matches the given slot and
+// attestation data root and has the most aggregation bits set. Returns nil if no
+// match is found.
+func bestMatchingAtt(atts []*qrysmpb.Attestation, slot primitives.Slot, attDataRoot []byte) (*qrysmpb.Attestation, error) {
+	var best *qrysmpb.Attestation
+	for _, att := range atts {
+		if att.Data.Slot != slot {
+			continue
+		}
+		root, err := att.Data.HashTreeRoot()
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get attestation data root")
+		}
+		if !bytes.Equal(root[:], attDataRoot) {
+			continue
+		}
+		if best == nil || len(att.AggregationBits) > len(best.AggregationBits) {
+			best = att
+		}
+	}
+	return best, nil
 }
 
 // SubmitContributionAndProofs publishes multiple signed sync committee contribution and proofs.
@@ -137,6 +155,10 @@ func (s *Server) SubmitContributionAndProofs(w http.ResponseWriter, r *http.Requ
 		rpcError := s.CoreService.SubmitSignedContributionAndProof(ctx, consensusItem)
 		if rpcError != nil {
 			http2.HandleError(w, rpcError.Err.Error(), core.ErrorReasonToHTTP(rpcError.Reason))
+			// Stop at the first failure: continuing would write a second
+			// error response on top of the first one (superfluous WriteHeader,
+			// concatenated JSON bodies).
+			return
 		}
 	}
 }
@@ -297,7 +319,17 @@ func (s *Server) SubmitSyncCommitteeSubscription(w http.ResponseWriter, r *http.
 		epochDuration := time.Duration(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot)) * time.Second
 		totalDuration := epochDuration * time.Duration(epochsToWatch)
 
-		cache.SyncSubnetIDs.AddSyncCommitteeSubnets(pubkey48[:], startEpoch, sub.SyncCommitteeIndices, totalDuration)
+		subcommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
+		seen := make(map[uint64]bool)
+		var subnetIndices []uint64
+		for _, idx := range sub.SyncCommitteeIndices {
+			subnetIdx := idx / subcommitteeSize
+			if !seen[subnetIdx] {
+				seen[subnetIdx] = true
+				subnetIndices = append(subnetIndices, subnetIdx)
+			}
+		}
+		cache.SyncSubnetIDs.AddSyncCommitteeSubnets(pubkey48[:], startEpoch, subnetIndices, totalDuration)
 	}
 }
 
@@ -407,9 +439,8 @@ func (s *Server) GetAttestationData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isOptimistic, err := shared.IsOptimistic(ctx, w, s.OptimisticModeFetcher); isOptimistic || err != nil {
-		return
-	}
+	// Optimistic-mode check is performed inside CoreService.GetAttestationData (after the
+	// cache lookup) so it is skipped on cache hit.
 
 	rawSlot := r.URL.Query().Get("slot")
 	slot, valid := shared.ValidateUint(w, "Slot", rawSlot)
@@ -460,6 +491,10 @@ func (s *Server) ProduceSyncCommitteeContribution(w http.ResponseWriter, r *http
 	if !valid {
 		return
 	}
+	if index >= params.BeaconConfig().SyncCommitteeSubnetCount {
+		http2.HandleError(w, fmt.Sprintf("Subcommittee index needs to be between 0 and %d, %d is outside of this range.", params.BeaconConfig().SyncCommitteeSubnetCount-1, index), http.StatusBadRequest)
+		return
+	}
 	rawSlot := r.URL.Query().Get("slot")
 	slot, valid := shared.ValidateUint(w, "Slot", rawSlot)
 	if !valid {
@@ -469,6 +504,15 @@ func (s *Server) ProduceSyncCommitteeContribution(w http.ResponseWriter, r *http
 	blockRoot, err := hexutil.Decode(rawBlockRoot)
 	if err != nil {
 		http2.HandleError(w, "Invalid Beacon Block Root: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	optimistic, err := s.OptimisticModeFetcher.IsOptimistic(ctx)
+	if err != nil {
+		http2.HandleError(w, errors.Wrap(err, "Could not determine if the node is a optimistic node").Error(), http.StatusInternalServerError)
+		return
+	}
+	if optimistic {
+		http2.HandleError(w, "The node is currently optimistic and cannot serve validators", http.StatusServiceUnavailable)
 		return
 	}
 	contribution, ok := s.produceSyncCommitteeContribution(ctx, w, primitives.Slot(slot), index, []byte(blockRoot))
@@ -584,10 +628,23 @@ func (s *Server) PrepareBeaconProposer(w http.ResponseWriter, r *http.Request) {
 	}
 	var feeRecipients []common.Address
 	var validatorIndices []primitives.ValidatorIndex
+	// Fee recipients are stored by validator index and never removed, so only
+	// indices of validators in the registry are accepted; otherwise any API
+	// client could grow the database without bound.
+	headState, err := s.HeadFetcher.HeadStateReadOnly(ctx)
+	if err != nil {
+		http2.HandleError(w, "Could not get head state: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	numValidators := uint64(headState.NumValidators())
 	// filter for found fee recipients
 	for _, r := range jsonFeeRecipients {
 		validatorIndex, valid := shared.ValidateUint(w, "Validator Index", r.ValidatorIndex)
 		if !valid {
+			return
+		}
+		if validatorIndex >= numValidators {
+			http2.HandleError(w, fmt.Sprintf("Validator index %d is not in the registry of %d validators", validatorIndex, numValidators), http.StatusBadRequest)
 			return
 		}
 		feeRecipientBytes, valid := shared.ValidateAddress(w, "Fee Recipient", r.FeeRecipient, fieldparams.FeeRecipientLength)
@@ -672,24 +729,19 @@ func (s *Server) GetAttesterDuties(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var startSlot primitives.Slot
+	// For next epoch requests, we use the current epoch's state since committee
+	// assignments for next epoch can be computed from current epoch's state.
+	epochForState := requestedEpoch
 	if requestedEpoch == nextEpoch {
-		startSlot, err = slots.EpochStart(currentEpoch)
-	} else {
-		startSlot, err = slots.EpochStart(requestedEpoch)
+		epochForState = currentEpoch
 	}
+	st, err := s.Stater.StateByEpoch(ctx, epochForState)
 	if err != nil {
-		http2.HandleError(w, fmt.Sprintf("Could not get start slot from epoch %d: %v", requestedEpoch, err), http.StatusInternalServerError)
+		shared.WriteStateFetchError(w, err)
 		return
 	}
 
-	st, err := s.Stater.StateBySlot(ctx, startSlot)
-	if err != nil {
-		http2.HandleError(w, "Could not get state: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	committeeAssignments, _, err := helpers.CommitteeAssignments(ctx, st, requestedEpoch)
+	committeeAssignments, err := helpers.CommitteeAssignments(ctx, st, requestedEpoch, requestedValIndices)
 	if err != nil {
 		http2.HandleError(w, "Could not compute committee assignments: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -733,10 +785,23 @@ func (s *Server) GetAttesterDuties(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	dependentRoot, err := attestationDependentRoot(st, requestedEpoch)
-	if err != nil {
-		http2.HandleError(w, "Could not get dependent root: "+err.Error(), http.StatusInternalServerError)
-		return
+	var dependentRoot []byte
+	// At genesis the state is still at slot 0, so helpers.BlockRootAtSlot(state, 0)
+	// rejects slot 0 as out-of-bounds. Read the genesis block root directly from
+	// the DB for epoch 0 and 1, matching the spec's "GENESIS_BLOCK_ROOT" fallback.
+	if requestedEpoch <= 1 {
+		genesisRoot, err := s.BeaconDB.GenesisBlockRoot(ctx)
+		if err != nil {
+			http2.HandleError(w, "Could not get genesis block root: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		dependentRoot = genesisRoot[:]
+	} else {
+		dependentRoot, err = attestationDependentRoot(st, requestedEpoch)
+		if err != nil {
+			http2.HandleError(w, "Could not get dependent root: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	isOptimistic, err := s.OptimisticModeFetcher.IsOptimistic(ctx)
 	if err != nil {
@@ -749,6 +814,12 @@ func (s *Server) GetAttesterDuties(w http.ResponseWriter, r *http.Request) {
 		Data:                duties,
 		ExecutionOptimistic: isOptimistic,
 	}
+	selectionSeed, err := helpers.AggregatorSelectionSeed(st, requestedEpoch)
+	if err != nil {
+		http2.HandleError(w, "Could not compute aggregator selection seed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	response.AggregatorSelectionSeed = hexutil.Encode(selectionSeed[:])
 	http2.WriteJson(w, response)
 }
 
@@ -790,40 +861,17 @@ func (s *Server) GetProposerDuties(w http.ResponseWriter, r *http.Request) {
 		http2.HandleError(w, fmt.Sprintf("Could not get start slot of epoch %d: %v", requestedEpoch, err), http.StatusInternalServerError)
 		return
 	}
-	var st state.BeaconState
-	// if the requested epoch is new, use the head state and the next slot cache
-	if requestedEpoch < currentEpoch {
-		st, err = s.Stater.StateBySlot(ctx, epochStartSlot)
-		if err != nil {
-			http2.HandleError(w, fmt.Sprintf("Could not get state for slot %d: %v ", epochStartSlot, err), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		st, err = s.HeadFetcher.HeadState(ctx)
-		if err != nil {
-			http2.HandleError(w, fmt.Sprintf("Could not get head state: %v ", err), http.StatusInternalServerError)
-			return
-		}
-		// Advance state with empty transitions up to the requested epoch start slot.
-		if st.Slot() < epochStartSlot {
-			headRoot, err := s.HeadFetcher.HeadRoot(ctx)
-			if err != nil {
-				http2.HandleError(w, fmt.Sprintf("Could not get head root: %v ", err), http.StatusInternalServerError)
-				return
-			}
-			st, err = transition.ProcessSlotsUsingNextSlotCache(ctx, st, headRoot, epochStartSlot)
-			if err != nil {
-				http2.HandleError(w, fmt.Sprintf("Could not process slots up to %d: %v ", epochStartSlot, err), http.StatusInternalServerError)
-				return
-			}
-		}
+	st, err := s.Stater.StateByEpoch(ctx, requestedEpoch)
+	if err != nil {
+		shared.WriteStateFetchError(w, err)
+		return
 	}
 
 	var proposals map[primitives.ValidatorIndex][]primitives.Slot
 	if nextEpochLookahead {
-		_, proposals, err = helpers.CommitteeAssignments(ctx, st, nextEpoch)
+		proposals, err = helpers.ProposerAssignments(ctx, st, nextEpoch)
 	} else {
-		_, proposals, err = helpers.CommitteeAssignments(ctx, st, requestedEpoch)
+		proposals, err = helpers.ProposerAssignments(ctx, st, requestedEpoch)
 	}
 	if err != nil {
 		http2.HandleError(w, "Could not compute committee assignments: "+err.Error(), http.StatusInternalServerError)
@@ -851,10 +899,23 @@ func (s *Server) GetProposerDuties(w http.ResponseWriter, r *http.Request) {
 
 	s.ProposerSlotIndexCache.PrunePayloadIDs(epochStartSlot)
 
-	dependentRoot, err := proposalDependentRoot(st, requestedEpoch)
-	if err != nil {
-		http2.HandleError(w, "Could not get dependent root: "+err.Error(), http.StatusInternalServerError)
-		return
+	var dependentRoot []byte
+	// proposalDependentRoot for epoch 0 ends up calling helpers.BlockRootAtSlot(state, 0),
+	// which rejects slot 0 as out-of-bounds when state.Slot() == 0 (genesis).
+	// Use the DB-stored genesis block root as the spec-defined fallback.
+	if requestedEpoch == 0 {
+		genesisRoot, err := s.BeaconDB.GenesisBlockRoot(ctx)
+		if err != nil {
+			http2.HandleError(w, "Could not get genesis block root: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		dependentRoot = genesisRoot[:]
+	} else {
+		dependentRoot, err = proposalDependentRoot(st, requestedEpoch)
+		if err != nil {
+			http2.HandleError(w, "Could not get dependent root: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	isOptimistic, err := s.OptimisticModeFetcher.IsOptimistic(ctx)
 	if err != nil {
@@ -929,24 +990,37 @@ func (s *Server) GetSyncCommitteeDuties(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	startingEpoch := min(requestedEpoch, currentEpoch)
-	slot, err := slots.EpochStart(startingEpoch)
-	if err != nil {
-		http2.HandleError(w, "Could not get sync committee slot: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	st, err := s.Stater.State(ctx, []byte(strconv.FormatUint(uint64(slot), 10)))
-	if err != nil {
-		http2.HandleError(w, "Could not get sync committee state: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	currentSyncCommitteeFirstEpoch, err := slots.SyncCommitteePeriodStartEpoch(startingEpoch)
+	currentCommitteeFirstEpoch, err := slots.SyncCommitteePeriodStartEpoch(currentEpoch)
 	if err != nil {
 		http2.HandleError(w, "Could not get sync committee period start epoch: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	nextSyncCommitteeFirstEpoch := currentSyncCommitteeFirstEpoch + params.BeaconConfig().EpochsPerSyncCommitteePeriod
+	requestedCommitteeFirstEpoch, err := slots.SyncCommitteePeriodStartEpoch(requestedEpoch)
+	if err != nil {
+		http2.HandleError(w, "Could not get sync committee period start epoch: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Sync committee assignments are fixed for the whole period and the next period's
+	// committee is already on-chain one period in advance, so we can serve current- and
+	// next-period requests from the head state and skip the historical replay. Only past
+	// periods need a state at the period boundary.
+	targetEpoch := currentEpoch
+	if requestedCommitteeFirstEpoch < currentCommitteeFirstEpoch {
+		targetEpoch = requestedCommitteeFirstEpoch
+	}
+	st, err := s.Stater.StateByEpoch(ctx, targetEpoch)
+	if err != nil {
+		shared.WriteStateFetchError(w, err)
+		return
+	}
+
+	targetCommitteeFirstEpoch, err := slots.SyncCommitteePeriodStartEpoch(targetEpoch)
+	if err != nil {
+		http2.HandleError(w, "Could not get sync committee period start epoch: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	nextSyncCommitteeFirstEpoch := targetCommitteeFirstEpoch + params.BeaconConfig().EpochsPerSyncCommitteePeriod
 	var committee *qrysmpb.SyncCommittee
 	if requestedEpoch >= nextSyncCommitteeFirstEpoch {
 		committee, err = st.NextSyncCommittee()
@@ -1064,7 +1138,7 @@ func (s *Server) GetLiveness(w http.ResponseWriter, r *http.Request) {
 		}
 		st, err = s.Stater.StateBySlot(ctx, epochEnd)
 		if err != nil {
-			http2.HandleError(w, "Could not get slot for requested epoch: "+err.Error(), http.StatusInternalServerError)
+			shared.WriteStateFetchError(w, err)
 			return
 		}
 		participation, err = st.CurrentEpochParticipation()
@@ -1164,21 +1238,21 @@ func syncCommitteeDuties(
 }
 
 func sortProposerDuties(w http.ResponseWriter, duties []*ProposerDuty) bool {
-	ok := true
+	// Pre-validate that every slot string parses, so the sort.Slice comparator
+	// below can't fail. Doing the parse inside the comparator would write the
+	// same error response many times (the comparator can't abort the sort)
+	// and corrupt the response body.
+	for _, duty := range duties {
+		if _, err := strconv.ParseUint(duty.Slot, 10, 64); err != nil {
+			http2.HandleError(w, "Could not parse slot: "+err.Error(), http.StatusInternalServerError)
+			return false
+		}
+	}
 	sort.Slice(duties, func(i, j int) bool {
-		si, err := strconv.ParseUint(duties[i].Slot, 10, 64)
-		if err != nil {
-			http2.HandleError(w, "Could not parse slot: "+err.Error(), http.StatusInternalServerError)
-			ok = false
-			return false
-		}
-		sj, err := strconv.ParseUint(duties[j].Slot, 10, 64)
-		if err != nil {
-			http2.HandleError(w, "Could not parse slot: "+err.Error(), http.StatusInternalServerError)
-			ok = false
-			return false
-		}
+		// Errors are unreachable here — the loop above validated every slot.
+		si, _ := strconv.ParseUint(duties[i].Slot, 10, 64)
+		sj, _ := strconv.ParseUint(duties[j].Slot, 10, 64)
 		return si < sj
 	})
-	return ok
+	return true
 }

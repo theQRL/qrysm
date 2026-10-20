@@ -122,7 +122,11 @@ func (s *Simulator) sigsForAttestation(
 	sigs := make([][]byte, len(att.AttestingIndices))
 	for i, validatorIndex := range att.AttestingIndices {
 		privKey := s.srvConfig.PrivateKeysByValidatorIndex[primitives.ValidatorIndex(validatorIndex)]
-		sigs[i] = privKey.Sign(signingRoot[:]).Marshal()
+		sig, err := privKey.Sign(signingRoot[:])
+		if err != nil {
+			return nil, err
+		}
+		sigs[i] = sig.Marshal()
 	}
 
 	return sigs, nil

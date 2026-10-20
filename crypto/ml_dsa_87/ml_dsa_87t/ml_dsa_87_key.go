@@ -46,12 +46,24 @@ func (m *mlDSA87Key) PublicKey() common.PublicKey {
 	return &PublicKey{p: &p}
 }
 
-func (m *mlDSA87Key) Sign(msg []byte) common.Signature {
+// Sign signs the message with the hedged ML-DSA-87 signing scheme. The
+// underlying wallet draws randomness for every signature, so signing can fail
+// (e.g. on entropy exhaustion); the error must be propagated instead of
+// returning a nil signature that callers would dereference.
+func (m *mlDSA87Key) Sign(msg []byte) (common.Signature, error) {
 	signature, err := m.w.Sign(msg)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("could not sign message: %w", err)
 	}
-	return &Signature{s: &signature}
+	return &Signature{s: &signature}, nil
+}
+
+func (m *mlDSA87Key) SignDeterministic(msg []byte) (common.Signature, error) {
+	signature, err := m.w.SignDeterministic(msg)
+	if err != nil {
+		return nil, err
+	}
+	return &Signature{s: &signature}, nil
 }
 
 // Marshal a secret key into a LittleEndian byte slice.

@@ -60,13 +60,20 @@ import (
 //
 // This method differs from the spec so as to process deposits beforehand instead of the end of the function.
 func GenesisBeaconStateZond(ctx context.Context, deposits []*qrysmpb.Deposit, genesisTime uint64, executionData *qrysmpb.ExecutionData, ep *enginev1.ExecutionPayloadZond) (state.BeaconState, error) {
+	if executionData == nil {
+		return nil, errors.New("no executionData provided for genesis state")
+	}
+	if n := len(executionData.DepositRoot); n != 0 && n != fieldparams.RootLength {
+		return nil, errors.Errorf("invalid execution deposit root length %d, expected %d", n, fieldparams.RootLength)
+	}
 	st, err := EmptyGenesisStateZond()
 	if err != nil {
 		return nil, err
 	}
 
-	// Process initial deposits.
-	st, err = helpers.UpdateGenesisExecutionData(st, deposits, executionData)
+	// Deposit verification needs the root of the supplied deposits, which can
+	// differ from the execution deposit root when validators are pre-mined.
+	st, err = helpers.UpdateGenesisExecutionData(st, deposits, qrysmpb.CopyExecutionData(executionData))
 	if err != nil {
 		return nil, err
 	}
@@ -76,9 +83,13 @@ func GenesisBeaconStateZond(ctx context.Context, deposits []*qrysmpb.Deposit, ge
 		return nil, errors.Wrap(err, "could not process validator deposits")
 	}
 
-	// After deposits have been processed, overwrite executionData to what is passed in. This allows us to "pre-mine" validators
-	// without the deposit root and count mismatching the real deposit contract.
-	if err := st.SetExecutionData(executionData); err != nil {
+	// Restore the supplied execution metadata after processing premine deposits.
+	// Callers that omit the deposit root retain the root derived above.
+	genesisExecutionData := qrysmpb.CopyExecutionData(executionData)
+	if len(genesisExecutionData.DepositRoot) == 0 {
+		genesisExecutionData.DepositRoot = st.ExecutionData().DepositRoot
+	}
+	if err := st.SetExecutionData(genesisExecutionData); err != nil {
 		return nil, err
 	}
 	if err := st.SetExecutionDepositIndex(executionData.DepositCount); err != nil {
@@ -93,6 +104,9 @@ func GenesisBeaconStateZond(ctx context.Context, deposits []*qrysmpb.Deposit, ge
 func OptimizedGenesisBeaconStateZond(genesisTime uint64, preState state.BeaconState, executionData *qrysmpb.ExecutionData, ep *enginev1.ExecutionPayloadZond) (state.BeaconState, error) {
 	if executionData == nil {
 		return nil, errors.New("no executionData provided for genesis state")
+	}
+	if err := helpers.ValidateGenesisActiveValidatorCount(preState); err != nil {
+		return nil, err
 	}
 
 	randaoMixes := make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector)
@@ -133,6 +147,28 @@ func OptimizedGenesisBeaconStateZond(genesisTime uint64, preState state.BeaconSt
 	scoresMissing := len(preState.Validators()) - len(scores)
 	if scoresMissing > 0 {
 		scores = append(scores, make([]uint64, scoresMissing)...)
+	}
+	// The pre-genesis deposits are processed with the phase0 deposit logic,
+	// which grows the validator registry but not the per-validator
+	// participation arrays. The epoch transition and attestation processing
+	// index those arrays by validator index, so they must be sized like the
+	// registry here; otherwise the first attestation-carrying block on an
+	// interop / deterministic genesis fails with "index >= len(epochParticipation)".
+	// (upstream #14139 achieves the same by processing pre-genesis deposits
+	// with the altair logic.)
+	prevParticipation, err := preState.PreviousEpochParticipation()
+	if err != nil {
+		return nil, err
+	}
+	if missing := len(preState.Validators()) - len(prevParticipation); missing > 0 {
+		prevParticipation = append(prevParticipation, make([]byte, missing)...)
+	}
+	currParticipation, err := preState.CurrentEpochParticipation()
+	if err != nil {
+		return nil, err
+	}
+	if missing := len(preState.Validators()) - len(currParticipation); missing > 0 {
+		currParticipation = append(currParticipation, make([]byte, missing)...)
 	}
 	wep, err := blocks.WrappedExecutionPayloadZond(ep, 0)
 	if err != nil {
@@ -187,10 +223,12 @@ func OptimizedGenesisBeaconStateZond(genesisTime uint64, preState state.BeaconSt
 		ExecutionDepositIndex:        preState.ExecutionDepositIndex(),
 		LatestExecutionPayloadHeader: eph,
 		InactivityScores:             scores,
+		PreviousEpochParticipation:   prevParticipation,
+		CurrentEpochParticipation:    currParticipation,
 	}
 
 	bodyRoot, err := (&qrysmpb.BeaconBlockBodyZond{
-		RandaoReveal: make([]byte, fieldparams.MLDSA87SignatureLength),
+		RandaoReveal: make([]byte, fieldparams.RandaoRevealLength),
 		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),
@@ -202,7 +240,7 @@ func OptimizedGenesisBeaconStateZond(genesisTime uint64, preState state.BeaconSt
 		},
 		ExecutionPayload: &enginev1.ExecutionPayloadZond{
 			ParentHash:    make([]byte, 32),
-			FeeRecipient:  make([]byte, 20),
+			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:     make([]byte, 32),
 			ReceiptsRoot:  make([]byte, 32),
 			LogsBloom:     make([]byte, 256),
@@ -262,7 +300,7 @@ func EmptyGenesisStateZond() (state.BeaconState, error) {
 		ExecutionDepositIndex: 0,
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       make([]byte, 32),
-			FeeRecipient:     make([]byte, 20),
+			FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:        make([]byte, 32),
 			ReceiptsRoot:     make([]byte, 32),
 			LogsBloom:        make([]byte, 256),

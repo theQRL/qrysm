@@ -280,10 +280,12 @@ func TestBeaconBlockJsonHelpers_JsonifyDeposits(t *testing.T) {
 		{
 			Proof: [][]byte{{1}, {2}},
 			Data: &qrysmpb.Deposit_Data{
-				PublicKey:             []byte{3},
-				WithdrawalCredentials: []byte{4},
-				Amount:                5,
-				Signature:             []byte{6},
+				PublicKey:           []byte{3},
+				WithdrawalRecipient: []byte{4},
+				Amount:              5,
+				Signature:           []byte{6},
+
+				RandaoCommitment: make([]byte, 32),
 			},
 		},
 		{
@@ -292,10 +294,12 @@ func TestBeaconBlockJsonHelpers_JsonifyDeposits(t *testing.T) {
 				{8},
 			},
 			Data: &qrysmpb.Deposit_Data{
-				PublicKey:             []byte{9},
-				WithdrawalCredentials: []byte{10},
-				Amount:                11,
-				Signature:             []byte{12},
+				PublicKey:           []byte{9},
+				WithdrawalRecipient: []byte{10},
+				Amount:              11,
+				Signature:           []byte{12},
+
+				RandaoCommitment: make([]byte, 32),
 			},
 		},
 	}
@@ -307,10 +311,11 @@ func TestBeaconBlockJsonHelpers_JsonifyDeposits(t *testing.T) {
 				hexutil.Encode([]byte{2}),
 			},
 			Data: &apimiddleware.Deposit_DataJson{
-				PublicKey:             hexutil.Encode([]byte{3}),
-				WithdrawalCredentials: hexutil.Encode([]byte{4}),
-				Amount:                "5",
-				Signature:             hexutil.Encode([]byte{6}),
+				PublicKey:           hexutil.Encode([]byte{3}),
+				WithdrawalRecipient: hexutil.Encode([]byte{4}),
+				Amount:              "5",
+				RandaoCommitment:    hexutil.Encode(make([]byte, 32)),
+				Signature:           hexutil.Encode([]byte{6}),
 			},
 		},
 		{
@@ -319,10 +324,11 @@ func TestBeaconBlockJsonHelpers_JsonifyDeposits(t *testing.T) {
 				hexutil.Encode([]byte{8}),
 			},
 			Data: &apimiddleware.Deposit_DataJson{
-				PublicKey:             hexutil.Encode([]byte{9}),
-				WithdrawalCredentials: hexutil.Encode([]byte{10}),
-				Amount:                "11",
-				Signature:             hexutil.Encode([]byte{12}),
+				PublicKey:           hexutil.Encode([]byte{9}),
+				WithdrawalRecipient: hexutil.Encode([]byte{10}),
+				Amount:              "11",
+				RandaoCommitment:    hexutil.Encode(make([]byte, 32)),
+				Signature:           hexutil.Encode([]byte{12}),
 			},
 		},
 	}
@@ -590,13 +596,13 @@ func TestBeaconBlockJsonHelpers_JsonifyWithdrawals(t *testing.T) {
 		{
 			WithdrawalIndex:  "1",
 			ValidatorIndex:   "2",
-			ExecutionAddress: hexutil.Encode([]byte{3}),
+			ExecutionAddress: hexutil.EncodeQ([]byte{3}),
 			Amount:           "4",
 		},
 		{
 			WithdrawalIndex:  "5",
 			ValidatorIndex:   "6",
-			ExecutionAddress: hexutil.Encode([]byte{7}),
+			ExecutionAddress: hexutil.EncodeQ([]byte{7}),
 			Amount:           "8",
 		},
 	}

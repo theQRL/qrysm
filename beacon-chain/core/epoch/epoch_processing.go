@@ -7,6 +7,7 @@ package epoch
 import (
 	"context"
 	"fmt"
+	"math/bits"
 	"slices"
 	"sort"
 
@@ -29,6 +30,23 @@ import (
 type sortableIndices struct {
 	indices    []primitives.ValidatorIndex
 	validators []*qrysmpb.Validator
+}
+
+// activeValidatorCountAtEpoch intentionally bypasses the committee cache. The
+// registry transition needs the count at a future activation epoch, including
+// activations already scheduled for that epoch. Caching it before this
+// transition mutates the registry would leave a stale committee assignment.
+func activeValidatorCountAtEpoch(st state.ReadOnlyBeaconState, epoch primitives.Epoch) (uint64, error) {
+	var count uint64
+	if err := st.ReadFromEveryValidator(func(_ int, validator state.ReadOnlyValidator) error {
+		if helpers.IsActiveValidatorUsingTrie(validator, epoch) {
+			count++
+		}
+		return nil
+	}); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 // Len is the number of elements in the collection.
@@ -145,6 +163,20 @@ func ProcessRegistryUpdates(ctx context.Context, state state.BeaconState) (state
 	}
 
 	activationExitEpoch := helpers.ActivationExitEpoch(currentEpoch)
+	maxActiveValidators, err := params.BeaconConfig().MaxActiveValidators()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not determine active validator capacity")
+	}
+	futureActiveValidatorCount, err := activeValidatorCountAtEpoch(state, activationExitEpoch)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not count active validators at activation epoch")
+	}
+	if futureActiveValidatorCount >= maxActiveValidators {
+		limit = 0
+	} else if remainingCapacity := maxActiveValidators - futureActiveValidatorCount; remainingCapacity < limit {
+		limit = remainingCapacity
+	}
+
 	for _, index := range activationQ[:limit] {
 		validator, err := state.ValidatorAtIndex(index)
 		if err != nil {
@@ -170,6 +202,12 @@ func ProcessRegistryUpdates(ctx context.Context, state state.BeaconState) (state
 //	          penalty_numerator = validator.effective_balance // increment * adjusted_total_slashing_balance
 //	          penalty = penalty_numerator // total_balance * increment
 //	          decrease_balance(state, ValidatorIndex(index), penalty)
+//
+// Note: the spec's "factor out increment" trick keeps penalty_numerator within
+// uint64 on Ethereum (effective_balance/increment = 32) but not on QRL, where
+// MaxEffectiveBalance/EffectiveBalanceIncrement = 40000. This implementation
+// computes penalty_numerator/total_balance in 128-bit arithmetic to match the
+// spec's exact (unbounded-integer) result without overflowing.
 func ProcessSlashings(state state.BeaconState, slashingMultiplier uint64) (state.BeaconState, error) {
 	currentEpoch := time.CurrentEpoch(state)
 	totalBalance, err := helpers.TotalActiveBalance(state)
@@ -193,12 +231,31 @@ func ProcessSlashings(state state.BeaconState, slashingMultiplier uint64) (state
 	// a callback is used here to apply the following actions to all validators
 	// below equally.
 	increment := params.BeaconConfig().EffectiveBalanceIncrement
-	minSlashing := min(totalSlashing*slashingMultiplier, totalBalance)
+	// adjusted_total_slashing_balance = min(sum(slashings) * multiplier, total_balance).
+	// Use a checked multiply: if sum(slashings) * multiplier overflows uint64 the
+	// true product necessarily exceeds total_balance (a uint64), so the min is
+	// total_balance. Without this, the multiply could silently wrap to a small
+	// value and understate the penalty.
+	minSlashing := totalBalance
+	if adjusted, mErr := math.Mul64(totalSlashing, slashingMultiplier); mErr == nil {
+		minSlashing = min(adjusted, totalBalance)
+	}
 	err = state.ApplyToEveryValidator(func(idx int, val *qrysmpb.Validator) (bool, *qrysmpb.Validator, error) {
 		correctEpoch := (currentEpoch + exitLength/2) == val.WithdrawableEpoch
 		if val.Slashed && correctEpoch {
-			penaltyNumerator := val.EffectiveBalance / increment * minSlashing
-			penalty := penaltyNumerator / totalBalance * increment
+			// penalty = effective_balance/increment * minSlashing / total_balance * increment.
+			// The spec factors increment out of the numerator to avoid uint64
+			// overflow, which suffices on Ethereum (effective_balance/increment = 32)
+			// but not on QRL, where MaxEffectiveBalance/EffectiveBalanceIncrement =
+			// 40000, so effective_balance/increment * minSlashing (minSlashing up to
+			// total_balance) overflows uint64. Compute that product in 128 bits.
+			// bits.Div64 cannot panic here: hi = (effective_balance/increment *
+			// minSlashing) >> 64 < total_balance because effective_balance/increment
+			// <= 40000 < 2^64 and minSlashing <= total_balance, and total_balance >=
+			// EffectiveBalanceIncrement >= 1 (floored in TotalActiveBalance).
+			hi, lo := bits.Mul64(val.EffectiveBalance/increment, minSlashing)
+			quotient, _ := bits.Div64(hi, lo, totalBalance)
+			penalty := quotient * increment
 			if err := helpers.DecreaseBalance(state, primitives.ValidatorIndex(idx), penalty); err != nil {
 				return false, val, err
 			}
@@ -350,7 +407,7 @@ func ProcessRandaoMixesReset(state state.BeaconState) (state.BeaconState, error)
 }
 
 // ProcessHistoricalDataUpdate processes the updates to historical data during epoch processing.
-// From Zond onward, per spec,state's historical summaries are updated instead of historical roots.
+// Per spec, the state's historical summaries are updated instead of historical roots.
 func ProcessHistoricalDataUpdate(state state.BeaconState) (state.BeaconState, error) {
 	currentEpoch := time.CurrentEpoch(state)
 	nextEpoch := currentEpoch + 1
@@ -408,16 +465,18 @@ func UnslashedAttestingIndices(ctx context.Context, state state.ReadOnlyBeaconSt
 	}
 	// Sort the attesting set indices by increasing order.
 	slices.Sort(setIndices)
-	// Remove the slashed validator indices.
-	for i := 0; i < len(setIndices); i++ {
-		v, err := state.ValidatorAtIndexReadOnly(setIndices[i])
+	// Filter in place without skipping entries after a slashed validator.
+	unslashedIndices := setIndices[:0]
+	for _, index := range setIndices {
+		v, err := state.ValidatorAtIndexReadOnly(index)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to look up validator")
 		}
 		if !v.IsNil() && v.Slashed() {
-			setIndices = append(setIndices[:i], setIndices[i+1:]...)
+			continue
 		}
+		unslashedIndices = append(unslashedIndices, index)
 	}
 
-	return setIndices, nil
+	return unslashedIndices, nil
 }

@@ -252,9 +252,11 @@ func TestDepositByPubkey_ReturnsFirstMatchingDeposit(t *testing.T) {
 			ExecutionBlockHeight: 9,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("pk0"), 48),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 96),
+					PublicKey:           bytesutil.PadTo([]byte("pk0"), 48),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, 96),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 		},
@@ -262,9 +264,11 @@ func TestDepositByPubkey_ReturnsFirstMatchingDeposit(t *testing.T) {
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("pk1"), 48),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 96),
+					PublicKey:           bytesutil.PadTo([]byte("pk1"), 48),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, 96),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 		},
@@ -272,9 +276,11 @@ func TestDepositByPubkey_ReturnsFirstMatchingDeposit(t *testing.T) {
 			ExecutionBlockHeight: 11,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("pk1"), 48),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 96),
+					PublicKey:           bytesutil.PadTo([]byte("pk1"), 48),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, 96),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 		},
@@ -282,9 +288,11 @@ func TestDepositByPubkey_ReturnsFirstMatchingDeposit(t *testing.T) {
 			ExecutionBlockHeight: 12,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("pk2"), 48),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 96),
+					PublicKey:           bytesutil.PadTo([]byte("pk2"), 48),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, 96),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 		},
@@ -316,9 +324,11 @@ func TestFinalizedDeposits_DepositsCachedCorrectly(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index: 0,
@@ -326,9 +336,11 @@ func TestFinalizedDeposits_DepositsCachedCorrectly(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index: 1,
@@ -336,9 +348,11 @@ func TestFinalizedDeposits_DepositsCachedCorrectly(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index: 2,
@@ -347,9 +361,11 @@ func TestFinalizedDeposits_DepositsCachedCorrectly(t *testing.T) {
 	dc.deposits = append(finalizedDeposits, &qrysmpb.DepositContainer{
 		Deposit: &qrysmpb.Deposit{
 			Data: &qrysmpb.Deposit_Data{
-				PublicKey:             bytesutil.PadTo([]byte{3}, field_params.MLDSA87PubkeyLength),
-				WithdrawalCredentials: make([]byte, 32),
-				Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+				PublicKey:           bytesutil.PadTo([]byte{3}, field_params.MLDSA87PubkeyLength),
+				WithdrawalRecipient: make([]byte, 64),
+				Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+				RandaoCommitment: make([]byte, 32),
 			},
 		},
 		Index: 3,
@@ -391,9 +407,11 @@ func TestFinalizedDeposits_UtilizesPreviouslyCachedDeposits(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index: 0,
@@ -401,9 +419,11 @@ func TestFinalizedDeposits_UtilizesPreviouslyCachedDeposits(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index: 1,
@@ -412,9 +432,11 @@ func TestFinalizedDeposits_UtilizesPreviouslyCachedDeposits(t *testing.T) {
 	newFinalizedDeposit := &qrysmpb.DepositContainer{
 		Deposit: &qrysmpb.Deposit{
 			Data: &qrysmpb.Deposit_Data{
-				PublicKey:             bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
-				WithdrawalCredentials: make([]byte, 32),
-				Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+				PublicKey:           bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
+				WithdrawalRecipient: make([]byte, 64),
+				Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+				RandaoCommitment: make([]byte, 32),
 			},
 		},
 		Index: 2,
@@ -477,9 +499,11 @@ func TestFinalizedDeposits_HandleSmallerThanExpectedDeposits(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			DepositRoot: rootCreator('A'),
@@ -488,9 +512,11 @@ func TestFinalizedDeposits_HandleSmallerThanExpectedDeposits(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			DepositRoot: rootCreator('B'),
@@ -499,9 +525,11 @@ func TestFinalizedDeposits_HandleSmallerThanExpectedDeposits(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			DepositRoot: rootCreator('C'),
@@ -527,9 +555,11 @@ func TestFinalizedDeposits_HandleLowerExecutionDepositIndex(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       0,
@@ -538,9 +568,11 @@ func TestFinalizedDeposits_HandleLowerExecutionDepositIndex(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       1,
@@ -549,9 +581,11 @@ func TestFinalizedDeposits_HandleLowerExecutionDepositIndex(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       2,
@@ -560,9 +594,11 @@ func TestFinalizedDeposits_HandleLowerExecutionDepositIndex(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{3}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{3}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       3,
@@ -571,9 +607,11 @@ func TestFinalizedDeposits_HandleLowerExecutionDepositIndex(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{4}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{4}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       4,
@@ -582,9 +620,11 @@ func TestFinalizedDeposits_HandleLowerExecutionDepositIndex(t *testing.T) {
 		{
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{5}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{5}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       5,
@@ -625,9 +665,11 @@ func TestNonFinalizedDeposits_ReturnsAllNonFinalizedDeposits(t *testing.T) {
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       0,
@@ -637,9 +679,11 @@ func TestNonFinalizedDeposits_ReturnsAllNonFinalizedDeposits(t *testing.T) {
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       1,
@@ -651,9 +695,11 @@ func TestNonFinalizedDeposits_ReturnsAllNonFinalizedDeposits(t *testing.T) {
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       2,
@@ -663,9 +709,11 @@ func TestNonFinalizedDeposits_ReturnsAllNonFinalizedDeposits(t *testing.T) {
 			ExecutionBlockHeight: 11,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{3}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{3}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       3,
@@ -695,9 +743,11 @@ func TestNonFinalizedDeposits_ReturnsNonFinalizedDepositsUpToBlockNumber(t *test
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{0}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       0,
@@ -707,9 +757,11 @@ func TestNonFinalizedDeposits_ReturnsNonFinalizedDepositsUpToBlockNumber(t *test
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{1}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       1,
@@ -721,9 +773,11 @@ func TestNonFinalizedDeposits_ReturnsNonFinalizedDepositsUpToBlockNumber(t *test
 			ExecutionBlockHeight: 10,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{2}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       2,
@@ -733,9 +787,11 @@ func TestNonFinalizedDeposits_ReturnsNonFinalizedDepositsUpToBlockNumber(t *test
 			ExecutionBlockHeight: 11,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{3}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{3}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index:       3,
@@ -755,9 +811,11 @@ func TestFinalizedDeposits_ReturnsTrieCorrectly(t *testing.T) {
 	generateCtr := func(height uint64, index int64) *qrysmpb.DepositContainer {
 		dep := &qrysmpb.Deposit{
 			Data: &qrysmpb.Deposit_Data{
-				PublicKey:             bytesutil.PadTo([]byte{uint8(index)}, field_params.MLDSA87PubkeyLength),
-				WithdrawalCredentials: make([]byte, 32),
-				Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+				PublicKey:           bytesutil.PadTo([]byte{uint8(index)}, field_params.MLDSA87PubkeyLength),
+				WithdrawalRecipient: make([]byte, 64),
+				Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+				RandaoCommitment: make([]byte, 32),
 			},
 		}
 		dRoot, err := dep.Data.HashTreeRoot()
@@ -868,9 +926,11 @@ func TestMin(t *testing.T) {
 			ExecutionBlockHeight: height,
 			Deposit: &qrysmpb.Deposit{
 				Data: &qrysmpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{uint8(index)}, field_params.MLDSA87PubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+					PublicKey:           bytesutil.PadTo([]byte{uint8(index)}, field_params.MLDSA87PubkeyLength),
+					WithdrawalRecipient: make([]byte, 64),
+					Signature:           make([]byte, field_params.MLDSA87SignatureLength),
+
+					RandaoCommitment: make([]byte, 32),
 				},
 			},
 			Index: index,
@@ -916,25 +976,25 @@ func TestPruneProofs_Ok(t *testing.T) {
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 0,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 1,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 2,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 3,
 		},
 	}
@@ -963,23 +1023,27 @@ func TestPruneProofs_SomeAlreadyPruned(t *testing.T) {
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: nil, Data: &qrysmpb.Deposit_Data{
-				PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
+				PublicKey:        bytesutil.PadTo([]byte("pk0"), 48),
+				RandaoCommitment: make([]byte, 32),
+			}},
 			index: 0,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: nil, Data: &qrysmpb.Deposit_Data{
-				PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}}, index: 1,
+				PublicKey:        bytesutil.PadTo([]byte("pk1"), 48),
+				RandaoCommitment: make([]byte, 32),
+			}}, index: 1,
 		},
 		{
 			blkNum:  0,
-			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(), Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
+			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(), Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48), RandaoCommitment: make([]byte, 32)}},
 			index:   2,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 3,
 		},
 	}
@@ -1005,25 +1069,25 @@ func TestPruneProofs_PruneAllWhenDepositIndexTooBig(t *testing.T) {
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 0,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 1,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 2,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 3,
 		},
 	}
@@ -1052,25 +1116,25 @@ func TestPruneProofs_CorrectlyHandleLastIndex(t *testing.T) {
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 0,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 1,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 2,
 		},
 		{
 			blkNum: 0,
 			deposit: &qrysmpb.Deposit{Proof: makeDepositProof(),
-				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
+				Data: &qrysmpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48), RandaoCommitment: make([]byte, 32)}},
 			index: 3,
 		},
 	}
@@ -1096,14 +1160,14 @@ func TestDepositMap_WorksCorrectly(t *testing.T) {
 	var nilDep *qrysmpb.Deposit
 	assert.DeepEqual(t, nilDep, dep)
 
-	dep = &qrysmpb.Deposit{Proof: makeDepositProof(), Data: &qrysmpb.Deposit_Data{PublicKey: pk0, Amount: 1000}}
+	dep = &qrysmpb.Deposit{Proof: makeDepositProof(), Data: &qrysmpb.Deposit_Data{PublicKey: pk0, Amount: 1000, RandaoCommitment: make([]byte, 32)}}
 	assert.NoError(t, dc.InsertDeposit(context.Background(), dep, 1000, 0, [32]byte{}))
 
 	dep, _ = dc.DepositByPubkey(context.Background(), pk0)
 	assert.NotEqual(t, nilDep, dep)
 	assert.Equal(t, uint64(1000), dep.Data.Amount)
 
-	dep = &qrysmpb.Deposit{Proof: makeDepositProof(), Data: &qrysmpb.Deposit_Data{PublicKey: pk0, Amount: 10000}}
+	dep = &qrysmpb.Deposit{Proof: makeDepositProof(), Data: &qrysmpb.Deposit_Data{PublicKey: pk0, Amount: 10000, RandaoCommitment: make([]byte, 32)}}
 	assert.NoError(t, dc.InsertDeposit(context.Background(), dep, 1000, 1, [32]byte{}))
 
 	// Make sure we have the same deposit returned over here.

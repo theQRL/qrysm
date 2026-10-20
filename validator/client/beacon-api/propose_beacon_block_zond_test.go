@@ -49,7 +49,7 @@ func TestProposeBeaconBlock_Zond(t *testing.T) {
 					BlockHash:     hexutil.Encode(zondBlock.Zond.Block.Body.ExecutionPayload.BlockHash),
 					BlockNumber:   uint64ToString(zondBlock.Zond.Block.Body.ExecutionPayload.BlockNumber),
 					ExtraData:     hexutil.Encode(zondBlock.Zond.Block.Body.ExecutionPayload.ExtraData),
-					FeeRecipient:  hexutil.Encode(zondBlock.Zond.Block.Body.ExecutionPayload.FeeRecipient),
+					FeeRecipient:  hexutil.EncodeQ(zondBlock.Zond.Block.Body.ExecutionPayload.FeeRecipient),
 					GasLimit:      uint64ToString(zondBlock.Zond.Block.Body.ExecutionPayload.GasLimit),
 					GasUsed:       uint64ToString(zondBlock.Zond.Block.Body.ExecutionPayload.GasUsed),
 					LogsBloom:     hexutil.Encode(zondBlock.Zond.Block.Body.ExecutionPayload.LogsBloom),

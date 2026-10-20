@@ -41,7 +41,13 @@ func (s *Server) ListKeystores(
 		return nil, status.Errorf(codes.Internal, "Could not get Qrysm keymanager (possibly due to beacon node unavailable): %v", err)
 	}
 	if /*s.wallet.KeymanagerKind() != keymanager.Derived &&*/ s.wallet.KeymanagerKind() != keymanager.Local {
-		return nil, status.Errorf(codes.FailedPrecondition, "Qrysm validator keys are not stored locally with this keymanager type.")
+		// Per the keymanager API spec, return an empty list rather than an
+		// error when the wallet's keymanager kind doesn't store local keys.
+		log.Debugf("ListKeystores: expected wallet kind %s but got %s; returning empty list",
+			keymanager.Local.String(), s.wallet.KeymanagerKind().String())
+		return &qrlpbservice.ListKeystoresResponse{
+			Data: []*qrlpbservice.ListKeystoresResponse_Keystore{},
+		}, nil
 	}
 	pubKeys, err := km.FetchValidatingPublicKeys(ctx)
 	if err != nil {
@@ -52,11 +58,6 @@ func (s *Server) ListKeystores(
 		keystoreResponse[i] = &qrlpbservice.ListKeystoresResponse_Keystore{
 			ValidatingPubkey: pubKeys[i][:],
 		}
-		/*
-			if s.wallet.KeymanagerKind() == keymanager.Derived {
-				keystoreResponse[i].DerivationPath = fmt.Sprintf(derived.ValidatingKeyDerivationPathTemplate, i)
-			}
-		*/
 	}
 	return &qrlpbservice.ListKeystoresResponse{
 		Data: keystoreResponse,

@@ -27,11 +27,11 @@ option php_namespace = "TheQRL\\QRL\\v1alpha1";
 message Attestation {
     // A bitfield representation of validator indices that have voted exactly
     // the same vote and have been aggregated into this attestation.
-    bytes aggregation_bits = 1 [(theqrl.qrl.ext.ssz_max) = "128", (theqrl.qrl.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
+    bytes aggregation_bits = 1 [(theqrl.qrl.ext.ssz_max) = "32", (theqrl.qrl.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
 
     AttestationData data = 2;
 
-    repeated bytes signatures = 3 [(theqrl.qrl.ext.ssz_size) = "?,4627", (theqrl.qrl.ext.ssz_max) = "128"];
+    repeated bytes signatures = 3 [(theqrl.qrl.ext.ssz_size) = "?,4627", (theqrl.qrl.ext.ssz_max) = "32"];
 }
 
 message AggregateAttestationAndProof {

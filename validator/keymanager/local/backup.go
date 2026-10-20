@@ -14,7 +14,7 @@ import (
 
 // ExtractKeystores retrieves the secret keys for specified public keys
 // in the function input, encrypts them using the specified password,
-// and returns their respective EIP-2335 keystores.
+// and returns their respective keystores.
 func (*Keymanager) ExtractKeystores(
 	_ context.Context, publicKeys []ml_dsa_87.PublicKey, password string,
 ) ([]*keymanager.Keystore, error) {

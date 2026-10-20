@@ -17,20 +17,23 @@ import (
 // attestations and we have an index `[]byte("5")` under the shard indices bucket,
 // we might find roots `0x23` and `0x45` stored under that index. We can then
 // do a batch read for attestations corresponding to those roots.
-func lookupValuesForIndices(ctx context.Context, indicesByBucket map[string][]byte, tx *bolt.Tx) [][][]byte {
+func lookupValuesForIndices(ctx context.Context, indicesByBucket map[string][]byte, tx *bolt.Tx) ([][][]byte, error) {
 	_, span := trace.StartSpan(ctx, "BeaconDB.lookupValuesForIndices")
 	defer span.End()
 	values := make([][][]byte, 0, len(indicesByBucket))
 	for k, v := range indicesByBucket {
 		bkt := tx.Bucket([]byte(k))
 		roots := bkt.Get(v)
+		if len(roots)%32 != 0 {
+			return nil, errors.Wrapf(errMisalignedRootList, "bucket %s index %#x len=%d", k, v, len(roots))
+		}
 		splitRoots := make([][]byte, 0, len(roots)/32)
 		for i := 0; i < len(roots); i += 32 {
 			splitRoots = append(splitRoots, roots[i:i+32])
 		}
 		values = append(values, splitRoots)
 	}
-	return values
+	return values, nil
 }
 
 // updateValueForIndices updates the value for each index by appending it to the previous
@@ -46,16 +49,25 @@ func updateValueForIndices(ctx context.Context, indicesByBucket map[string][]byt
 			if err := bkt.Put(idx, root); err != nil {
 				return err
 			}
-		} else {
-			// Do not save duplication in indices bucket
-			for i := 0; i < len(valuesAtIndex); i += 32 {
-				if bytes.Equal(valuesAtIndex[i:i+32], root) {
-					return nil
-				}
+			continue
+		}
+		if len(valuesAtIndex)%32 != 0 {
+			return errors.Wrapf(errMisalignedRootList, "bucket %s index %#x len=%d", k, idx, len(valuesAtIndex))
+		}
+		// Do not save duplication in indices bucket. A duplicate in one index
+		// must not skip the other indices of the same object.
+		duplicate := false
+		for i := 0; i < len(valuesAtIndex); i += 32 {
+			if bytes.Equal(valuesAtIndex[i:i+32], root) {
+				duplicate = true
+				break
 			}
-			if err := bkt.Put(idx, append(valuesAtIndex, root...)); err != nil {
-				return err
-			}
+		}
+		if duplicate {
+			continue
+		}
+		if err := bkt.Put(idx, append(valuesAtIndex, root...)); err != nil {
+			return err
 		}
 	}
 	return nil

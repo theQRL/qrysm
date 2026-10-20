@@ -12,6 +12,7 @@ type migration func(context.Context, *bolt.DB) error
 
 var migrations = []migration{
 	migrateStateValidators,
+	migrateFinalizedParent,
 }
 
 // RunMigrations defined in the migrations array.

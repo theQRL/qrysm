@@ -18,6 +18,7 @@ import (
 	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/theQRL/go-qrl/p2p/qnr"
 	grpcutil "github.com/theQRL/qrysm/api/grpc"
+	mockChain "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
 	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
@@ -53,17 +54,20 @@ func TestGetHealth(t *testing.T) {
 	ctx := grpc.NewContextWithServerTransportStream(context.Background(), &grpcruntime.ServerTransportStream{})
 	checker := &syncmock.Sync{}
 	s := &Server{
-		SyncChecker: checker,
+		SyncChecker:           checker,
+		OptimisticModeFetcher: &mockChain.ChainService{},
 	}
 
 	_, err := s.GetHealth(ctx, &emptypb.Empty{})
 	require.ErrorContains(t, "Node not initialized or having issues", err)
 	checker.IsInitialized = true
+	checker.IsSyncing = true
 	_, err = s.GetHealth(ctx, &emptypb.Empty{})
 	require.NoError(t, err)
 	stream, ok := grpc.ServerTransportStreamFromContext(ctx).(*grpcruntime.ServerTransportStream)
 	require.Equal(t, true, ok, "type assertion failed")
 	assert.Equal(t, stream.Header()[strings.ToLower(grpcutil.HttpCodeMetadataKey)][0], strconv.Itoa(http.StatusPartialContent))
+	checker.IsSyncing = false
 	checker.IsSynced = true
 	_, err = s.GetHealth(ctx, &emptypb.Empty{})
 	require.NoError(t, err)
@@ -85,7 +89,9 @@ func TestGetIdentity(t *testing.T) {
 	require.NoError(t, err)
 	attnets := bitfield.NewBitvector64()
 	attnets.SetBitAt(1, true)
-	metadataProvider := &mockp2p.MockMetadataProvider{Data: wrapper.WrappedMetadataV1(&qrysmpb.MetaDataV1{SeqNumber: 1, Attnets: attnets})}
+	syncnets := bitfield.NewBitvector4()
+	syncnets.SetBitAt(2, true)
+	metadataProvider := &mockp2p.MockMetadataProvider{Data: wrapper.WrappedMetadataV1(&qrysmpb.MetaDataV1{SeqNumber: 1, Attnets: attnets, Syncnets: syncnets})}
 
 	t.Run("OK", func(t *testing.T) {
 		peerManager := &mockp2p.MockPeerManager{
@@ -121,6 +127,10 @@ func TestGetIdentity(t *testing.T) {
 		assert.Equal(t, true, ipv6Found, "IPv6 discovery address not found")
 		assert.Equal(t, discAddr1.String(), resp.Data.DiscoveryAddresses[0])
 		assert.Equal(t, discAddr2.String(), resp.Data.DiscoveryAddresses[1])
+		require.NotNil(t, resp.Data.Metadata)
+		assert.Equal(t, uint64(1), resp.Data.Metadata.SeqNumber)
+		assert.DeepEqual(t, []byte(attnets), []byte(resp.Data.Metadata.Attnets))
+		assert.DeepEqual(t, []byte(syncnets), []byte(resp.Data.Metadata.Syncnets))
 	})
 
 	t.Run("QNR failure", func(t *testing.T) {

@@ -22,9 +22,9 @@ func TestVerifyBlockHeaderSignature(t *testing.T) {
 	require.NoError(t, err)
 	validators := make([]*qrysmpb.Validator, 1)
 	validators[0] = &qrysmpb.Validator{
-		PublicKey:             privKey.PublicKey().Marshal(),
-		WithdrawalCredentials: make([]byte, 32),
-		EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
+		PublicKey:           privKey.PublicKey().Marshal(),
+		WithdrawalRecipient: make([]byte, 64),
+		EffectiveBalance:    params.BeaconConfig().MaxEffectiveBalance,
 	}
 	err = beaconState.SetValidators(validators)
 	require.NoError(t, err)
@@ -54,7 +54,9 @@ func TestVerifyBlockHeaderSignature(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set the signature in the block header.
-	blockHeader.Signature = privKey.Sign(signingRoot[:]).Marshal()
+	lsig1, err := privKey.Sign(signingRoot[:])
+	require.NoError(t, err)
+	blockHeader.Signature = lsig1.Marshal()
 
 	// Sig should verify.
 	err = blocks.VerifyBlockHeaderSignature(beaconState, blockHeader)
@@ -75,11 +77,61 @@ func TestVerifyBlockSignatureUsingCurrentFork(t *testing.T) {
 	}
 	domain, err := signing.Domain(fData, 100, params.BeaconConfig().DomainBeaconProposer, bState.GenesisValidatorsRoot())
 	assert.NoError(t, err)
+	blkRoot, err := blk.Block.HashTreeRoot()
+	assert.NoError(t, err)
 	rt, err := signing.ComputeSigningRoot(blk.Block, domain)
 	assert.NoError(t, err)
-	sig := keys[0].Sign(rt[:]).Marshal()
+	lsig2, err := keys[0].Sign(rt[:])
+	require.NoError(t, err)
+	sig := lsig2.Marshal()
 	blk.Signature = sig
 	wsb, err := consensusblocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
-	assert.NoError(t, blocks.VerifyBlockSignatureUsingCurrentFork(bState, wsb))
+	assert.NoError(t, blocks.VerifyBlockSignatureUsingCurrentFork(bState, wsb, blkRoot))
+}
+
+func TestVerifyBlockSignatureUsingCurrentFork_InvalidSignature(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+
+	bState, keys := util.DeterministicGenesisStateZond(t, 100)
+	blk := util.NewBeaconBlockZond()
+	blk.Block.ProposerIndex = 0
+	blk.Block.Slot = params.BeaconConfig().SlotsPerEpoch * 100
+	fData := &qrysmpb.Fork{
+		Epoch:           100,
+		CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
+		PreviousVersion: params.BeaconConfig().GenesisForkVersion,
+	}
+	domain, err := signing.Domain(fData, 100, params.BeaconConfig().DomainBeaconProposer, bState.GenesisValidatorsRoot())
+	assert.NoError(t, err)
+	rt, err := signing.ComputeSigningRoot(blk.Block, domain)
+	assert.NoError(t, err)
+
+	// Sign with the wrong key (proposer index is 0, but using key 1).
+	lsig3, err := keys[1].Sign(rt[:])
+	require.NoError(t, err)
+	blk.Signature = lsig3.Marshal()
+	wsb, err := consensusblocks.NewSignedBeaconBlock(blk)
+	require.NoError(t, err)
+	blkRoot, err := blk.Block.HashTreeRoot()
+	require.NoError(t, err)
+
+	err = blocks.VerifyBlockSignatureUsingCurrentFork(bState, wsb, blkRoot)
+	require.ErrorIs(t, err, blocks.ErrInvalidSignature, "Expected ErrInvalidSignature for invalid signature")
+}
+
+func TestVerifyBlockSignatureUsingCurrentFork_OutOfRangeProposerIndex(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+
+	bState, _ := util.DeterministicGenesisStateZond(t, 100)
+	blk := util.NewBeaconBlockZond()
+	blk.Block.ProposerIndex = 100 // first index outside the 100-validator registry
+	blk.Block.Slot = params.BeaconConfig().SlotsPerEpoch * 100
+	wsb, err := consensusblocks.NewSignedBeaconBlock(blk)
+	require.NoError(t, err)
+	blkRoot, err := blk.Block.HashTreeRoot()
+	require.NoError(t, err)
+
+	err = blocks.VerifyBlockSignatureUsingCurrentFork(bState, wsb, blkRoot)
+	require.ErrorIs(t, err, blocks.ErrInvalidProposerIndex, "Expected ErrInvalidProposerIndex for out-of-range proposer index")
 }

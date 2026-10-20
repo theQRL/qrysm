@@ -247,7 +247,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 				},
 				convertAll: true,
 			},
-			wantHex: []string{"0x467db8ae2800ecb5fa427aba49c1c41a8200a1863570520f9a029a73231d0bec"},
+			wantHex: []string{"0xc025b6f6a0d912f7a513865196342a83431adcd3372030f7811b4f9d208d4a12"},
 		},
 		{
 			name: "Validators not found",

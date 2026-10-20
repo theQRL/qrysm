@@ -33,6 +33,17 @@ func TestSszNetworkEncoder_FailsSnappyLength(t *testing.T) {
 	require.ErrorContains(t, "snappy message exceeds max size", err)
 }
 
+func TestSszNetworkEncoder_DecodeGossip_RejectsOversizedCompressedFrame(t *testing.T) {
+	e := &encoder.SszNetworkEncoder{}
+	att := &qrysmpb.Fork{}
+	// Any byte slice longer than the worst-case snappy-encoded bound for a
+	// payload of MaxGossipSize must be rejected up-front, before snappy
+	// header parsing runs.
+	data := make([]byte, encoder.MaxGossipCompressedSize+1)
+	err := e.DecodeGossip(data, att)
+	require.ErrorContains(t, "exceeds max compressed size", err)
+}
+
 func testRoundTripWithLength(t *testing.T, e *encoder.SszNetworkEncoder) {
 	buf := new(bytes.Buffer)
 	msg := &qrysmpb.Fork{

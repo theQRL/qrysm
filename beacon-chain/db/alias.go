@@ -6,6 +6,11 @@ import "github.com/theQRL/qrysm/beacon-chain/db/iface"
 // head info. For head info, use github.com/theQRL/qrysm/blockchain.HeadFetcher.
 type ReadOnlyDatabase = iface.ReadOnlyDatabase
 
+// ReadOnlyDatabaseWithSeqNum exposes Qrysm's QRL data backend for read access only, no information about
+// head info, but with read/write access to the p2p metadata sequence number.
+// This is used for the p2p service.
+type ReadOnlyDatabaseWithSeqNum = iface.ReadOnlyDatabaseWithSeqNum
+
 // NoHeadAccessDatabase exposes Qrysm's QRL data backend for read/write access, no information
 // about head info. For head info, use github.com/theQRL/qrysm/blockchain.HeadFetcher.
 type NoHeadAccessDatabase = iface.NoHeadAccessDatabase

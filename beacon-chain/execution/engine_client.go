@@ -97,7 +97,7 @@ func (s *Service) NewPayload(ctx context.Context, payload interfaces.ExecutionDa
 		if !ok {
 			return nil, errors.New("execution data must be a Zond execution payload")
 		}
-		err := s.rpcClient.CallContext(ctx, result, NewPayloadMethodV2, payloadPb)
+		err := s.executionClient().CallContext(ctx, result, NewPayloadMethodV2, payloadPb)
 		if err != nil {
 			return nil, handleRPCError(err)
 		}
@@ -146,7 +146,7 @@ func (s *Service) ForkchoiceUpdated(
 		if err != nil {
 			return nil, nil, err
 		}
-		err = s.rpcClient.CallContext(ctx, result, ForkchoiceUpdatedMethodV2, state, a)
+		err = s.executionClient().CallContext(ctx, result, ForkchoiceUpdatedMethodV2, state, a)
 		if err != nil {
 			return nil, nil, handleRPCError(err)
 		}
@@ -157,10 +157,10 @@ func (s *Service) ForkchoiceUpdated(
 	if result.Status == nil {
 		return nil, nil, ErrNilResponse
 	}
-	if result.ValidationError != "" {
-		log.WithError(errors.New(result.ValidationError)).Error("Got a validation error in forkChoiceUpdated")
-	}
 	resp := result.Status
+	if resp.ValidationError != "" {
+		log.WithError(errors.New(resp.ValidationError)).Error("Got a validation error in forkChoiceUpdated")
+	}
 	switch resp.Status {
 	case pb.PayloadStatus_SYNCING:
 		return nil, nil, ErrAcceptedSyncingPayloadStatus
@@ -188,9 +188,15 @@ func (s *Service) GetPayload(ctx context.Context, payloadId [8]byte, slot primit
 	defer cancel()
 
 	result := &pb.ExecutionPayloadZondWithValue{}
-	err := s.rpcClient.CallContext(ctx, result, GetPayloadMethodV2, pb.PayloadIDBytes(payloadId))
+	err := s.executionClient().CallContext(ctx, result, GetPayloadMethodV2, pb.PayloadIDBytes(payloadId))
 	if err != nil {
 		return nil, false, handleRPCError(err)
+	}
+	if result.Payload == nil {
+		return nil, false, ErrNilResponse
+	}
+	if err := validateWithdrawals(result.Payload.Withdrawals); err != nil {
+		return nil, false, err
 	}
 	ed, err := blocks.WrappedExecutionPayloadZond(result.Payload, blocks.PayloadValueToShor(result.Value))
 	if err != nil {
@@ -206,7 +212,7 @@ func (s *Service) LatestExecutionBlock(ctx context.Context) (*pb.ExecutionBlock,
 	defer span.End()
 
 	result := &pb.ExecutionBlock{}
-	err := s.rpcClient.CallContext(
+	err := s.executionClient().CallContext(
 		ctx,
 		result,
 		ExecutionBlockByNumberMethod,
@@ -222,14 +228,14 @@ func (s *Service) ExecutionBlockByHash(ctx context.Context, hash common.Hash, wi
 	ctx, span := trace.StartSpan(ctx, "execution-chain.engine-api-client.ExecutionBlockByHash")
 	defer span.End()
 	result := &pb.ExecutionBlock{}
-	err := s.rpcClient.CallContext(ctx, result, ExecutionBlockByHashMethod, hash, withTxs)
+	err := s.executionClient().CallContext(ctx, result, ExecutionBlockByHashMethod, hash, withTxs)
 	return result, handleRPCError(err)
 }
 
 // ExecutionBlocksByHashes fetches a batch of execution engine blocks by hash by calling
 // qrl_blockByHash via JSON-RPC.
 func (s *Service) ExecutionBlocksByHashes(ctx context.Context, hashes []common.Hash, withTxs bool) ([]*pb.ExecutionBlock, error) {
-	_, span := trace.StartSpan(ctx, "execution-chain.engine-api-client.ExecutionBlocksByHashes")
+	ctx, span := trace.StartSpan(ctx, "execution-chain.engine-api-client.ExecutionBlocksByHashes")
 	defer span.End()
 	numOfHashes := len(hashes)
 	elems := make([]rpc.BatchElem, 0, numOfHashes)
@@ -248,7 +254,7 @@ func (s *Service) ExecutionBlocksByHashes(ctx context.Context, hashes []common.H
 		})
 		execBlks = append(execBlks, blk)
 	}
-	ioErr := s.rpcClient.BatchCall(elems)
+	ioErr := s.executionClient().BatchCallContext(ctx, elems)
 	if ioErr != nil {
 		return nil, ioErr
 	}
@@ -263,7 +269,7 @@ func (s *Service) ExecutionBlocksByHashes(ctx context.Context, hashes []common.H
 // HeaderByHash returns the relevant header details for the provided block hash.
 func (s *Service) HeaderByHash(ctx context.Context, hash common.Hash) (*types.HeaderInfo, error) {
 	var hdr *types.HeaderInfo
-	err := s.rpcClient.CallContext(ctx, &hdr, ExecutionBlockByHashMethod, hash, false /* no transactions */)
+	err := s.executionClient().CallContext(ctx, &hdr, ExecutionBlockByHashMethod, hash, false /* no transactions */)
 	if err == nil && hdr == nil {
 		err = qrl.NotFound
 	}
@@ -273,7 +279,7 @@ func (s *Service) HeaderByHash(ctx context.Context, hash common.Hash) (*types.He
 // HeaderByNumber returns the relevant header details for the provided block number.
 func (s *Service) HeaderByNumber(ctx context.Context, number *big.Int) (*types.HeaderInfo, error) {
 	var hdr *types.HeaderInfo
-	err := s.rpcClient.CallContext(ctx, &hdr, ExecutionBlockByNumberMethod, toBlockNumArg(number), false /* no transactions */)
+	err := s.executionClient().CallContext(ctx, &hdr, ExecutionBlockByNumberMethod, toBlockNumArg(number), false /* no transactions */)
 	if err == nil && hdr == nil {
 		err = qrl.NotFound
 	}
@@ -286,17 +292,24 @@ func (s *Service) GetPayloadBodiesByHash(ctx context.Context, executionBlockHash
 	defer span.End()
 
 	result := make([]*pb.ExecutionPayloadBodyV1, 0)
-	err := s.rpcClient.CallContext(ctx, &result, GetPayloadBodiesByHashV1, executionBlockHashes)
-
+	err := s.executionClient().CallContext(ctx, &result, GetPayloadBodiesByHashV1, executionBlockHashes)
+	if err != nil {
+		return nil, handleRPCError(err)
+	}
+	if len(result) != len(executionBlockHashes) {
+		return nil, fmt.Errorf("mismatch of payloads retrieved from the execution client: %d vs %d", len(result), len(executionBlockHashes))
+	}
 	for i, item := range result {
 		if item == nil {
 			result[i] = &pb.ExecutionPayloadBodyV1{
 				Transactions: make([][]byte, 0),
 				Withdrawals:  make([]*pb.Withdrawal, 0),
 			}
+		} else if err := validateWithdrawals(item.Withdrawals); err != nil {
+			return nil, errors.Wrapf(err, "invalid payload body at index %d", i)
 		}
 	}
-	return result, handleRPCError(err)
+	return result, nil
 }
 
 // GetPayloadBodiesByRange returns the relevant payload bodies for the provided range.
@@ -305,17 +318,38 @@ func (s *Service) GetPayloadBodiesByRange(ctx context.Context, start, count uint
 	defer span.End()
 
 	result := make([]*pb.ExecutionPayloadBodyV1, 0)
-	err := s.rpcClient.CallContext(ctx, &result, GetPayloadBodiesByRangeV1, start, count)
-
+	err := s.executionClient().CallContext(ctx, &result, GetPayloadBodiesByRangeV1, hexutil.EncodeUint64(start), hexutil.EncodeUint64(count))
+	if err != nil {
+		return nil, handleRPCError(err)
+	}
+	if result == nil {
+		return nil, ErrNilResponse
+	}
+	// The execution client truncates ranges at its current head.
+	if uint64(len(result)) > count {
+		return nil, fmt.Errorf("mismatch of payloads retrieved from the execution client: %d vs %d", len(result), count)
+	}
 	for i, item := range result {
 		if item == nil {
 			result[i] = &pb.ExecutionPayloadBodyV1{
 				Transactions: make([][]byte, 0),
 				Withdrawals:  make([]*pb.Withdrawal, 0),
 			}
+		} else if err := validateWithdrawals(item.Withdrawals); err != nil {
+			return nil, errors.Wrapf(err, "invalid payload body at index %d", i)
 		}
 	}
-	return result, handleRPCError(err)
+	return result, nil
+}
+
+// JSON null entries bypass Withdrawal.UnmarshalJSON and would panic in SSZ hashing.
+func validateWithdrawals(withdrawals []*pb.Withdrawal) error {
+	for i, withdrawal := range withdrawals {
+		if withdrawal == nil {
+			return errors.Errorf("nil withdrawal at index %d", i)
+		}
+	}
+	return nil
 }
 
 // ReconstructFullBlock takes in a blinded beacon block and reconstructs
@@ -333,7 +367,7 @@ func (s *Service) ReconstructFullBlock(
 	if err != nil {
 		return nil, err
 	}
-	if header.IsNil() {
+	if header == nil || header.IsNil() {
 		return nil, errors.New("execution payload header in blinded block was nil")
 	}
 
@@ -371,7 +405,7 @@ func (s *Service) ReconstructFullBlockBatch(
 		if err != nil {
 			return nil, err
 		}
-		if header.IsNil() {
+		if header == nil || header.IsNil() {
 			return nil, errors.New("execution payload header in blinded block was nil")
 		}
 
@@ -481,7 +515,7 @@ func (s *Service) retrievePayloadsFromExecutionHashes(
 func fullPayloadFromExecutionBlock(
 	blockVersion int, header interfaces.ExecutionData, block *pb.ExecutionBlock,
 ) (interfaces.ExecutionData, error) {
-	if header.IsNil() || block == nil {
+	if header == nil || header.IsNil() || block == nil {
 		return nil, errors.New("execution block and header cannot be nil")
 	}
 	blockHash := block.Hash
@@ -495,6 +529,9 @@ func fullPayloadFromExecutionBlock(
 	blockTransactions := block.Transactions
 	txs := make([][]byte, len(blockTransactions))
 	for i, tx := range blockTransactions {
+		if tx == nil {
+			return nil, fmt.Errorf("nil transaction at index %d in execution block %#x", i, blockHash)
+		}
 		txBin, err := tx.MarshalBinary()
 		if err != nil {
 			return nil, err
@@ -529,7 +566,7 @@ func fullPayloadFromExecutionBlock(
 func fullPayloadFromPayloadBody(
 	header interfaces.ExecutionData, body *pb.ExecutionPayloadBodyV1, bVersion int,
 ) (interfaces.ExecutionData, error) {
-	if header.IsNil() || body == nil {
+	if header == nil || header.IsNil() || body == nil {
 		return nil, errors.New("execution block and header cannot be nil")
 	}
 
@@ -563,7 +600,7 @@ func handleRPCError(err error) error {
 		return nil
 	}
 	if isTimeout(err) {
-		return ErrHTTPTimeout
+		return fmt.Errorf("%w: %w", ErrHTTPTimeout, err)
 	}
 	e, ok := err.(rpc.Error)
 	if !ok {

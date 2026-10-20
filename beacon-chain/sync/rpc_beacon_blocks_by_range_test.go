@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"io"
 	"math/big"
 	"sync"
@@ -54,7 +55,7 @@ func TestRPCBeaconBlocksByRange_RPCHandlerReturnsBlocks(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to, err := common.NewAddressFromString("Q095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d87")
 	require.NoError(t, err)
 	tx := gqrltypes.NewTx(&gqrltypes.DynamicFeeTx{
 		Nonce:     0,
@@ -168,7 +169,7 @@ func TestRPCBeaconBlocksByRange_ReturnCorrectNumberBack(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to, err := common.NewAddressFromString("Q095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d87")
 	require.NoError(t, err)
 	tx := gqrltypes.NewTx(&gqrltypes.DynamicFeeTx{
 		Nonce:     0,
@@ -288,7 +289,7 @@ func TestRPCBeaconBlocksByRange_ReconstructsPayloads(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to, err := common.NewAddressFromString("Q095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d87")
 	require.NoError(t, err)
 	tx := gqrltypes.NewTx(&gqrltypes.DynamicFeeTx{
 		Nonce:     0,
@@ -396,6 +397,132 @@ func TestRPCBeaconBlocksByRange_ReconstructsPayloads(t *testing.T) {
 	}
 }
 
+func TestWriteBlockBatchToStream_ReconstructedBlocksPreserveCanonicalOrder(t *testing.T) {
+	p1 := p2ptest.NewTestP2P(t)
+	p2 := p2ptest.NewTestP2P(t)
+	p1.Connect(p2)
+	require.Equal(t, 1, len(p1.BHost.Network().Peers()))
+
+	clock := startup.NewClock(time.Unix(0, 0), [32]byte{})
+
+	makePayload := func(tag byte) *enginev1.ExecutionPayloadZond {
+		blockHash := bytesutil.PadTo([]byte{tag}, fieldparams.RootLength)
+		return &enginev1.ExecutionPayloadZond{
+			ParentHash:    bytesutil.PadTo([]byte{'p', tag}, fieldparams.RootLength),
+			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
+			StateRoot:     bytesutil.PadTo([]byte{'s', tag}, fieldparams.RootLength),
+			ReceiptsRoot:  bytesutil.PadTo([]byte{'r', tag}, fieldparams.RootLength),
+			LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
+			PrevRandao:    blockHash,
+			BlockNumber:   0,
+			GasLimit:      0,
+			GasUsed:       0,
+			Timestamp:     0,
+			ExtraData:     nil,
+			BlockHash:     blockHash,
+			BaseFeePerGas: bytesutil.PadTo([]byte{'b', tag}, fieldparams.RootLength),
+			Transactions:  nil,
+		}
+	}
+
+	makeBlindedROBlock := func(slot primitives.Slot, payload *enginev1.ExecutionPayloadZond) blocks.ROBlock {
+		blinded := util.NewBlindedBeaconBlockZond()
+		blinded.Block.Slot = slot
+		wrappedPayload, err := blocks.WrappedExecutionPayloadZond(payload, 0)
+		require.NoError(t, err)
+		header, err := blocks.PayloadToHeaderZond(wrappedPayload)
+		require.NoError(t, err)
+		blinded.Block.Body.ExecutionPayloadHeader = header
+		signed, err := blocks.NewSignedBeaconBlock(blinded)
+		require.NoError(t, err)
+		root, err := blinded.Block.HashTreeRoot()
+		require.NoError(t, err)
+		ro, err := blocks.NewROBlockWithRoot(signed, root)
+		require.NoError(t, err)
+		return ro
+	}
+
+	makeFullROBlock := func(slot primitives.Slot) blocks.ROBlock {
+		full := util.NewBeaconBlockZond()
+		full.Block.Slot = slot
+		signed, err := blocks.NewSignedBeaconBlock(full)
+		require.NoError(t, err)
+		root, err := full.Block.HashTreeRoot()
+		require.NoError(t, err)
+		ro, err := blocks.NewROBlockWithRoot(signed, root)
+		require.NoError(t, err)
+		return ro
+	}
+
+	payload1 := makePayload(0x11)
+	payload3 := makePayload(0x33)
+	block1 := makeBlindedROBlock(1, payload1)
+	block2 := makeFullROBlock(2)
+	block3 := makeBlindedROBlock(3, payload3)
+
+	mockEngine := &mockExecution.EngineClient{
+		ExecutionPayloadByBlockHash: map[[32]byte]*enginev1.ExecutionPayloadZond{
+			bytesutil.ToBytes32(payload1.BlockHash): payload1,
+			bytesutil.ToBytes32(payload3.BlockHash): payload3,
+		},
+	}
+
+	r := &Service{cfg: &config{p2p: p1, clock: clock, executionPayloadReconstructor: mockEngine}}
+	pcl := protocol.ID(p2p.RPCBlocksByRangeTopicV2)
+
+	slotsCh := make(chan []primitives.Slot, 1)
+	errCh := make(chan error, 1)
+	p2.BHost.SetStreamHandler(pcl, func(stream network.Stream) {
+		got := make([]primitives.Slot, 0, 3)
+		for i := 0; i < 3; i++ {
+			expectSuccess(t, stream)
+			_, err := readContextFromStream(stream)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			blk := util.NewBeaconBlockZond()
+			if err := p2.Encoding().DecodeWithMaxLength(stream, blk); err != nil {
+				errCh <- err
+				return
+			}
+			wrapped, err := blocks.NewSignedBeaconBlock(blk)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			if wrapped.IsBlinded() {
+				errCh <- errors.New("expected reconstructed full block, got blinded block")
+				return
+			}
+			got = append(got, wrapped.Block().Slot())
+		}
+		slotsCh <- got
+	})
+
+	stream, err := p1.BHost.NewStream(context.Background(), p2.BHost.ID(), pcl)
+	require.NoError(t, err)
+
+	err = r.writeBlockBatchToStream(
+		context.Background(),
+		blockBatch{lin: []blocks.ROBlock{block1, block2, block3}},
+		stream,
+	)
+	require.NoError(t, err)
+	require.NoError(t, stream.Close())
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case got := <-slotsCh:
+		assert.DeepEqual(t, []primitives.Slot{1, 2, 3}, got)
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for streamed blocks")
+	}
+
+	require.Equal(t, uint64(2), mockEngine.NumReconstructedPayloads)
+}
+
 func TestRPCBeaconBlocksByRange_RPCHandlerReturnsSortedBlocks(t *testing.T) {
 	p1 := p2ptest.NewTestP2P(t)
 	p2 := p2ptest.NewTestP2P(t)
@@ -413,7 +540,7 @@ func TestRPCBeaconBlocksByRange_RPCHandlerReturnsSortedBlocks(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to, err := common.NewAddressFromString("Q095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d87")
 	require.NoError(t, err)
 	tx := gqrltypes.NewTx(&gqrltypes.DynamicFeeTx{
 		Nonce:     0,
@@ -533,7 +660,7 @@ func TestRPCBeaconBlocksByRange_ReturnsGenesisBlock(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to, err := common.NewAddressFromString("Q095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d87")
 	require.NoError(t, err)
 	tx := gqrltypes.NewTx(&gqrltypes.DynamicFeeTx{
 		Nonce:     0,
@@ -640,7 +767,7 @@ func TestRPCBeaconBlocksByRange_RPCHandlerRateLimitOverflow(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to, err := common.NewAddressFromString("Q095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d87")
 	require.NoError(t, err)
 	tx := gqrltypes.NewTx(&gqrltypes.DynamicFeeTx{
 		Nonce:     0,
@@ -973,7 +1100,7 @@ func TestRPCBeaconBlocksByRange_EnforceResponseInvariants(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to, err := common.NewAddressFromString("Q095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d87")
 	require.NoError(t, err)
 	tx := gqrltypes.NewTx(&gqrltypes.DynamicFeeTx{
 		Nonce:     0,
@@ -1103,7 +1230,7 @@ func TestRPCBeaconBlocksByRange_FilterBlocks(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to, err := common.NewAddressFromString("Q095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d87")
 	require.NoError(t, err)
 	tx := gqrltypes.NewTx(&gqrltypes.DynamicFeeTx{
 		Nonce:     0,

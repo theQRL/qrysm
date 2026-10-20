@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
@@ -12,7 +13,7 @@ import (
 
 // SaveUnaggregatedAttestation saves an unaggregated attestation in cache.
 func (c *AttCaches) SaveUnaggregatedAttestation(att *qrysmpb.Attestation) error {
-	if att == nil {
+	if att == nil || att.Data == nil {
 		return nil
 	}
 	if helpers.IsAggregated(att) {
@@ -27,6 +28,10 @@ func (c *AttCaches) SaveUnaggregatedAttestation(att *qrysmpb.Attestation) error 
 		return nil
 	}
 
+	return c.saveUnaggregatedAttestation(att)
+}
+
+func (c *AttCaches) saveUnaggregatedAttestation(att *qrysmpb.Attestation) error {
 	r, err := hashFn(att)
 	if err != nil {
 		return errors.Wrap(err, "could not tree hash attestation")
@@ -59,7 +64,8 @@ func (c *AttCaches) UnaggregatedAttestations() ([]*qrysmpb.Attestation, error) {
 	for _, att := range unAggregatedAtts {
 		seen, err := c.hasSeenBit(att)
 		if err != nil {
-			return nil, err
+			log.WithError(err).Debug("Could not check if unaggregated attestation's bit has been seen. Attestation will not be returned")
+			continue
 		}
 		if !seen {
 			atts = append(atts, qrysmpb.CopyAttestation(att) /* Copied */)
@@ -91,15 +97,11 @@ func (c *AttCaches) UnaggregatedAttestationsBySlotIndex(ctx context.Context, slo
 
 // DeleteUnaggregatedAttestation deletes the unaggregated attestations in cache.
 func (c *AttCaches) DeleteUnaggregatedAttestation(att *qrysmpb.Attestation) error {
-	if att == nil {
+	if att == nil || att.Data == nil {
 		return nil
 	}
 	if helpers.IsAggregated(att) {
 		return errors.New("attestation is aggregated")
-	}
-
-	if err := c.insertSeenBit(att); err != nil {
-		return err
 	}
 
 	r, err := hashFn(att)
@@ -108,9 +110,17 @@ func (c *AttCaches) DeleteUnaggregatedAttestation(att *qrysmpb.Attestation) erro
 	}
 
 	c.unAggregateAttLock.Lock()
-	defer c.unAggregateAttLock.Unlock()
+	_, existed := c.unAggregatedAtt[r]
 	delete(c.unAggregatedAtt, r)
+	c.unAggregateAttLock.Unlock()
 
+	// Only an entry that was in the pool is known to have been authenticated
+	// in its target state; att may come from a block valid only in its own.
+	if existed {
+		if err := c.insertSeenBit(att); err != nil {
+			log.WithError(err).Debug("Could not insert seen bit of deleted unaggregated attestation")
+		}
+	}
 	return nil
 }
 
@@ -121,15 +131,16 @@ func (c *AttCaches) DeleteSeenUnaggregatedAttestations() (int, error) {
 	defer c.unAggregateAttLock.Unlock()
 
 	count := 0
-	for _, att := range c.unAggregatedAtt {
-		if att == nil || helpers.IsAggregated(att) {
+	for r, att := range c.unAggregatedAtt {
+		if att == nil || att.Data == nil || helpers.IsAggregated(att) {
 			continue
 		}
-		if seen, err := c.hasSeenBit(att); err == nil && seen {
-			r, err := hashFn(att)
-			if err != nil {
-				return count, errors.Wrap(err, "could not tree hash attestation")
-			}
+		seen, err := c.hasSeenBit(att)
+		if err != nil {
+			log.WithError(err).Debug("Could not check if unaggregated attestation's bit has been seen. Attestation will be deleted")
+			seen = true
+		}
+		if seen {
 			delete(c.unAggregatedAtt, r)
 			count++
 		}

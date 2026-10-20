@@ -44,6 +44,7 @@ go_binary(
     embed = [":beacon-chain_lib"],
     visibility = [
         "//beacon-chain:__subpackages__",
+        "//cmd/alltools:__pkg__",
         "//testing/endtoend:__pkg__",
     ],
 )

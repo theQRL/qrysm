@@ -8,6 +8,8 @@ go_library(
         "errors.go",
         "log.go",
         "restore.go",
+        "restore_other.go",
+        "restore_unix.go",
     ],
     importpath = "github.com/theQRL/qrysm/beacon-chain/db",
     visibility = [
@@ -20,11 +22,13 @@ go_library(
         "//beacon-chain/db/iface",
         "//beacon-chain/db/kv",
         "//cmd",
+        "//config/params",
         "//io/file",
         "//io/prompt",
         "@com_github_pkg_errors//:errors",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_urfave_cli_v2//:cli",
+        "@io_etcd_go_bbolt//:bbolt",
     ],
 )
 
@@ -38,6 +42,7 @@ go_test(
     deps = [
         "//beacon-chain/db/kv",
         "//cmd",
+        "//config/params",
         "//consensus-types/blocks",
         "//consensus-types/primitives",
         "//testing/assert",
@@ -45,5 +50,6 @@ go_test(
         "//testing/util",
         "@com_github_sirupsen_logrus//hooks/test",
         "@com_github_urfave_cli_v2//:cli",
+        "@io_etcd_go_bbolt//:bbolt",
     ],
 )

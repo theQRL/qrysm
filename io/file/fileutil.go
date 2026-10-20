@@ -60,6 +60,21 @@ func HandleBackupDir(dirPath string, permissionOverride bool) error {
 	return os.MkdirAll(expanded, params.BeaconIoConfig().ReadWriteExecutePermissions)
 }
 
+// SyncDir makes a directory's entries durable: a rename into or a removal
+// from the directory is only on disk once the directory itself is synced.
+func SyncDir(dir string) (err error) {
+	d, err := os.Open(dir) // #nosec G304
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := d.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+	return d.Sync()
+}
+
 // MkdirAll takes in a path, expands it if necessary, and looks through the
 // permissions of every directory along the path, ensuring we are not attempting
 // to overwrite any existing permissions. Finally, creates the directory accordingly
@@ -201,7 +216,7 @@ func ReadFileAsBytes(filename string) ([]byte, error) {
 }
 
 // CopyFile copy a file from source to destination path.
-func CopyFile(src, dst string) error {
+func CopyFile(src, dst string) (err error) {
 	if !FileExists(src) {
 		return errors.New("source file does not exist at provided path")
 	}
@@ -209,10 +224,20 @@ func CopyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, params.BeaconIoConfig().ReadWritePermissions) // #nosec G304
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if closeErr := dstFile.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 	_, err = io.Copy(dstFile, f)
 	return err
 }

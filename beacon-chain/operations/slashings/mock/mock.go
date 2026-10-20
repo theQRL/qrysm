@@ -35,6 +35,16 @@ func (m *PoolMock) InsertProposerSlashing(_ context.Context, _ state.ReadOnlyBea
 	return nil
 }
 
+// RecoverAttesterSlashing --
+func (m *PoolMock) RecoverAttesterSlashing(ctx context.Context, st state.ReadOnlyBeaconState, slashing *qrysmpb.AttesterSlashing) error {
+	return m.InsertAttesterSlashing(ctx, st, slashing)
+}
+
+// RecoverProposerSlashing --
+func (m *PoolMock) RecoverProposerSlashing(ctx context.Context, st state.ReadOnlyBeaconState, slashing *qrysmpb.ProposerSlashing) error {
+	return m.InsertProposerSlashing(ctx, st, slashing)
+}
+
 // MarkIncludedAttesterSlashing --
 func (*PoolMock) MarkIncludedAttesterSlashing(_ *qrysmpb.AttesterSlashing) {
 	panic("implement me")

@@ -6,10 +6,6 @@ import (
 
 // ExecutionData corresponding to the execution chain information stored in the beacon state.
 func (b *BeaconState) ExecutionData() *qrysmpb.ExecutionData {
-	if b.executionData == nil {
-		return nil
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -29,10 +25,6 @@ func (b *BeaconState) executionDataVal() *qrysmpb.ExecutionData {
 // ExecutionDataVotes corresponds to votes from Ethereum on the canonical execution chain
 // data retrieved from execution.
 func (b *BeaconState) ExecutionDataVotes() []*qrysmpb.ExecutionData {
-	if b.executionDataVotes == nil {
-		return nil
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 

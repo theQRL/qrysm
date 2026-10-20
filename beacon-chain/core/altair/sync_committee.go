@@ -10,7 +10,6 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	coreTime "github.com/theQRL/qrysm/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/beacon-chain/state"
-	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/hash"
@@ -169,22 +168,15 @@ func SyncSubCommitteePubkeys(syncCommittee *qrysmpb.SyncCommittee, subComIdx pri
 	return syncCommittee.Pubkeys[i:endOfSubCom], nil
 }
 
-// IsSyncCommitteeAggregator checks whether the provided signature is for a valid
-// aggregator.
-//
-// def is_sync_committee_aggregator(signature: BLSSignature) -> bool:
-//
-//	modulo = max(1, SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT // TARGET_AGGREGATORS_PER_SYNC_SUBCOMMITTEE)
-//	return bytes_to_uint64(hash(signature)[0:8]) % modulo == 0
-func IsSyncCommitteeAggregator(sig []byte) (bool, error) {
-	if len(sig) != field_params.MLDSA87SignatureLength {
-		return false, errors.New("incorrect sig length")
-	}
-
+// IsSyncCommitteeAggregator determines eligibility for a sync subcommittee duty
+// using the shared epoch seed. Committee membership is checked by the caller.
+func IsSyncCommitteeAggregator(seed []byte, slot primitives.Slot, subcommitteeIndex uint64, validatorIndex primitives.ValidatorIndex) (bool, error) {
 	cfg := params.BeaconConfig()
-	modulo := max(1, cfg.SyncCommitteeSize/cfg.SyncCommitteeSubnetCount/cfg.TargetAggregatorsPerSyncSubcommittee)
-	hashedSig := hash.Hash(sig)
-	return bytesutil.FromBytes8(hashedSig[:8])%modulo == 0, nil
+	if cfg.SyncCommitteeSubnetCount == 0 || subcommitteeIndex >= cfg.SyncCommitteeSubnetCount {
+		return false, errors.New("invalid sync subcommittee index")
+	}
+	return helpers.IsAggregatorSelected(seed, cfg.DomainSyncCommitteeSelectionProof, slot, subcommitteeIndex, validatorIndex,
+		cfg.SyncCommitteeSize/cfg.SyncCommitteeSubnetCount, cfg.TargetAggregatorsPerSyncSubcommittee)
 }
 
 // ValidateSyncMessageTime validates sync message to ensure that the provided slot is valid.

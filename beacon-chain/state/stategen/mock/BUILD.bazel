@@ -11,6 +11,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/state",
+        "//beacon-chain/forkchoice/types",
         "//beacon-chain/state/stategen",
         "//consensus-types/primitives",
     ],

@@ -3,10 +3,59 @@ package equality_test
 import (
 	"testing"
 
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/ssz/equality"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 )
+
+func TestDeepEqualNamedScalars(t *testing.T) {
+	type namedByte uint8
+	type namedUint16 uint16
+	type namedUint32 uint32
+	type namedInt32 int32
+	type namedBool bool
+	for _, tc := range []struct {
+		name string
+		x, y any
+		want bool
+	}{
+		{"SSZ uint64 equal", primitives.SSZUint64(^uint64(0)), primitives.SSZUint64(^uint64(0)), true},
+		{"SSZ uint64 different", primitives.SSZUint64(1), primitives.SSZUint64(2), false},
+		{"different named types", primitives.SSZUint64(1), primitives.Epoch(1), false},
+		{"named byte equal", namedByte(255), namedByte(255), true},
+		{"named byte different", namedByte(255), namedByte(0), false},
+		{"named uint16 equal", namedUint16(65535), namedUint16(65535), true},
+		{"named uint16 different", namedUint16(1), namedUint16(2), false},
+		{"named uint32 equal", namedUint32(^uint32(0)), namedUint32(^uint32(0)), true},
+		{"named uint32 different", namedUint32(1), namedUint32(2), false},
+		{"named int32 equal", namedInt32(-1), namedInt32(-1), true},
+		{"named int32 different", namedInt32(-1), namedInt32(1), false},
+		{"named bool equal", namedBool(true), namedBool(true), true},
+		{"named bool different", namedBool(true), namedBool(false), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, equality.DeepEqual(tc.x, tc.y))
+		})
+	}
+	x, y := primitives.SSZUint64(7), primitives.SSZUint64(7)
+	assert.Equal(t, true, equality.DeepEqual(&x, &y))
+	y++
+	assert.Equal(t, false, equality.DeepEqual(&x, &y))
+}
+
+func TestDeepEqualUnexportedScalars(t *testing.T) {
+	type record struct {
+		count   uint64
+		active  bool
+		balance int32
+	}
+	value := record{count: ^uint64(0), active: true, balance: -1}
+	assert.Equal(t, true, equality.DeepEqual(value, value))
+	assert.Equal(t, false, equality.DeepEqual(value, record{count: 0, active: true, balance: -1}))
+	assert.Equal(t, false, equality.DeepEqual(value, record{count: ^uint64(0), active: false, balance: -1}))
+	assert.Equal(t, false, equality.DeepEqual(value, record{count: ^uint64(0), active: true, balance: 1}))
+}
 
 func TestDeepEqualBasicTypes(t *testing.T) {
 	assert.Equal(t, true, equality.DeepEqual(true, true))

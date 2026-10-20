@@ -27,6 +27,7 @@ go_test(
         "domain_test.go",
         "signature_test.go",
         "signing_root_test.go",
+        "signing_root_validation_test.go",
     ],
     embed = [":signing"],
     deps = [

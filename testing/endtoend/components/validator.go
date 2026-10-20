@@ -28,7 +28,7 @@ import (
 	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 )
 
-const DefaultFeeRecipientAddress = "Q099FB65722e7b2455043bfebF6177f1D2E9738d9"
+const DefaultFeeRecipientAddress = "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000099FB65722e7b2455043bfebF6177f1D2E9738d9"
 
 var _ e2etypes.ComponentRunner = (*ValidatorNode)(nil)
 var _ e2etypes.ComponentRunner = (*ValidatorNodeSet)(nil)

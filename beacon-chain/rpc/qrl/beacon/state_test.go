@@ -198,6 +198,51 @@ func TestGetRandao(t *testing.T) {
 		assert.NotNil(t, resp)
 		assert.DeepEqual(t, true, resp.ExecutionOptimistic)
 	})
+	t.Run("early epoch scenario - epoch 0 from state at epoch (EpochsPerHistoricalVector - 1)", func(t *testing.T) {
+		earlyEpochState, err := util.NewBeaconStateZond()
+		require.NoError(t, err)
+		earlyEpoch := params.BeaconConfig().EpochsPerHistoricalVector - 1
+		require.NoError(t, earlyEpochState.SetSlot(params.BeaconConfig().SlotsPerEpoch*primitives.Slot(earlyEpoch)))
+		epoch0Randao := bytesutil.ToBytes32([]byte("epoch0"))
+		require.NoError(t, earlyEpochState.UpdateRandaoMixesAtIndex(0, epoch0Randao))
+
+		earlyServer := &Server{
+			Stater: &testutil.MockStater{
+				BeaconState: earlyEpochState,
+			},
+			HeadFetcher:           &chainMock.ChainService{},
+			OptimisticModeFetcher: &chainMock.ChainService{},
+			FinalizationFetcher:   &chainMock.ChainService{},
+			BeaconDB:              db,
+		}
+
+		queryEpoch := primitives.Epoch(0)
+		resp, err := earlyServer.GetRandao(ctx, &qrlpb.RandaoRequest{StateId: []byte("head"), Epoch: &queryEpoch})
+		require.NoError(t, err)
+		assert.DeepEqual(t, epoch0Randao[:], resp.Data.Randao)
+	})
+	t.Run("early epoch scenario - epoch 0 from state at epoch EpochsPerHistoricalVector", func(t *testing.T) {
+		earlyEpochState, err := util.NewBeaconStateZond()
+		require.NoError(t, err)
+		earlyEpoch := params.BeaconConfig().EpochsPerHistoricalVector
+		require.NoError(t, earlyEpochState.SetSlot(params.BeaconConfig().SlotsPerEpoch*primitives.Slot(earlyEpoch)))
+		epoch0Randao := bytesutil.ToBytes32([]byte("epoch0"))
+		require.NoError(t, earlyEpochState.UpdateRandaoMixesAtIndex(0, epoch0Randao))
+
+		earlyServer := &Server{
+			Stater: &testutil.MockStater{
+				BeaconState: earlyEpochState,
+			},
+			HeadFetcher:           &chainMock.ChainService{},
+			OptimisticModeFetcher: &chainMock.ChainService{},
+			FinalizationFetcher:   &chainMock.ChainService{},
+			BeaconDB:              db,
+		}
+
+		queryEpoch := primitives.Epoch(0)
+		_, err = earlyServer.GetRandao(ctx, &qrlpb.RandaoRequest{StateId: []byte("head"), Epoch: &queryEpoch})
+		require.ErrorContains(t, "Epoch is out of range for the randao mixes of the state", err)
+	})
 	t.Run("finalized", func(t *testing.T) {
 		parentRoot := [32]byte{'a'}
 		blk := util.NewBeaconBlockZond()

@@ -8,7 +8,6 @@ import (
 
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
@@ -30,13 +29,9 @@ func (s *Service) pingHandler(_ context.Context, msg any, stream libp2pcore.Stre
 	pid := stream.Conn().RemotePeer()
 	valid, err := s.validateSequenceNum(*m, pid)
 	if err != nil {
-		// Descore peer for giving us a bad sequence number.
+		// validateSequenceNum already descores the peer for bad sequence numbers;
+		// here we only need to surface the error to the wire.
 		if errors.Is(err, p2ptypes.ErrInvalidSequenceNum) {
-			s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-			log.WithFields(logrus.Fields{
-				"pid":   pid,
-				"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-			}).Debug("Peer is penalized for providing a bad sequence number")
 			s.writeErrorResponseToStream(responseCodeInvalidRequest, p2ptypes.ErrInvalidSequenceNum.Error(), stream)
 		}
 		return err
@@ -58,8 +53,9 @@ func (s *Service) pingHandler(_ context.Context, msg any, stream libp2pcore.Stre
 
 	// The sequence number was not valid.  Start our own ping back to the peer.
 	go func() {
-		// New context so the calling function doesn't cancel on us.
-		ctx, cancel := context.WithTimeout(context.Background(), ttfbTimeout)
+		// Detach from the caller but stay bound to the service lifetime so we
+		// don't leak this goroutine past Service shutdown.
+		ctx, cancel := context.WithTimeout(s.ctx, ttfbTimeout)
 		defer cancel()
 		md, err := s.sendMetaDataRequest(ctx, pid)
 		if err != nil {
@@ -102,11 +98,7 @@ func (s *Service) sendPingRequest(ctx context.Context, id peer.ID) error {
 	s.cfg.p2p.Host().Peerstore().RecordLatency(id, time.Now().Sub(currentTime))
 	pid := stream.Conn().RemotePeer()
 	if code != 0 {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-		log.WithFields(logrus.Fields{
-			"pid":   pid,
-			"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-		}).Debug("Peer is penalized for unsuccessful status code")
+		s.downscorePeer(pid, "pingNonNullStatusCode")
 		return errors.New(errMsg)
 	}
 	msg := new(primitives.SSZUint64)
@@ -115,14 +107,7 @@ func (s *Service) sendPingRequest(ctx context.Context, id peer.ID) error {
 	}
 	valid, err := s.validateSequenceNum(*msg, pid)
 	if err != nil {
-		// Descore peer for giving us a bad sequence number.
-		if errors.Is(err, p2ptypes.ErrInvalidSequenceNum) {
-			s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(pid)
-			log.WithFields(logrus.Fields{
-				"pid":   pid,
-				"score": s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Score(pid),
-			}).Debug("Peer is penalized for providing a bad sequence number")
-		}
+		// validateSequenceNum already descores the peer for bad sequence numbers.
 		return err
 	}
 	if valid {
@@ -147,8 +132,10 @@ func (s *Service) validateSequenceNum(seq primitives.SSZUint64, id peer.ID) (boo
 	if md == nil || md.IsNil() {
 		return false, nil
 	}
-	// Return error on invalid sequence number.
+	// Return error on invalid sequence number. Descore the peer here so callers
+	// don't need to repeat the same penalty + log block.
 	if md.SequenceNumber() > uint64(seq) {
+		s.downscorePeer(id, "pingInvalidSequenceNumber")
 		return false, p2ptypes.ErrInvalidSequenceNum
 	}
 	return md.SequenceNumber() == uint64(seq), nil

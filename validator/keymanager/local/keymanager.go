@@ -43,6 +43,11 @@ type Keymanager struct {
 	wallet              iface.Wallet
 	accountsStore       *accountStore
 	accountsChangedFeed *event.Feed
+	// ctx is the long-lived context the keymanager was created with. It bounds
+	// the accounts file watcher, including one started later by
+	// SaveStoreAndReInitialize when the accounts file is first created.
+	ctx              context.Context
+	listenForChanges bool
 }
 
 // SetupConfig includes configuration values for initializing
@@ -68,7 +73,7 @@ func (a *accountStore) Copy() *accountStore {
 }
 
 // AccountsKeystoreRepresentation defines an internal Qrysm representation
-// of validator accounts, encrypted according to the EIP-2334 standard.
+// of validator accounts, encrypted according to the QRL keystore standard.
 type AccountsKeystoreRepresentation struct {
 	Crypto  map[string]any `json:"crypto"`
 	ID      string         `json:"uuid"`
@@ -82,6 +87,7 @@ func ResetCaches() {
 	orderedPublicKeys = make([][field_params.MLDSA87PubkeyLength]byte, 0)
 	mlDSA87KeysCache = make(map[[field_params.MLDSA87PubkeyLength]byte]ml_dsa_87.MLDSA87Key)
 	lock.Unlock()
+	resetRandaoOnions()
 }
 
 // NewKeymanager instantiates a new local keymanager from configuration options.
@@ -90,6 +96,8 @@ func NewKeymanager(ctx context.Context, cfg *SetupConfig) (*Keymanager, error) {
 		wallet:              cfg.Wallet,
 		accountsStore:       &accountStore{},
 		accountsChangedFeed: new(event.Feed),
+		ctx:                 ctx,
+		listenForChanges:    cfg.ListenForChanges,
 	}
 
 	if err := k.initializeAccountKeystore(ctx); err != nil {
@@ -171,6 +179,9 @@ func (km *Keymanager) initializeKeysCachesFromKeystore() error {
 		}
 		mlDSA87KeysCache[publicKey2592] = secretKey
 	}
+	// Build the RANDAO onions off the critical path so the first proposal
+	// does not pay for it.
+	go warmRandaoOnions(orderedPublicKeys)
 	return nil
 }
 
@@ -207,6 +218,13 @@ func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][field_params
 }
 
 // Sign signs a message using a validator key.
+//
+// ML-DSA-87 signing is hedged by default (FIPS 204 §3.4). Slot, sync selection,
+// and legacy epoch signing requests retain deterministic mode for reproducible
+// proofs. This is a local signing policy: verifiers also accept randomized
+// signatures, so these signature bytes must never determine eligibility or
+// chain randomness. Aggregator eligibility uses the shared epoch seed, and
+// RANDAO uses hash-chain reveals.
 func (*Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (ml_dsa_87.Signature, error) {
 	publicKey := req.PublicKey
 	if publicKey == nil {
@@ -218,7 +236,30 @@ func (*Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (ml_d
 	if !ok {
 		return nil, errors.New("no signing key found in keys cache")
 	}
-	return secretKey.Sign(req.SigningRoot), nil
+	var sig ml_dsa_87.Signature
+	var err error
+	if requiresDeterministicSignature(req) {
+		sig, err = secretKey.SignDeterministic(req.SigningRoot)
+	} else {
+		sig, err = secretKey.Sign(req.SigningRoot)
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "could not sign signing root")
+	}
+	return sig, nil
+}
+
+// requiresDeterministicSignature preserves reproducible signatures for these
+// request types; it does not establish protocol-enforced signature uniqueness.
+func requiresDeterministicSignature(req *validatorpb.SignRequest) bool {
+	switch req.Object.(type) {
+	case *validatorpb.SignRequest_Slot,
+		*validatorpb.SignRequest_SyncAggregatorSelectionData,
+		*validatorpb.SignRequest_Epoch:
+		return true
+	default:
+		return false
+	}
 }
 
 func (km *Keymanager) initializeAccountKeystore(ctx context.Context) error {
@@ -283,18 +324,50 @@ func (km *Keymanager) SaveStoreAndReInitialize(ctx context.Context, store *accou
 	if err != nil {
 		return err
 	}
-	if err := km.wallet.WriteFileAtPath(ctx, AccountsPath, AccountsKeystoreFileName, encodedAccounts); err != nil {
+	existedPreviously, err := km.wallet.WriteFileAtPath(ctx, AccountsPath, AccountsKeystoreFileName, encodedAccounts)
+	if err != nil {
 		return err
 	}
 
 	// Reinitialize account store and cache
 	// This will update the in-memory information instead of reading from the file itself for safety concerns
 	km.accountsStore = store
-	err = km.initializeKeysCachesFromKeystore()
-	if err != nil {
+	if err := km.initializeKeysCachesFromKeystore(); err != nil {
 		return errors.Wrap(err, "failed to initialize keys caches")
 	}
-	return err
+	if existedPreviously {
+		// The accounts file watcher started with the keymanager observes this
+		// write and notifies accountsChangedFeed subscribers.
+		return nil
+	}
+
+	// The accounts file did not exist when the keymanager was created, so no
+	// file watcher is running (listenForAccountChanges returns immediately for a
+	// missing file) and nothing would tell the running validator client about
+	// the keys that were just written. Notify subscribers directly and start
+	// watching the new file for subsequent changes. The watcher is bounded by
+	// the keymanager's own long-lived context rather than the request context
+	// of the keymanager API call that triggered this write.
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, len(store.PublicKeys))
+	for i, pubKey := range store.PublicKeys {
+		pubKeys[i] = bytesutil.ToBytes2592(pubKey)
+	}
+	log.Info(keymanager.KeysReloaded)
+	// Keymanagers built without NewKeymanager (e.g. CLI helpers and tests) may
+	// have no feed, in which case there is nobody to notify.
+	if km.accountsChangedFeed != nil {
+		km.accountsChangedFeed.Send(pubKeys)
+	}
+	if km.listenForChanges {
+		go km.listenForAccountChanges(km.ctx)
+	}
+	return nil
+}
+
+// CreateEmptyKeyStoreRepresentationForNewWallet creates a placeholder accounts keystore for a new Qrysm Local Wallet.
+func CreateEmptyKeyStoreRepresentationForNewWallet(ctx context.Context, walletPassword string) (*AccountsKeystoreRepresentation, error) {
+	ResetCaches()
+	return CreateAccountsKeystoreRepresentation(ctx, &accountStore{}, walletPassword)
 }
 
 // CreateAccountsKeystoreRepresentation is a pure function that takes an accountStore and wallet password and returns the encrypted formatted json version for local writing.
@@ -426,13 +499,10 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 func CreatePrintoutOfKeys(keys [][]byte) string {
 	var keysStr strings.Builder
 	for i, k := range keys {
-		if i == 0 {
-			keysStr.WriteString(fmt.Sprintf("%#x", bytesutil.Trunc(k)))
-		} else if i == len(keys)-1 {
-			keysStr.WriteString(fmt.Sprintf("%#x", bytesutil.Trunc(k)))
-		} else {
-			keysStr.WriteString(fmt.Sprintf(",%#x", bytesutil.Trunc(k)))
+		if i != 0 {
+			keysStr.WriteString(",")
 		}
+		keysStr.WriteString(fmt.Sprintf("%#x", bytesutil.Trunc(k)))
 	}
 	return keysStr.String()
 }

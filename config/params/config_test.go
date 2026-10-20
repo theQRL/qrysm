@@ -4,8 +4,42 @@ import (
 	"sync"
 	"testing"
 
+	qrlparams "github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/qrysm/config/params"
 )
+
+func TestConfig_MainnetAttestationPropagationWindow(t *testing.T) {
+	got := params.BeaconNetworkConfig().AttestationPropagationSlotRange
+	want := params.MainnetConfig().SlotsPerEpoch
+	if got != want {
+		t.Fatalf("mainnet attestation propagation window %d must match the inclusion window of %d slots", got, want)
+	}
+}
+
+// Regression test: DefaultBuilderGasLimit is what validators advertise in
+// builder registrations and what the local proposer targets. go-qrl rejects any
+// block whose gas limit exceeds params.MaxGasLimit and the beacon node clamps
+// the proposer's target to it, so a default above the cap can never take effect
+// and only produces invalid registrations. Every shipped config must stay
+// within the execution-layer cap.
+func TestConfig_DefaultBuilderGasLimitWithinExecutionCap(t *testing.T) {
+	configs := map[string]*params.BeaconChainConfig{
+		"mainnet":     params.MainnetConfig(),
+		"minimal":     params.MinimalSpecConfig(),
+		"interop":     params.InteropConfig(),
+		"e2e":         params.E2ETestConfig(),
+		"e2e-mainnet": params.E2EMainnetTestConfig(),
+	}
+	for name, cfg := range configs {
+		if cfg.DefaultBuilderGasLimit == 0 {
+			t.Errorf("%s: DefaultBuilderGasLimit must be non-zero", name)
+		}
+		if cfg.DefaultBuilderGasLimit > qrlparams.MaxGasLimit {
+			t.Errorf("%s: DefaultBuilderGasLimit %d exceeds go-qrl MaxGasLimit %d",
+				name, cfg.DefaultBuilderGasLimit, qrlparams.MaxGasLimit)
+		}
+	}
+}
 
 // Test cases can be executed in an arbitrary order. TestOverrideBeaconConfigTestTeardown checks
 // that there's no state mutation leak from the previous test, therefore we need a sentinel flag,

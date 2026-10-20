@@ -125,7 +125,8 @@ func TestProcessDeposit_UnableToVerify(t *testing.T) {
 
 	deposits, keys, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	sig := keys[0].Sign([]byte{'F', 'A', 'K', 'E'})
+	sig, err := keys[0].Sign([]byte{'F', 'A', 'K', 'E'})
+	require.NoError(t, err)
 	deposits[0].Data.Signature = sig.Marshal()
 
 	generatedTrie, _, err := util.DepositTrieFromDeposits(deposits)
@@ -164,9 +165,11 @@ func TestProcessDeposit_IncompleteDeposit(t *testing.T) {
 
 	deposit := &qrysmpb.Deposit{
 		Data: &qrysmpb.Deposit_Data{
-			Amount:                params.BeaconConfig().EffectiveBalanceIncrement, // incomplete deposit
-			WithdrawalCredentials: bytesutil.PadTo([]byte("testing"), 32),
-			Signature:             bytesutil.PadTo([]byte("test"), field_params.MLDSA87SignatureLength),
+			Amount:              params.BeaconConfig().EffectiveBalanceIncrement, // incomplete deposit
+			WithdrawalRecipient: bytesutil.PadTo([]byte("testing"), field_params.WithdrawalRecipientLength),
+			Signature:           bytesutil.PadTo([]byte("test"), field_params.MLDSA87SignatureLength),
+
+			RandaoCommitment: make([]byte, 32),
 		},
 	}
 
@@ -178,7 +181,8 @@ func TestProcessDeposit_IncompleteDeposit(t *testing.T) {
 	signedRoot, err := signing.ComputeSigningRoot(deposit.Data, d)
 	require.NoError(t, err)
 
-	sig := priv.Sign(signedRoot[:])
+	sig, err := priv.Sign(signedRoot[:])
+	require.NoError(t, err)
 	deposit.Data.Signature = sig.Marshal()
 
 	generatedTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)

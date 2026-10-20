@@ -5,7 +5,7 @@ package params
 // WARNING: This config is only for testing, it is not meant for use outside of E2E.
 func E2ETestConfig() *BeaconChainConfig {
 	e2eConfig := MinimalSpecConfig()
-	e2eConfig.DepositContractAddress = "Q4242424242424242424242424242424242424242"
+	e2eConfig.DepositContractAddress = "Q42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242"
 	e2eConfig.ExecutionFollowDistance = 8
 
 	// Misc.
@@ -38,7 +38,7 @@ func E2ETestConfig() *BeaconChainConfig {
 
 func E2EMainnetTestConfig() *BeaconChainConfig {
 	e2eConfig := MainnetConfig().Copy()
-	e2eConfig.DepositContractAddress = "Q4242424242424242424242424242424242424242"
+	e2eConfig.DepositContractAddress = "Q42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242"
 	e2eConfig.ExecutionFollowDistance = 8
 
 	// Misc.

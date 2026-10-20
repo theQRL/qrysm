@@ -144,7 +144,7 @@ func VerifyIndexedAttestationSigs(ctx context.Context, indexedAtt *qrysmpb.Index
 		return errors.Wrap(err, "could not get signing root of object")
 	}
 
-	maxProcs := runtime.GOMAXPROCS(0) - 1
+	maxProcs := max(runtime.GOMAXPROCS(0)-1, 1)
 	grp := errgroup.Group{}
 	grp.SetLimit(maxProcs)
 	for i := range indexedAtt.Signatures {
@@ -193,7 +193,7 @@ func IsValidAttestationIndices(ctx context.Context, indexedAttestation *qrysmpb.
 	_, span := trace.StartSpan(ctx, "attestationutil.IsValidAttestationIndices")
 	defer span.End()
 
-	if indexedAttestation == nil || indexedAttestation.Data == nil || indexedAttestation.Data.Target == nil || indexedAttestation.AttestingIndices == nil {
+	if indexedAttestation == nil || indexedAttestation.Data == nil || indexedAttestation.Data.Target == nil || indexedAttestation.Data.Source == nil {
 		return errors.New("nil or missing indexed attestation data")
 	}
 	indices := indexedAttestation.AttestingIndices

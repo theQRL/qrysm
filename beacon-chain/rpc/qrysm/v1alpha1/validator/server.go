@@ -43,6 +43,7 @@ type Server struct {
 	Ctx                    context.Context
 	ProposerSlotIndexCache *cache.ProposerPayloadIDsCache
 	HeadFetcher            blockchain.HeadFetcher
+	AttestationReceiver    blockchain.AttestationReceiver
 	ForkFetcher            blockchain.ForkFetcher
 	ForkchoiceFetcher      blockchain.ForkchoiceFetcher
 	GenesisFetcher         blockchain.GenesisFetcher
@@ -93,10 +94,15 @@ func (vs *Server) WaitForActivation(req *qrysmpb.ValidatorActivationRequest, str
 		return status.Errorf(codes.Internal, "Could not send response over stream: %v", err)
 	}
 
+	waitTime := time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second
+	timer := time.NewTimer(waitTime)
+	defer timer.Stop()
+
 	for {
+		timer.Reset(waitTime)
 		select {
 		// Pinging every slot for activation.
-		case <-time.After(time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second):
+		case <-timer.C:
 			activeValidatorExists, validatorStatuses, err := vs.activationStatus(stream.Context(), req.PublicKeys)
 			if err != nil {
 				return status.Errorf(codes.Internal, "Could not fetch validator status: %v", err)

@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/async/event"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
@@ -101,6 +102,18 @@ func (km *Keymanager) Sign(ctx context.Context, request *validatorpb.SignRequest
 	signRequestsTotal.Inc()
 
 	return km.client.Sign(ctx, hexutil.Encode(request.PublicKey), signRequest)
+}
+
+// RandaoReveal is not supported: the RANDAO hash onion is derived from the
+// validator's seed, which a remote signer does not expose. Proposals by
+// web3signer-backed keys therefore fail until the remote signer protocol grows
+// a reveal request.
+func (*Keymanager) RandaoReveal(
+	_ context.Context,
+	_ [field_params.MLDSA87PubkeyLength]byte,
+	_ [field_params.RandaoCommitmentLength]byte,
+) ([field_params.RandaoRevealLength]byte, error) {
+	return [field_params.RandaoRevealLength]byte{}, keymanager.ErrRandaoRevealUnsupported
 }
 
 // getSignRequestJson returns a json request based on the SignRequest type.

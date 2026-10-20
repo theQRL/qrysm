@@ -92,7 +92,7 @@ func Test_SignedBeaconBlock_Version(t *testing.T) {
 func Test_SignedBeaconBlock_Header(t *testing.T) {
 	bb := &BeaconBlockBody{
 		version:      version.Zond,
-		randaoReveal: [field_params.MLDSA87SignatureLength]byte{},
+		randaoReveal: [field_params.RandaoRevealLength]byte{},
 		executionData: &qrysmpb.ExecutionData{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),
@@ -105,7 +105,7 @@ func Test_SignedBeaconBlock_Header(t *testing.T) {
 		executionPayload: executionPayloadZond{
 			p: &pb.ExecutionPayloadZond{
 				ParentHash:    make([]byte, 32),
-				FeeRecipient:  make([]byte, 20),
+				FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 				StateRoot:     make([]byte, 32),
 				ReceiptsRoot:  make([]byte, 32),
 				LogsBloom:     make([]byte, 256),
@@ -190,7 +190,7 @@ func Test_BeaconBlock_Body(t *testing.T) {
 }
 
 func Test_BeaconBlock_Copy(t *testing.T) {
-	bb := &BeaconBlockBody{version: version.Zond, randaoReveal: bytesutil.ToBytes4627([]byte{246}), graffiti: bytesutil.ToBytes32([]byte("graffiti"))}
+	bb := &BeaconBlockBody{version: version.Zond, randaoReveal: bytesutil.ToBytes32([]byte{246}), graffiti: bytesutil.ToBytes32([]byte("graffiti"))}
 	b := &BeaconBlock{version: version.Zond, body: bb, slot: 123, proposerIndex: 456, parentRoot: bytesutil.ToBytes32([]byte("parentroot")), stateRoot: bytesutil.ToBytes32([]byte("stateroot"))}
 	cp, err := b.Copy()
 	require.NoError(t, err)
@@ -308,7 +308,7 @@ func Test_BeaconBlockBody_IsNil(t *testing.T) {
 func Test_BeaconBlockBody_RandaoReveal(t *testing.T) {
 	bb := &SignedBeaconBlock{block: &BeaconBlock{body: &BeaconBlockBody{}}}
 	bb.SetRandaoReveal([]byte("randaoreveal"))
-	assert.DeepEqual(t, bytesutil.ToBytes4627([]byte("randaoreveal")), bb.Block().Body().RandaoReveal())
+	assert.DeepEqual(t, bytesutil.ToBytes32([]byte("randaoreveal")), bb.Block().Body().RandaoReveal())
 }
 
 func Test_BeaconBlockBody_ExecutionData(t *testing.T) {
@@ -416,7 +416,7 @@ func hydrateBeaconBlock() *qrysmpb.BeaconBlockZond {
 
 func hydrateBeaconBlockBody() *qrysmpb.BeaconBlockBodyZond {
 	return &qrysmpb.BeaconBlockBodyZond{
-		RandaoReveal: make([]byte, field_params.MLDSA87SignatureLength),
+		RandaoReveal: make([]byte, field_params.RandaoRevealLength),
 		Graffiti:     make([]byte, fieldparams.RootLength),
 		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot: make([]byte, fieldparams.RootLength),
@@ -428,7 +428,7 @@ func hydrateBeaconBlockBody() *qrysmpb.BeaconBlockBodyZond {
 		},
 		ExecutionPayload: &pb.ExecutionPayloadZond{
 			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, 20),
+			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:     make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
 			LogsBloom:     make([]byte, 256),

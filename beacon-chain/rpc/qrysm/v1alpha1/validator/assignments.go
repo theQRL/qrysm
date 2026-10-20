@@ -7,7 +7,6 @@ import (
 
 	"github.com/theQRL/qrysm/beacon-chain/cache"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
-	coreTime "github.com/theQRL/qrysm/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
 	beaconState "github.com/theQRL/qrysm/beacon-chain/state"
@@ -31,8 +30,7 @@ func (vs *Server) GetDuties(ctx context.Context, req *qrysmpb.DutiesRequest) (*q
 	return vs.duties(ctx, req)
 }
 
-// Compute the validator duties from the head state's corresponding epoch
-// for validators public key / indices requested.
+// Compute the validator duties from a state in the requested epoch.
 func (vs *Server) duties(ctx context.Context, req *qrysmpb.DutiesRequest) (*qrysmpb.DutiesResponse, error) {
 	currentEpoch := slots.ToEpoch(vs.TimeFetcher.CurrentSlot())
 	if req.Epoch > currentEpoch+1 {
@@ -44,12 +42,20 @@ func (vs *Server) duties(ctx context.Context, req *qrysmpb.DutiesRequest) (*qrys
 		return nil, status.Errorf(codes.Internal, "Could not get head state: %v", err)
 	}
 
-	// Advance state with empty transitions up to the requested epoch start slot.
 	epochStartSlot, err := slots.EpochStart(req.Epoch)
 	if err != nil {
 		return nil, err
 	}
-	if s.Slot() < epochStartSlot {
+	historical := req.Epoch < slots.ToEpoch(s.Slot())
+	if historical {
+		// Historical proposer weights must come from the requested epoch;
+		// later effective balances cannot be recovered from the head's roots.
+		s, err = vs.ReplayerBuilder.ReplayerForSlot(epochStartSlot).ReplayToSlot(ctx, epochStartSlot)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Could not replay historical state at slot %d: %v", epochStartSlot, err)
+		}
+	} else if s.Slot() < epochStartSlot {
+		// Advance state with empty transitions to the requested epoch start.
 		headRoot, err := vs.HeadFetcher.HeadRoot(ctx)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not retrieve head root: %v", err)
@@ -59,28 +65,60 @@ func (vs *Server) duties(ctx context.Context, req *qrysmpb.DutiesRequest) (*qrys
 			return nil, status.Errorf(codes.Internal, "Could not process slots up to %d: %v", epochStartSlot, err)
 		}
 	}
-	committeeAssignments, proposerIndexToSlots, err := helpers.CommitteeAssignments(ctx, s, req.Epoch)
+	requestIndices := make([]primitives.ValidatorIndex, 0, len(req.PublicKeys))
+	for _, pubKey := range req.PublicKeys {
+		idx, ok := s.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
+		if !ok {
+			continue
+		}
+		requestIndices = append(requestIndices, idx)
+	}
+
+	committeeAssignments, err := helpers.CommitteeAssignments(ctx, s, req.Epoch, requestIndices)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not compute committee assignments: %v", err)
 	}
 	// Query the next epoch assignments for committee subnet subscriptions.
-	nextCommitteeAssignments, nextProposerIndexToSlots, err := helpers.CommitteeAssignments(ctx, s, req.Epoch+1)
+	nextCommitteeAssignments, err := helpers.CommitteeAssignments(ctx, s, req.Epoch+1, requestIndices)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not compute next committee assignments: %v", err)
 	}
 
+	proposerIndexToSlots, err := helpers.ProposerAssignments(ctx, s, req.Epoch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute proposer slots: %v", err)
+	}
+	var nextProposerIndexToSlots map[primitives.ValidatorIndex][]primitives.Slot
+	if !historical {
+		// These predictions are only used to prepare live execution payloads.
+		nextProposerIndexToSlots, err = helpers.ProposerAssignments(ctx, s, req.Epoch+1)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Could not compute next proposer slots: %v", err)
+		}
+	}
+
 	validatorAssignments := make([]*qrysmpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
 	nextValidatorAssignments := make([]*qrysmpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
+	selectionSeed, err := helpers.AggregatorSelectionSeed(s, req.Epoch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute aggregator selection seed: %v", err)
+	}
+	nextSelectionSeed, err := helpers.AggregatorSelectionSeed(s, req.Epoch+1)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute next aggregator selection seed: %v", err)
+	}
 
 	for _, pubKey := range req.PublicKeys {
 		if ctx.Err() != nil {
 			return nil, status.Errorf(codes.Aborted, "Could not continue fetching assignments: %v", ctx.Err())
 		}
 		assignment := &qrysmpb.DutiesResponse_Duty{
-			PublicKey: pubKey,
+			PublicKey:               pubKey,
+			AggregatorSelectionSeed: selectionSeed[:],
 		}
 		nextAssignment := &qrysmpb.DutiesResponse_Duty{
-			PublicKey: pubKey,
+			PublicKey:               pubKey,
+			AggregatorSelectionSeed: nextSelectionSeed[:],
 		}
 		idx, ok := s.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 		if ok {
@@ -107,14 +145,17 @@ func (vs *Server) duties(ctx context.Context, req *qrysmpb.DutiesRequest) (*qrys
 				nextAssignment.AttesterSlot = ca.AttesterSlot
 				nextAssignment.CommitteeIndex = ca.CommitteeIndex
 			}
-			// Cache proposer assignment for the current epoch.
-			for _, slot := range proposerIndexToSlots[idx] {
-				// Head root is empty because it can't be known until slot - 1. Same with payload id.
-				vs.ProposerSlotIndexCache.SetProposerAndPayloadIDs(slot, idx, [8]byte{} /* payloadID */, [32]byte{} /* head root */)
-			}
-			// Cache proposer assignment for the next epoch.
-			for _, slot := range nextProposerIndexToSlots[idx] {
-				vs.ProposerSlotIndexCache.SetProposerAndPayloadIDs(slot, idx, [8]byte{} /* payloadID */, [32]byte{} /* head root */)
+			// Historical predictions must not overwrite live proposer assignments.
+			if !historical {
+				// Cache proposer assignment for the current epoch.
+				for _, slot := range proposerIndexToSlots[idx] {
+					// Head root is empty because it can't be known until slot - 1. Same with payload id.
+					vs.ProposerSlotIndexCache.SetProposerAndPayloadIDs(slot, idx, [8]byte{} /* payloadID */, [32]byte{} /* head root */)
+				}
+				// Cache proposer assignment for the next epoch.
+				for _, slot := range nextProposerIndexToSlots[idx] {
+					vs.ProposerSlotIndexCache.SetProposerAndPayloadIDs(slot, idx, [8]byte{} /* payloadID */, [32]byte{} /* head root */)
+				}
 			}
 		} else {
 			// If the validator isn't in the beacon state, try finding their deposit to determine their status.
@@ -139,9 +180,7 @@ func (vs *Server) duties(ctx context.Context, req *qrysmpb.DutiesRequest) (*qrys
 			// Next epoch sync committee duty is assigned with next period sync committee only during
 			// sync period epoch boundary (ie. EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1). Else wise
 			// next epoch sync committee duty is the same as current epoch.
-			nextSlotToEpoch := slots.ToEpoch(s.Slot() + 1)
-			currentEpoch := coreTime.CurrentEpoch(s)
-			if slots.SyncCommitteePeriod(nextSlotToEpoch) == slots.SyncCommitteePeriod(currentEpoch)+1 {
+			if slots.SyncCommitteePeriod(req.Epoch+1) == slots.SyncCommitteePeriod(req.Epoch)+1 {
 				nextAssignment.IsSyncCommittee, err = helpers.IsNextPeriodSyncCommittee(s, idx)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "Could not determine next epoch sync committee: %v", err)
@@ -161,12 +200,68 @@ func (vs *Server) duties(ctx context.Context, req *qrysmpb.DutiesRequest) (*qrys
 		core.AssignValidatorToSubnetProto(pubKey, nextAssignment.Status)
 	}
 	// Prune payload ID cache for any slots before request slot.
-	vs.ProposerSlotIndexCache.PrunePayloadIDs(epochStartSlot)
+	if !historical {
+		vs.ProposerSlotIndexCache.PrunePayloadIDs(epochStartSlot)
+	}
+
+	previousDutyDependentRoot, err := attestationDutyDependentRoot(s, req.Epoch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute previous duty dependent root: %v", err)
+	}
+	currentDutyDependentRoot, err := proposalDutyDependentRoot(s, req.Epoch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute current duty dependent root: %v", err)
+	}
 
 	return &qrysmpb.DutiesResponse{
-		CurrentEpochDuties: validatorAssignments,
-		NextEpochDuties:    nextValidatorAssignments,
+		CurrentEpochDuties:        validatorAssignments,
+		NextEpochDuties:           nextValidatorAssignments,
+		PreviousDutyDependentRoot: previousDutyDependentRoot,
+		CurrentDutyDependentRoot:  currentDutyDependentRoot,
 	}, nil
+}
+
+// attestationDutyDependentRoot returns get_block_root_at_slot(state, compute_start_slot_at_epoch(epoch - 1) - 1),
+// or zero bytes when the requested slot is before the state's earliest tracked block root (genesis).
+// Used as the attester-duty dependent root for the given epoch.
+func attestationDutyDependentRoot(s beaconState.BeaconState, epoch primitives.Epoch) ([]byte, error) {
+	var dependentRootSlot primitives.Slot
+	if epoch <= 1 {
+		dependentRootSlot = 0
+	} else {
+		prevEpochStartSlot, err := slots.EpochStart(epoch.Sub(1))
+		if err != nil {
+			return nil, err
+		}
+		dependentRootSlot = prevEpochStartSlot.Sub(1)
+	}
+	return blockRootAtSlotOrGenesis(s, dependentRootSlot)
+}
+
+// proposalDutyDependentRoot returns get_block_root_at_slot(state, compute_start_slot_at_epoch(epoch) - 1),
+// or zero bytes when the requested slot is before the state's earliest tracked block root (genesis).
+// Used as the proposer-duty dependent root for the given epoch.
+func proposalDutyDependentRoot(s beaconState.BeaconState, epoch primitives.Epoch) ([]byte, error) {
+	var dependentRootSlot primitives.Slot
+	if epoch == 0 {
+		dependentRootSlot = 0
+	} else {
+		epochStartSlot, err := slots.EpochStart(epoch)
+		if err != nil {
+			return nil, err
+		}
+		dependentRootSlot = epochStartSlot.Sub(1)
+	}
+	return blockRootAtSlotOrGenesis(s, dependentRootSlot)
+}
+
+// blockRootAtSlotOrGenesis returns the block root at the given slot, or 32 zero bytes when the
+// slot is before the state's earliest tracked block root (i.e. genesis-era queries on a fresh state).
+func blockRootAtSlotOrGenesis(s beaconState.BeaconState, slot primitives.Slot) ([]byte, error) {
+	if slot >= s.Slot() {
+		return make([]byte, 32), nil
+	}
+	return helpers.BlockRootAtSlot(s, slot)
 }
 
 // AssignValidatorToSubnet checks the status and pubkey of a particular validator

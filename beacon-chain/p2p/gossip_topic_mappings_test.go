@@ -12,7 +12,8 @@ import (
 func TestMappingHasNoDuplicates(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	m := make(map[reflect.Type]bool)
-	for _, v := range gossipTopicMappings {
+	for _, fn := range gossipTopicMappings {
+		v := fn()
 		if _, ok := m[reflect.TypeOf(v)]; ok {
 			t.Errorf("%T is duplicated in the topic mapping", v)
 		}
@@ -27,4 +28,23 @@ func TestGossipTopicMappings_CorrectBlockType(t *testing.T) {
 	pMessage := GossipTopicMappings(BlockSubnetTopicFormat)
 	_, ok := pMessage.(*qrysmpb.SignedBeaconBlockZond)
 	assert.Equal(t, true, ok)
+}
+
+func TestGossipTopicMappings_ReturnsFreshInstancePerCall(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+
+	// Each call must produce a distinct, independent message — otherwise
+	// concurrent decoders would race on the same singleton.
+	a := GossipTopicMappings(BlockSubnetTopicFormat)
+	b := GossipTopicMappings(BlockSubnetTopicFormat)
+	assert.NotNil(t, a)
+	assert.NotNil(t, b)
+	if a == b {
+		t.Fatal("GossipTopicMappings returned the same pointer on repeat calls; factory must allocate fresh instances")
+	}
+}
+
+func TestGossipTopicMappings_UnknownTopicReturnsNil(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	assert.Equal(t, nil, GossipTopicMappings("/nonexistent/topic"))
 }

@@ -47,8 +47,9 @@ Here's an example using a `go_deps.module_override`:
 
 ```
 go_deps.module_override(
-    patches = ["//third_party:com_github_libp2p_go_libp2p_pubsub-gogo.patch"],
-    path = "github.com/libp2p/go-libp2p-pubsub",
+    patch_strip = 1,
+    patches = ["//third_party:com_github_grpc_ecosystem_grpc_gateway_v2-googleapis.patch"],
+    path = "github.com/grpc-ecosystem/grpc-gateway/v2",
 )
 ```
 

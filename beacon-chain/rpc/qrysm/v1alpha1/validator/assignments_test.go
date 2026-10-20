@@ -3,6 +3,7 @@ package validator
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"testing"
 	"time"
 
@@ -12,8 +13,10 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/core/validators"
 	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen/mock"
 	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
@@ -25,6 +28,8 @@ import (
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // pubKey is a helper to generate a well-formed public key.
@@ -69,6 +74,13 @@ func TestGetDuties_OK(t *testing.T) {
 	}
 	res, err := vs.GetDuties(context.Background(), req)
 	require.NoError(t, err, "Could not call epoch committee assignment")
+	currentSeed, err := helpers.AggregatorSelectionSeed(bs, 0)
+	require.NoError(t, err)
+	nextSeed, err := helpers.AggregatorSelectionSeed(bs, 1)
+	require.NoError(t, err)
+	require.DeepEqual(t, currentSeed[:], res.CurrentEpochDuties[0].AggregatorSelectionSeed)
+	require.DeepEqual(t, nextSeed[:], res.NextEpochDuties[0].AggregatorSelectionSeed)
+	require.NotEqual(t, currentSeed, nextSeed)
 	if res.CurrentEpochDuties[0].AttesterSlot > bs.Slot()+params.BeaconConfig().SlotsPerEpoch {
 		t.Errorf("Assigned slot %d can't be higher than %d",
 			res.CurrentEpochDuties[0].AttesterSlot, bs.Slot()+params.BeaconConfig().SlotsPerEpoch)
@@ -96,6 +108,125 @@ func TestGetDuties_OK(t *testing.T) {
 	for i := 0; i < len(res.CurrentEpochDuties); i++ {
 		assert.Equal(t, primitives.ValidatorIndex(i), res.CurrentEpochDuties[i].ValidatorIndex)
 	}
+}
+
+func TestGetDuties_HistoricalProposersAfterSlashing(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	cfg := params.MainnetTestConfig()
+	if fieldparams.Preset == "minimal" {
+		cfg = params.MinimalSpecConfig()
+	}
+	params.OverrideBeaconConfig(cfg)
+	helpers.ClearCache()
+	t.Cleanup(helpers.ClearCache)
+	transition.SkipSlotCache.Disable()
+	t.Cleanup(transition.SkipSlotCache.Enable)
+	ctx := context.Background()
+	const historicalEpoch primitives.Epoch = 2
+
+	// Generate fresh signatures for this config instead of reusing deposits
+	// cached by tests with a different genesis fork version.
+	balances := make([]uint64, 128)
+	for i := range balances {
+		balances[i] = cfg.MaxEffectiveBalance
+	}
+	deposits, depositTrie, err := util.DepositsWithBalance(balances)
+	require.NoError(t, err)
+	depositRoot, err := depositTrie.HashTreeRoot()
+	require.NoError(t, err)
+	executionData := &qrysmpb.ExecutionData{
+		BlockHash: depositRoot[:], DepositRoot: depositRoot[:], DepositCount: uint64(len(deposits)),
+	}
+	st, err := transition.GenesisBeaconStateZond(ctx, deposits, 0, executionData, &enginev1.ExecutionPayloadZond{
+		ParentHash: make([]byte, 32), FeeRecipient: make([]byte, fieldparams.FeeRecipientLength),
+		StateRoot: make([]byte, 32), ReceiptsRoot: make([]byte, 32), LogsBloom: make([]byte, 256),
+		PrevRandao: make([]byte, 32), BaseFeePerGas: make([]byte, 32), BlockHash: make([]byte, 32),
+	})
+	require.NoError(t, err)
+	require.Equal(t, len(deposits), st.NumValidators())
+	st, err = transition.ProcessSlots(ctx, st, primitives.Slot(historicalEpoch)*cfg.SlotsPerEpoch)
+	require.NoError(t, err)
+	historical := st.Copy()
+	want, err := helpers.ProposerAssignments(ctx, historical, historicalEpoch)
+	require.NoError(t, err)
+
+	// Real slashing and epoch processing change the effective balances used to
+	// sample proposers. Historical duties must still use the earlier balances.
+	st, err = transition.ProcessSlots(ctx, st, st.Slot()+1)
+	require.NoError(t, err)
+	for index := primitives.ValidatorIndex(0); index < 64; index++ {
+		st, err = validators.SlashValidator(ctx, st, index, cfg.MinSlashingPenaltyQuotient, cfg.ProposerRewardQuotient)
+		require.NoError(t, err)
+	}
+	st, err = transition.ProcessSlots(ctx, st, primitives.Slot(historicalEpoch+1)*cfg.SlotsPerEpoch)
+	require.NoError(t, err)
+	before, err := historical.ValidatorAtIndex(0)
+	require.NoError(t, err)
+	after, err := st.ValidatorAtIndex(0)
+	require.NoError(t, err)
+	require.Equal(t, true, after.EffectiveBalance < before.EffectiveBalance)
+	headProposers, err := helpers.ProposerAssignments(ctx, st, historicalEpoch+1)
+	require.NoError(t, err)
+
+	pubkeys := make([][]byte, len(deposits))
+	for i, deposit := range deposits {
+		pubkeys[i] = deposit.Data.PublicKey
+	}
+	headSlot := st.Slot()
+	chain := &mockChain.ChainService{State: st, Slot: &headSlot}
+	for _, name := range []string{"empty_cache", "populated_cache"} {
+		t.Run(name, func(t *testing.T) {
+			helpers.ClearCache()
+			if name == "populated_cache" {
+				require.NoError(t, helpers.UpdateProposerIndicesInCache(ctx, historical, historicalEpoch))
+			}
+			vs := &Server{
+				HeadFetcher:            chain,
+				TimeFetcher:            chain,
+				SyncChecker:            &mockSync.Sync{},
+				ReplayerBuilder:        mock.NewMockReplayerBuilder(mock.WithMockState(historical)),
+				ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
+			}
+			for index, slots := range headProposers {
+				for _, slot := range slots {
+					vs.ProposerSlotIndexCache.SetProposerAndPayloadIDs(slot, index, [8]byte{}, [32]byte{})
+				}
+			}
+			res, err := vs.GetDuties(ctx, &qrysmpb.DutiesRequest{Epoch: historicalEpoch, PublicKeys: pubkeys})
+			require.NoError(t, err)
+			require.Equal(t, len(pubkeys), len(res.CurrentEpochDuties))
+			for _, duty := range res.CurrentEpochDuties {
+				assert.DeepEqual(t, want[duty.ValidatorIndex], duty.ProposerSlots, "validator %d", duty.ValidatorIndex)
+			}
+			// Predictions made from the historical state must not overwrite the
+			// current epoch's payload preparation assignments.
+			for index, slots := range headProposers {
+				for _, slot := range slots {
+					got, _, exists := vs.ProposerSlotIndexCache.GetProposerPayloadIDs(slot, [32]byte{})
+					require.Equal(t, true, exists)
+					assert.Equal(t, index, got, "live proposer at slot %d", slot)
+				}
+			}
+		})
+	}
+}
+
+func TestGetDuties_HistoricalReplayError(t *testing.T) {
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
+	headSlot := 3 * params.BeaconConfig().SlotsPerEpoch
+	require.NoError(t, st.SetSlot(headSlot))
+	chain := &mockChain.ChainService{State: st, Slot: &headSlot}
+	replayer := mock.NewMockReplayerBuilder()
+	replayer.SetMockSlotError(0, errors.New("historical state unavailable"))
+	vs := &Server{
+		HeadFetcher:     chain,
+		TimeFetcher:     chain,
+		SyncChecker:     &mockSync.Sync{},
+		ReplayerBuilder: replayer,
+	}
+	_, err := vs.GetDuties(context.Background(), &qrysmpb.DutiesRequest{Epoch: 0})
+	require.ErrorContains(t, "historical state unavailable", err)
+	require.Equal(t, codes.Internal, status.Code(err))
 }
 
 func TestGetZondDuties_SyncCommitteeOK(t *testing.T) {
@@ -135,6 +266,7 @@ func TestGetZondDuties_SyncCommitteeOK(t *testing.T) {
 		pubKeys[i] = deposits[i].Data.PublicKey
 		indices[i] = uint64(i)
 	}
+	genesisState := bs.Copy()
 	require.NoError(t, bs.SetSlot(params.BeaconConfig().SlotsPerEpoch*primitives.Slot(params.BeaconConfig().EpochsPerSyncCommitteePeriod)-1))
 	require.NoError(t, helpers.UpdateSyncCommitteeCache(bs))
 
@@ -147,6 +279,7 @@ func TestGetZondDuties_SyncCommitteeOK(t *testing.T) {
 		TimeFetcher:            chain,
 		ExecutionInfoFetcher:   &mockExecution.Chain{},
 		SyncChecker:            &mockSync.Sync{IsSyncing: false},
+		ReplayerBuilder:        mock.NewMockReplayerBuilder(mock.WithMockState(genesisState)),
 		ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 	}
 
@@ -222,6 +355,7 @@ func TestGetAltairDuties_UnknownPubkey(t *testing.T) {
 	genesisRoot, err := genesis.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
+	genesisState := bs.Copy()
 	require.NoError(t, bs.SetSlot(params.BeaconConfig().SlotsPerEpoch*primitives.Slot(params.BeaconConfig().EpochsPerSyncCommitteePeriod)-1))
 	require.NoError(t, helpers.UpdateSyncCommitteeCache(bs))
 
@@ -238,6 +372,7 @@ func TestGetAltairDuties_UnknownPubkey(t *testing.T) {
 		ExecutionInfoFetcher:   &mockExecution.Chain{},
 		SyncChecker:            &mockSync.Sync{IsSyncing: false},
 		DepositFetcher:         depositCache,
+		ReplayerBuilder:        mock.NewMockReplayerBuilder(mock.WithMockState(genesisState)),
 		ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 	}
 
@@ -346,8 +481,12 @@ func TestGetDuties_MultipleKeys_OK(t *testing.T) {
 	res, err := vs.GetDuties(context.Background(), req)
 	require.NoError(t, err, "Could not call epoch committee assignment")
 	assert.Equal(t, 2, len(res.CurrentEpochDuties))
-	assert.Equal(t, primitives.Slot(3), res.CurrentEpochDuties[0].AttesterSlot)
-	assert.Equal(t, primitives.Slot(3), res.CurrentEpochDuties[1].AttesterSlot)
+	// The attester slots follow the committee shuffling of the genesis state.
+	assignments, err := helpers.CommitteeAssignments(context.Background(), bs, 0, []primitives.ValidatorIndex{0, 1})
+	require.NoError(t, err)
+	assert.Equal(t, assignments[0].AttesterSlot, res.CurrentEpochDuties[0].AttesterSlot)
+	assert.Equal(t, assignments[1].AttesterSlot, res.CurrentEpochDuties[1].AttesterSlot)
+	assert.NotEqual(t, res.CurrentEpochDuties[0].AttesterSlot, res.CurrentEpochDuties[1].AttesterSlot)
 }
 
 func TestGetDuties_SyncNotReady(t *testing.T) {

@@ -1,0 +1,16 @@
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "randao",
+    srcs = ["onion.go"],
+    importpath = "github.com/theQRL/qrysm/crypto/randao",
+    visibility = ["//visibility:public"],
+    deps = ["//config/fieldparams"],
+)
+
+go_test(
+    name = "randao_test",
+    srcs = ["onion_test.go"],
+    embed = [":randao"],
+    deps = ["//testing/require"],
+)

@@ -63,9 +63,11 @@ func (ns *Server) GetIdentity(ctx context.Context, _ *emptypb.Empty) (*qrlpb.Ide
 		discoveryAddresses[i] = sourceDisc[i].String()
 	}
 
+	md := ns.MetadataProvider.Metadata()
 	meta := &qrlpb.Metadata{
 		SeqNumber: ns.MetadataProvider.MetadataSeq(),
-		Attnets:   ns.MetadataProvider.Metadata().AttnetsBitfield(),
+		Attnets:   md.AttnetsBitfield(),
+		Syncnets:  md.SyncnetsBitfield(),
 	}
 
 	return &qrlpb.IdentityResponse{
@@ -153,7 +155,12 @@ func (ns *Server) ListPeers(ctx context.Context, req *qrlpb.PeersRequest) (*qrlp
 			}
 			allPeers = append(allPeers, p)
 		}
-		return &qrlpb.PeersResponse{Data: allPeers}, nil
+		return &qrlpb.PeersResponse{
+			Data: allPeers,
+			Meta: &qrlpb.PeersResponse_Meta{
+				Count: uint64(len(allPeers)),
+			},
+		}, nil
 	}
 
 	var stateIds []peer.ID
@@ -225,7 +232,12 @@ func (ns *Server) ListPeers(ctx context.Context, req *qrlpb.PeersRequest) (*qrlp
 		filteredPeers = append(filteredPeers, p)
 	}
 
-	return &qrlpb.PeersResponse{Data: filteredPeers}, nil
+	return &qrlpb.PeersResponse{
+		Data: filteredPeers,
+		Meta: &qrlpb.PeersResponse_Meta{
+			Count: uint64(len(filteredPeers)),
+		},
+	}, nil
 }
 
 // PeerCount retrieves number of known peers.
@@ -272,10 +284,14 @@ func (ns *Server) GetHealth(ctx context.Context, _ *emptypb.Empty) (*emptypb.Emp
 	ctx, span := trace.StartSpan(ctx, "node.GetHealth")
 	defer span.End()
 
-	if ns.SyncChecker.Synced() {
+	optimistic, err := ns.OptimisticModeFetcher.IsOptimistic(ctx)
+	if err != nil {
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not check optimistic status: %v", err)
+	}
+	if ns.SyncChecker.Synced() && !optimistic {
 		return &emptypb.Empty{}, nil
 	}
-	if ns.SyncChecker.Syncing() || ns.SyncChecker.Initialized() {
+	if ns.SyncChecker.Syncing() || optimistic {
 		if err := grpc.SetHeader(ctx, metadata.Pairs(grpcutil.HttpCodeMetadataKey, strconv.Itoa(http.StatusPartialContent))); err != nil {
 			// We return a positive result because failing to set a non-gRPC related header should not cause the gRPC call to fail.
 			//nolint:nilerr

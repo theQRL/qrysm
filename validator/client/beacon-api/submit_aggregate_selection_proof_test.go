@@ -209,7 +209,8 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 			).SetArg(
 				4,
 				validator.GetAttesterDutiesResponse{
-					Data: test.duties,
+					Data:                    test.duties,
+					AggregatorSelectionSeed: hexutil.Encode(make([]byte, 32)),
 				},
 			).Return(
 				nil,

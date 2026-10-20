@@ -17,12 +17,20 @@ import (
 )
 
 func TestPruneExpired_Ticker(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	// pruneAttsPool now fires near the end of each slot via SlotTickerWithOffset.
+	// Shrink SecondsPerSlot so the test runs in seconds, not minutes — but keep it
+	// large enough that the window where slot 0 is expired and slot 1 is not is
+	// wider than the ~500ms polling cadence below.
+	params.SetupTestConfigCleanup(t)
+	cfg := params.BeaconConfig().Copy()
+	cfg.SecondsPerSlot = 5
+	params.OverrideBeaconConfig(cfg)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	s, err := NewService(ctx, &Config{
-		Pool:          NewPool(),
-		pruneInterval: 250 * time.Millisecond,
+		Pool: NewPool(),
 	})
 	require.NoError(t, err)
 
@@ -46,10 +54,19 @@ func TestPruneExpired_Ticker(t *testing.T) {
 		require.NoError(t, s.cfg.Pool.SaveBlockAttestation(att))
 	}
 
-	// Rewind back one epoch worth of time.
-	s.genesisTime = uint64(qrysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
+	// Rewind back two epochs worth of time to cover the EIP-7045 inclusion window.
+	s.genesisTime = uint64(qrysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot*2))
 
-	go s.pruneAttsPool()
+	pruneDone := make(chan struct{})
+	go func() {
+		defer close(pruneDone)
+		s.pruneAttsPool()
+	}()
+	// Stop the worker before cleanup restores the shared beacon configuration.
+	t.Cleanup(func() {
+		cancel()
+		<-pruneDone
+	})
 
 	done := make(chan struct{}, 1)
 	async.RunEvery(ctx, 500*time.Millisecond, func() {
@@ -65,10 +82,8 @@ func TestPruneExpired_Ticker(t *testing.T) {
 				return
 			}
 		}
-		for _, attestation := range s.cfg.Pool.BlockAttestations() {
-			if attestation.Data.Slot == 0 {
-				return
-			}
+		if len(s.cfg.Pool.BlockAttestations()) != 2 {
+			return
 		}
 		if s.cfg.Pool.UnaggregatedAttestationCount() != 1 || s.cfg.Pool.AggregatedAttestationCount() != 1 {
 			return
@@ -100,30 +115,27 @@ func TestPruneExpired_PruneExpiredAtts(t *testing.T) {
 	for _, att := range atts {
 		require.NoError(t, s.cfg.Pool.SaveBlockAttestation(att))
 	}
+	pending := s.cfg.Pool.BlockAttestations()
 
-	// Rewind back one epoch worth of time.
-	s.genesisTime = uint64(qrysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
+	// Rewind back two epochs worth of time to cover the EIP-7045 inclusion window.
+	s.genesisTime = uint64(qrysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot*2))
 
 	s.pruneExpiredAtts()
-	// All the attestations on slot 0 should be pruned.
+	// Proposal candidates expire, but already included votes must survive for forkchoice retry.
 	for _, attestation := range s.cfg.Pool.AggregatedAttestations() {
 		if attestation.Data.Slot == 0 {
 			t.Error("Should be pruned")
 		}
 	}
-	for _, attestation := range s.cfg.Pool.BlockAttestations() {
-		if attestation.Data.Slot == 0 {
-			t.Error("Should be pruned")
-		}
-	}
+	require.DeepSSZEqual(t, pending, s.cfg.Pool.BlockAttestations())
 }
 
 func TestPruneExpired_Expired(t *testing.T) {
 	s, err := NewService(context.Background(), &Config{Pool: NewPool()})
 	require.NoError(t, err)
 
-	// Rewind back one epoch worth of time.
-	s.genesisTime = uint64(qrysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
+	// Rewind back two epochs worth of time to cover the EIP-7045 inclusion window.
+	s.genesisTime = uint64(qrysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot*2))
 	assert.Equal(t, true, s.expired(0), "Should be expired")
 	assert.Equal(t, false, s.expired(1), "Should not be expired")
 }

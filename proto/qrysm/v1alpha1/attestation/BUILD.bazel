@@ -23,6 +23,7 @@ go_test(
     srcs = ["attestation_utils_test.go"],
     deps = [
         ":attestation",
+        "//beacon-chain/core/signing",
         "//config/params",
         "//consensus-types/primitives",
         "//crypto/ml_dsa_87",

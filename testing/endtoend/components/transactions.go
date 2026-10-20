@@ -31,6 +31,8 @@ type TransactionGenerator struct {
 	cancel   context.CancelFunc
 }
 
+const transactionGeneratorBatchSize = 20
+
 func NewTransactionGenerator(keystore string, seed int64) *TransactionGenerator {
 	return &TransactionGenerator{keystore: keystore, seed: seed}
 }
@@ -70,9 +72,10 @@ func (t *TransactionGenerator) Start(ctx context.Context) error {
 		return err
 	}
 	f := filler.NewFiller(rnd)
-	// Broadcast Transactions every 3 blocks
+	// Broadcast transactions every slot.
 	txPeriod := time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second
 	ticker := time.NewTicker(txPeriod)
+	defer ticker.Stop()
 	gasFeeCap := big.NewInt(1e11)
 	gasTipCap := big.NewInt(3e7)
 	wallet := testKey.Wallet
@@ -83,9 +86,12 @@ func (t *TransactionGenerator) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			err := SendTransaction(client, wallet, f, gasFeeCap, gasTipCap, addr.String(), 1000, false)
+			err := SendTransaction(ctx, client, wallet, f, gasFeeCap, gasTipCap, addr.String(), transactionGeneratorBatchSize, false)
 			if err != nil {
-				return err
+				if ctx.Err() != nil {
+					return nil
+				}
+				logrus.WithError(err).Warn("Transaction generator batch failed")
 			}
 		}
 	}
@@ -96,29 +102,29 @@ func (s *TransactionGenerator) Started() <-chan struct{} {
 	return s.started
 }
 
-func SendTransaction(client *rpc.Client, wallet wallet.Wallet, f *filler.Filler, gasFeeCap *big.Int, gasTipCap *big.Int, addr string, N uint64, al bool) error {
+func SendTransaction(ctx context.Context, client *rpc.Client, wallet wallet.Wallet, f *filler.Filler, gasFeeCap *big.Int, gasTipCap *big.Int, addr string, N uint64, al bool) error {
 	backend := qrlclient.NewClient(client)
 
 	sender, err := common.NewAddressFromString(addr)
 	if err != nil {
 		return err
 	}
-	chainid, err := backend.ChainID(context.Background())
+	chainid, err := backend.ChainID(ctx)
 	if err != nil {
 		return err
 	}
-	nonce, err := backend.PendingNonceAt(context.Background(), sender)
+	nonce, err := backend.PendingNonceAt(ctx, sender)
 	if err != nil {
 		return err
 	}
-	expectedGasFeeCap, err := backend.SuggestGasPrice(context.Background())
+	expectedGasFeeCap, err := backend.SuggestGasPrice(ctx)
 	if err != nil {
 		return err
 	}
 	if expectedGasFeeCap.Cmp(gasFeeCap) > 0 {
 		gasFeeCap = expectedGasFeeCap
 	}
-	expectedGasTipCap, err := backend.SuggestGasTipCap(context.Background())
+	expectedGasTipCap, err := backend.SuggestGasTipCap(ctx)
 	if err != nil {
 		return err
 	}
@@ -126,7 +132,7 @@ func SendTransaction(client *rpc.Client, wallet wallet.Wallet, f *filler.Filler,
 		gasTipCap = expectedGasTipCap
 	}
 
-	g, _ := errgroup.WithContext(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
 	for i := range N {
 		index := i
 		g.Go(func() error {
@@ -144,7 +150,7 @@ func SendTransaction(client *rpc.Client, wallet wallet.Wallet, f *filler.Filler,
 				//nolint:nilerr
 				return nil
 			}
-			err = backend.SendTransaction(context.Background(), signedTx)
+			err = backend.SendTransaction(ctx, signedTx)
 			if err != nil {
 				// We continue on if the constructed transaction is invalid
 				// and can't be submitted on chain.

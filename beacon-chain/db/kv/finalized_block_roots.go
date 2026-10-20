@@ -48,7 +48,9 @@ func (s *Store) updateFinalizedBlockRoots(ctx context.Context, tx *bolt.Tx, chec
 	genesisRoot := tx.Bucket(blocksBucket).Get(genesisBlockRootKey)
 	initCheckpointRoot := tx.Bucket(blocksBucket).Get(originCheckpointBlockRootKey)
 
-	// De-index recent finalized block roots, to be re-indexed.
+	// De-index recent finalized block roots, to be re-indexed. The range runs
+	// one epoch past the new checkpoint epoch so that sentinels an older release
+	// wrote for that epoch are removed as well.
 	previousFinalizedCheckpoint := &qrysmpb.Checkpoint{}
 	if b := bkt.Get(previousFinalizedCheckpointKey); b != nil {
 		if err := decode(ctx, b, previousFinalizedCheckpoint); err != nil {
@@ -136,8 +138,11 @@ func (s *Store) updateFinalizedBlockRoots(ctx context.Context, tx *bolt.Tx, chec
 		root = pr[:]
 	}
 
-	// Upsert blocks from the current finalized epoch.
-	roots, err := s.BlockRoots(ctx, filters.NewFilter().SetStartEpoch(checkpoint.Epoch).SetEndEpoch(checkpoint.Epoch+1))
+	// Upsert blocks from the current finalized epoch. The epoch filter is
+	// inclusive at both ends, so this must stop at the checkpoint epoch: blocks
+	// of the following epoch are not finalized in any sense and marking them
+	// would make them undeletable while they can still be invalidated.
+	roots, err := s.BlockRoots(ctx, filters.NewFilter().SetStartEpoch(checkpoint.Epoch).SetEndEpoch(checkpoint.Epoch))
 	if err != nil {
 		tracing.AnnotateError(span, err)
 		return err
@@ -161,6 +166,16 @@ func (s *Store) updateFinalizedBlockRoots(ctx context.Context, tx *bolt.Tx, chec
 	}
 
 	return bkt.Put(previousFinalizedCheckpointKey, enc)
+}
+
+// isFinalizedCanonicalInIndex reports whether the finalized block roots index
+// holds root as part of the finalized canonical chain. Roots of the latest
+// finalized epoch carry the containerFinalizedButNotCanonical sentinel until the
+// next checkpoint update settles their status; they are not canonical-exact and
+// may still be invalidated or lose fork choice.
+func isFinalizedCanonicalInIndex(tx *bolt.Tx, root [32]byte) bool {
+	v := tx.Bucket(finalizedBlockRootsIndexBucket).Get(root[:])
+	return v != nil && !bytes.Equal(v, containerFinalizedButNotCanonical)
 }
 
 // IsFinalizedBlock returns true if the block root is present in the finalized block root index.

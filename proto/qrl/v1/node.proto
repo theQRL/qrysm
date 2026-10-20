@@ -49,6 +49,8 @@ message Metadata {
   uint64 seq_number = 1;
   // Attnets is a bitvector representing the node's persistent attestation subnet subscriptions.
   bytes attnets = 2 [(theqrl.qrl.ext.ssz_size) = "8", (theqrl.qrl.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector64"];
+  // Syncnets is a bitvector representing the node's persistent sync committee subnet subscriptions.
+  bytes syncnets = 3 [(theqrl.qrl.ext.ssz_size) = "1", (theqrl.qrl.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector4"];
 }
 
 message PeerRequest {
@@ -74,6 +76,11 @@ message PeerResponse {
 
 message PeersResponse {
   repeated Peer data = 1;
+  Meta meta = 2;
+
+  message Meta {
+    uint64 count = 1;
+  }
 }
 
 message PeerCountResponse {

@@ -62,7 +62,7 @@ func initApp() *cli.App {
 var app = initApp()
 
 func main() {
-	// qrl.sendTransaction({from:personal.listAccounts[0], to:"Qb02A2EdA1b317FBd16760128836B0Ac59B560e9D", value: "100000000000000"})
+	// qrl.sendTransaction({from:personal.listAccounts[0], to:"Q00000000000000000000000000000000f1c4b3a519fb7cbb0c95143d22234411932151b9cc98b510d34bebb6f99f37abc1051bacd1853dc25bf92ead382cbaf7", value: "100000000000000"})
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

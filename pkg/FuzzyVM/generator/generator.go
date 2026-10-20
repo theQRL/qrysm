@@ -29,7 +29,7 @@ import (
 
 var (
 	fork              = "Zond"
-	sender, _         = common.NewAddressFromString("Qa94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+	sender, _         = common.NewAddressFromString("Q00000000000000000000000000000000be6c1fd78f40b86a24dc2d7d633e2912d71e5d166f8be2c850d5727f0adcc170c7741b784295eae0c4f28291d0928dc7")
 	sk                = hexutil.MustDecode("0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8")
 	recursionLevel    = 0
 	maxRecursionLevel = 10
@@ -70,15 +70,15 @@ func createGstMaker(fill *filler.Filler, code []byte) *fuzzing.GstMaker {
 		// Used to be 0xffffffff, increased to prevent sender to little money exceptions
 		// see: https://gist.github.com/MariusVanDerWijden/008b91a61de4b0fb831b72c24600ef59
 		Balance: big.NewInt(0x3fffffffffffffff),
-		Storage: make(map[common.Hash]common.Hash),
+		Storage: make(map[common.Hash]common.StorageValue64),
 		Code:    []byte{},
 	})
 	// Add code
-	dest, _ := common.NewAddressFromString("Q000000000000000000000000000000ca1100f022")
+	dest, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ca1100f022")
 	gst.AddAccount(dest, fuzzing.GenesisAccount{
 		Code:    code,
 		Balance: new(big.Int),
-		Storage: make(map[common.Hash]common.Hash),
+		Storage: make(map[common.Hash]common.StorageValue64),
 	})
 	// Add the transaction
 	tx := &fuzzing.StTransaction{

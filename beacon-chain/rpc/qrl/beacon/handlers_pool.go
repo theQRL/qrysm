@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/theQRL/qrysm/config/params"
 	"io"
 	"net/http"
 	"strconv"
@@ -76,6 +77,10 @@ func (s *Server) SubmitAttestations(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "beacon.SubmitAttestations")
 	defer span.End()
 
+	if shared.IsSyncing(ctx, w, s.SyncChecker, s.HeadFetcher, s.TimeFetcher, s.OptimisticModeFetcher) {
+		return
+	}
+
 	var req SubmitAttestationsRequest
 	err := json.NewDecoder(r.Body).Decode(&req.Data)
 	switch {
@@ -104,6 +109,14 @@ outer:
 			continue
 		}
 
+		if err := corehelpers.ValidateSlotTargetEpoch(att.Data); err != nil {
+			attFailures = append(attFailures, &shared.IndexedVerificationFailure{
+				Index:   i,
+				Message: "Invalid attestation: " + err.Error(),
+			})
+			continue
+		}
+
 		for _, sig := range att.Signatures {
 			if _, err = ml_dsa_87.SignatureFromBytes(sig); err != nil {
 				attFailures = append(attFailures, &shared.IndexedVerificationFailure{
@@ -112,6 +125,37 @@ outer:
 				})
 				continue outer
 			}
+		}
+
+		// The pool consumer assumes gossip has already checked LMD/FFG consistency.
+		if err := s.AttestationReceiver.VerifyLmdFfgConsistency(ctx, att); err != nil {
+			attFailures = append(attFailures, &shared.IndexedVerificationFailure{
+				Index:   i,
+				Message: "Inconsistent attestation: " + err.Error(),
+			})
+			continue
+		}
+
+		// Verify the signatures against the attestation's target state before
+		// the attestation is broadcast or enters the pool. The gossip path
+		// verifies every attestation it accepts; this API was the only
+		// unverified way in, and the proposer packs pool attestations without
+		// re-verifying signatures, so an invalid one would end up in a block
+		// that then fails to process. (upstream #16879)
+		targetState, err := s.AttestationReceiver.AttestationTargetState(ctx, att.Data.Target)
+		if err != nil {
+			attFailures = append(attFailures, &shared.IndexedVerificationFailure{
+				Index:   i,
+				Message: "Could not get attestation target state: " + err.Error(),
+			})
+			continue
+		}
+		if err = blocks.VerifyAttestationSignatures(ctx, targetState, att); err != nil {
+			attFailures = append(attFailures, &shared.IndexedVerificationFailure{
+				Index:   i,
+				Message: "Incorrect attestation signature: " + err.Error(),
+			})
+			continue
 		}
 
 		// Broadcast the unaggregated attestation on a feed to notify other services in the beacon node
@@ -226,7 +270,13 @@ func (s *Server) SubmitVoluntaryExit(w http.ResponseWriter, r *http.Request) {
 		http2.HandleError(w, "Could not get epoch start: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	headState, err = transition.ProcessSlotsIfPossible(ctx, headState, epochStart)
+	// The exit epoch is client-supplied. Advancing the head state to it lets an
+	// exit for an upcoming epoch be verified, but it must never run past the
+	// current wall-clock slot, nor more than two epochs past the head: beyond
+	// that the request would drive unbounded slot processing, and gossip
+	// validation would not accept the exit either.
+	target := min(epochStart, s.GenesisTimeFetcher.CurrentSlot(), headState.Slot()+2*params.BeaconConfig().SlotsPerEpoch)
+	headState, err = transition.ProcessSlotsIfPossible(ctx, headState, target)
 	if err != nil {
 		http2.HandleError(w, "Could not process slots: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -256,6 +306,10 @@ func (s *Server) SubmitVoluntaryExit(w http.ResponseWriter, r *http.Request) {
 func (s *Server) SubmitSyncCommitteeSignatures(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "beacon.SubmitPoolSyncCommitteeSignatures")
 	defer span.End()
+
+	if shared.IsSyncing(ctx, w, s.SyncChecker, s.HeadFetcher, s.TimeFetcher, s.OptimisticModeFetcher) {
+		return
+	}
 
 	var req SubmitSyncCommitteeSignaturesRequest
 	err := json.NewDecoder(r.Body).Decode(&req.Data)

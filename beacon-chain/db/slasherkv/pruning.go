@@ -4,86 +4,149 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"time"
 
-	fssz "github.com/prysmaticlabs/fastssz"
+	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/time/slots"
 	bolt "go.etcd.io/bbolt"
 )
 
+var errTimeOut = errors.New("operation timed out")
+
 // PruneAttestationsAtEpoch deletes all attestations from the slasher DB with target epoch
 // less than or equal to the specified epoch.
+//
+// The deletion is bounded in time. When the deadline passes, the deletes made so
+// far are committed (returning an error from the transaction would roll all of
+// them back and make no progress at all) and the next pruning tick continues
+// from the lowest remaining epoch. The validator index and the records are
+// pruned in separate transactions and each decides on its own whether it still
+// holds expired entries, so an interruption between the two cannot strand
+// expired records behind an already pruned index.
 func (s *Store) PruneAttestationsAtEpoch(
-	_ context.Context, maxEpoch primitives.Epoch,
+	ctx context.Context, maxEpoch primitives.Epoch,
 ) (numPruned uint, err error) {
+	// In some cases, pruning may take a very long time and consume significant memory in the
+	// open Update transaction. Therefore, we impose a 1 minute timeout on this operation.
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+	defer cancel()
+
 	// We can prune everything less than the current epoch - history length.
-	encodedEndPruneEpoch := fssz.MarshalUint64([]byte{}, uint64(maxEpoch))
+	encodedEndPruneEpoch := make([]byte, 8)
+	binary.BigEndian.PutUint64(encodedEndPruneEpoch, uint64(maxEpoch))
 
-	// We retrieve the lowest stored epoch in the attestations bucket.
-	var lowestEpoch primitives.Epoch
-	var hasData bool
+	// Both buckets are keyed by the target epoch; only the ones whose lowest
+	// epoch is at or below the pruning epoch hold work.
+	var indexLowest, recordsLowest primitives.Epoch
+	var indexHasData, recordsHasData bool
 	if err = s.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(attestationDataRootsBucket)
-		c := bkt.Cursor()
-		k, _ := c.First()
-		if k == nil {
-			return nil
-		}
-		hasData = true
-		lowestEpoch = primitives.Epoch(binary.LittleEndian.Uint64(k))
+		indexLowest, indexHasData = lowestEpoch(tx.Bucket(attestationDataRootsBucket))
+		recordsLowest, recordsHasData = lowestEpoch(tx.Bucket(attestationRecordsBucket))
 		return nil
 	}); err != nil {
 		return
 	}
-
 	// If there is no data stored, just exit early.
-	if !hasData {
+	if !indexHasData && !recordsHasData {
 		return
 	}
-
-	// If the lowest epoch is greater than the end pruning epoch,
-	// there is nothing to prune, so we return early.
-	if lowestEpoch > maxEpoch {
-		log.Debugf("Lowest epoch %d is > pruning epoch %d, nothing to prune", lowestEpoch, maxEpoch)
-		return
-	}
-
-	if err = s.db.Update(func(tx *bolt.Tx) error {
-		signingRootsBkt := tx.Bucket(attestationDataRootsBucket)
-		attRecordsBkt := tx.Bucket(attestationRecordsBucket)
-		c := signingRootsBkt.Cursor()
-
-		// We begin a pruning iteration starting from the first item in the bucket.
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			// We check the epoch from the current key in the database.
-			// If we have hit an epoch that is greater than the end epoch of the pruning process,
-			// we then completely exit the process as we are done.
-			if uint64PrefixGreaterThan(k, encodedEndPruneEpoch) {
-				return nil
-			}
-
-			// Attestation in the database look like this:
-			//  (target_epoch ++ _) => encode(attestation)
-			// so it is possible we have a few adjacent objects that have the same slot, such as
-			//  (target_epoch = 3 ++ _) => encode(attestation)
-			if err := signingRootsBkt.Delete(k); err != nil {
-				return err
-			}
-			if err := attRecordsBkt.Delete(v); err != nil {
-				return err
-			}
-			slasherAttestationsPrunedTotal.Inc()
-			numPruned++
+	indexHasWork := indexHasData && indexLowest <= maxEpoch
+	recordsHasWork := recordsHasData && recordsLowest <= maxEpoch
+	if !indexHasWork && !recordsHasWork {
+		lowest := indexLowest
+		if !indexHasData || (recordsHasData && recordsLowest < lowest) {
+			lowest = recordsLowest
 		}
-		return nil
-	}); err != nil {
+		log.Debugf("Lowest epoch %d is > pruning epoch %d, nothing to prune", lowest, maxEpoch)
 		return
+	}
+
+	var deleted uint
+	var timedOut bool
+	if indexHasWork {
+		err = s.db.Update(func(tx *bolt.Tx) error {
+			signingRootsBkt := tx.Bucket(attestationDataRootsBucket)
+			c := signingRootsBkt.Cursor()
+			// We begin a pruning iteration starting from the first item in the bucket.
+			for k, _ := c.First(); k != nil; k, _ = c.Next() {
+				if ctx.Err() != nil {
+					// Deadline reached: commit what was deleted so far.
+					timedOut = true
+					return nil
+				}
+				// We check the epoch from the current key in the database.
+				// If we have hit an epoch that is greater than the end epoch of the pruning process,
+				// we then completely exit the process as we are done.
+				if uint64PrefixGreaterThan(k, encodedEndPruneEpoch) {
+					return nil
+				}
+				// Index entries in the database look like this:
+				//  (target_epoch ++ validator_index) => data root
+				// so it is possible we have a few adjacent objects that have the same epoch.
+				if err := signingRootsBkt.Delete(k); err != nil {
+					return errors.Wrap(err, "delete attestation signing root")
+				}
+				deleted++
+			}
+			return nil
+		})
+		if err != nil {
+			log.WithError(err).Error("Failed to prune attestations")
+			return
+		}
+	}
+	if recordsHasWork && !timedOut {
+		// Records are keyed by target epoch as well, so every record of a pruned
+		// epoch is removed, including records that no index entry points at any
+		// more (a validator that voted twice at the same target keeps only the
+		// latest root in its index entry).
+		err = s.db.Update(func(tx *bolt.Tx) error {
+			attRecordsBkt := tx.Bucket(attestationRecordsBucket)
+			c := attRecordsBkt.Cursor()
+			for k, _ := c.First(); k != nil; k, _ = c.Next() {
+				if ctx.Err() != nil {
+					timedOut = true
+					return nil
+				}
+				if uint64PrefixGreaterThan(k, encodedEndPruneEpoch) {
+					return nil
+				}
+				if err := attRecordsBkt.Delete(k); err != nil {
+					return errors.Wrap(err, "delete attestation record")
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			log.WithError(err).Error("Failed to prune attestation records")
+			return
+		}
+	}
+
+	// Only committed deletions count.
+	numPruned = deleted
+	slasherAttestationsPrunedTotal.Add(float64(deleted))
+	if timedOut {
+		log.WithField("numPruned", deleted).Warning("Pruning deadline reached, committed partial progress; continuing on the next tick")
+		err = errTimeOut
 	}
 	return
 }
 
+// lowestEpoch returns the epoch of the bucket's first key (keys are ordered by
+// their 8-byte big-endian epoch prefix) and whether the bucket holds any.
+func lowestEpoch(bkt *bolt.Bucket) (primitives.Epoch, bool) {
+	k, _ := bkt.Cursor().First()
+	if len(k) < 8 {
+		return 0, false
+	}
+	return primitives.Epoch(binary.BigEndian.Uint64(k[:8])), true
+}
+
 // PruneProposalsAtEpoch deletes all proposals from the slasher DB with epoch
-// less than or equal to the specified epoch.
+// less than or equal to the specified epoch. A cancelled context commits the
+// deletes made so far instead of rolling them back.
 func (s *Store) PruneProposalsAtEpoch(
 	ctx context.Context, maxEpoch primitives.Epoch,
 ) (numPruned uint, err error) {
@@ -92,7 +155,8 @@ func (s *Store) PruneProposalsAtEpoch(
 	if err != nil {
 		return
 	}
-	encodedEndPruneSlot := fssz.MarshalUint64([]byte{}, uint64(endPruneSlot))
+	encodedEndPruneSlot := make([]byte, 8)
+	binary.BigEndian.PutUint64(encodedEndPruneSlot, uint64(endPruneSlot))
 
 	// We retrieve the lowest stored slot in the proposals bucket.
 	var lowestSlot primitives.Slot
@@ -123,13 +187,16 @@ func (s *Store) PruneProposalsAtEpoch(
 		return
 	}
 
+	var deleted uint
+	var cancelled bool
 	if err = s.db.Update(func(tx *bolt.Tx) error {
 		proposalBkt := tx.Bucket(proposalRecordsBucket)
 		c := proposalBkt.Cursor()
 		// We begin a pruning iteration starting from the first item in the bucket.
 		for k, _ := c.First(); k != nil; k, _ = c.Next() {
 			if ctx.Err() != nil {
-				return ctx.Err()
+				cancelled = true
+				return nil
 			}
 			// We check the slot from the current key in the database.
 			// If we have hit a slot that is greater than the end slot of the pruning process,
@@ -146,18 +213,22 @@ func (s *Store) PruneProposalsAtEpoch(
 			if err := proposalBkt.Delete(k); err != nil {
 				return err
 			}
-			slasherProposalsPrunedTotal.Inc()
-			numPruned++
+			deleted++
 		}
 		return nil
 	}); err != nil {
 		return
 	}
+	numPruned = deleted
+	slasherProposalsPrunedTotal.Add(float64(deleted))
+	if cancelled {
+		err = ctx.Err()
+	}
 	return
 }
 
 func slotFromProposalKey(key []byte) primitives.Slot {
-	return primitives.Slot(binary.LittleEndian.Uint64(key[:8]))
+	return primitives.Slot(binary.BigEndian.Uint64(key[:8]))
 }
 
 func uint64PrefixGreaterThan(key, lessThan []byte) bool {

@@ -170,7 +170,7 @@ func (d *Depositor) SendAndMine(ctx context.Context, offset, nvals int, batch ty
 
 	// This is the "AndMine" part of the function. WaitForBlocks will spam transactions to/from the given key
 	// to advance the EL chain and until the chain has advanced the requested amount.
-	if err = WaitForBlocks(d.Client, params.BeaconConfig().ExecutionFollowDistance); err != nil {
+	if err = WaitForBlocks(ctx, d.Client, params.BeaconConfig().ExecutionFollowDistance); err != nil {
 		return fmt.Errorf("failed to mine blocks %w", err)
 	}
 	return nil
@@ -189,7 +189,7 @@ func (d *Depositor) SendDeposit(dep *qrysmpb.Deposit, txo *bind.TransactOpts, ba
 		return err
 	}
 	sent := time.Now()
-	tx, err := contract.Deposit(txo, dep.Data.PublicKey, dep.Data.WithdrawalCredentials, dep.Data.Signature, root)
+	tx, err := contract.Deposit(txo, dep.Data.PublicKey, dep.Data.WithdrawalRecipient, dep.Data.RandaoCommitment, dep.Data.Signature, root)
 	if err != nil {
 		return errors.Wrap(err, "unable to send transaction to contract")
 	}

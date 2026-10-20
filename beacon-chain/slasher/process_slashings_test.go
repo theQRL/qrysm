@@ -31,9 +31,9 @@ func TestService_processAttesterSlashings(t *testing.T) {
 	require.NoError(t, err)
 	validators := make([]*qrysmpb.Validator, 1)
 	validators[0] = &qrysmpb.Validator{
-		PublicKey:             privKey.PublicKey().Marshal(),
-		WithdrawalCredentials: make([]byte, 32),
-		EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
+		PublicKey:           privKey.PublicKey().Marshal(),
+		WithdrawalRecipient: make([]byte, 64),
+		EffectiveBalance:    params.BeaconConfig().MaxEffectiveBalance,
 	}
 	err = beaconState.SetValidators(validators)
 	require.NoError(t, err)
@@ -71,16 +71,18 @@ func TestService_processAttesterSlashings(t *testing.T) {
 	t.Run("first_att_valid_sig_second_invalid", func(tt *testing.T) {
 		hook := logTest.NewGlobal()
 		// Use valid signature for the first att, but bad one for the second.
-		signature := privKey.Sign(signingRoot[:])
+		signature, err := privKey.Sign(signingRoot[:])
+		require.NoError(t, err)
 		firstAtt.Signatures = [][]byte{signature.Marshal()}
 		secondAtt.Signatures = [][]byte{make([]byte, 4627)}
 
-		slashings := []*qrysmpb.AttesterSlashing{
-			{
-				Attestation_1: firstAtt,
-				Attestation_2: secondAtt,
-			},
+		slashing := &qrysmpb.AttesterSlashing{
+			Attestation_1: firstAtt,
+			Attestation_2: secondAtt,
 		}
+		slashingRoot, err := slashing.HashTreeRoot()
+		require.NoError(tt, err)
+		slashings := map[[32]byte]*qrysmpb.AttesterSlashing{slashingRoot: slashing}
 
 		err = s.processAttesterSlashings(ctx, slashings)
 		require.NoError(tt, err)
@@ -90,16 +92,18 @@ func TestService_processAttesterSlashings(t *testing.T) {
 	t.Run("first_att_invalid_sig_second_valid", func(tt *testing.T) {
 		hook := logTest.NewGlobal()
 		// Use invalid signature for the first att, but valid for the second.
-		signature := privKey.Sign(signingRoot[:])
+		signature, err := privKey.Sign(signingRoot[:])
+		require.NoError(t, err)
 		firstAtt.Signatures = [][]byte{make([]byte, 4627)}
 		secondAtt.Signatures = [][]byte{signature.Marshal()}
 
-		slashings := []*qrysmpb.AttesterSlashing{
-			{
-				Attestation_1: firstAtt,
-				Attestation_2: secondAtt,
-			},
+		slashing := &qrysmpb.AttesterSlashing{
+			Attestation_1: firstAtt,
+			Attestation_2: secondAtt,
 		}
+		slashingRoot, err := slashing.HashTreeRoot()
+		require.NoError(tt, err)
+		slashings := map[[32]byte]*qrysmpb.AttesterSlashing{slashingRoot: slashing}
 
 		err = s.processAttesterSlashings(ctx, slashings)
 		require.NoError(tt, err)
@@ -109,16 +113,18 @@ func TestService_processAttesterSlashings(t *testing.T) {
 	t.Run("both_valid_att_signatures", func(tt *testing.T) {
 		hook := logTest.NewGlobal()
 		// Use valid signatures.
-		signature := privKey.Sign(signingRoot[:])
+		signature, err := privKey.Sign(signingRoot[:])
+		require.NoError(t, err)
 		firstAtt.Signatures = [][]byte{signature.Marshal()}
 		secondAtt.Signatures = [][]byte{signature.Marshal()}
 
-		slashings := []*qrysmpb.AttesterSlashing{
-			{
-				Attestation_1: firstAtt,
-				Attestation_2: secondAtt,
-			},
+		slashing := &qrysmpb.AttesterSlashing{
+			Attestation_1: firstAtt,
+			Attestation_2: secondAtt,
 		}
+		slashingRoot, err := slashing.HashTreeRoot()
+		require.NoError(tt, err)
+		slashings := map[[32]byte]*qrysmpb.AttesterSlashing{slashingRoot: slashing}
 
 		err = s.processAttesterSlashings(ctx, slashings)
 		require.NoError(tt, err)
@@ -138,9 +144,9 @@ func TestService_processProposerSlashings(t *testing.T) {
 	require.NoError(t, err)
 	validators := make([]*qrysmpb.Validator, 1)
 	validators[0] = &qrysmpb.Validator{
-		PublicKey:             privKey.PublicKey().Marshal(),
-		WithdrawalCredentials: make([]byte, 32),
-		EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
+		PublicKey:           privKey.PublicKey().Marshal(),
+		WithdrawalRecipient: make([]byte, 64),
+		EffectiveBalance:    params.BeaconConfig().MaxEffectiveBalance,
 	}
 	err = beaconState.SetValidators(validators)
 	require.NoError(t, err)
@@ -197,7 +203,8 @@ func TestService_processProposerSlashings(t *testing.T) {
 	t.Run("first_header_valid_sig_second_invalid", func(tt *testing.T) {
 		hook := logTest.NewGlobal()
 		// Use valid signature for the first header, but bad one for the second.
-		signature := privKey.Sign(signingRoot[:])
+		signature, err := privKey.Sign(signingRoot[:])
+		require.NoError(t, err)
 		firstBlockHeader.Signature = signature.Marshal()
 		secondBlockHeader.Signature = make([]byte, 96)
 
@@ -216,7 +223,8 @@ func TestService_processProposerSlashings(t *testing.T) {
 	t.Run("first_header_invalid_sig_second_valid", func(tt *testing.T) {
 		hook := logTest.NewGlobal()
 		// Use invalid signature for the first header, but valid for the second.
-		signature := privKey.Sign(signingRoot[:])
+		signature, err := privKey.Sign(signingRoot[:])
+		require.NoError(t, err)
 		firstBlockHeader.Signature = make([]byte, 96)
 		secondBlockHeader.Signature = signature.Marshal()
 
@@ -235,7 +243,8 @@ func TestService_processProposerSlashings(t *testing.T) {
 	t.Run("both_valid_header_signatures", func(tt *testing.T) {
 		hook := logTest.NewGlobal()
 		// Use valid signatures.
-		signature := privKey.Sign(signingRoot[:])
+		signature, err := privKey.Sign(signingRoot[:])
+		require.NoError(t, err)
 		firstBlockHeader.Signature = signature.Marshal()
 		secondBlockHeader.Signature = signature.Marshal()
 

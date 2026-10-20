@@ -20,9 +20,10 @@ go_library(
         "//config/params",
         "//contracts/deposit",
         "//crypto/ml_dsa_87",
+        "//crypto/randao",
         "//monitoring/progress",
         "//proto/qrysm/v1alpha1",
-        "@com_github_theqrl_go_qrllib//wallet/misc",
         "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrllib//wallet/misc",
     ],
 )

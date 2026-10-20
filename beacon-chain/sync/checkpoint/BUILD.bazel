@@ -9,6 +9,7 @@ go_library(
     importpath = "github.com/theQRL/qrysm/beacon-chain/sync/checkpoint",
     visibility = ["//visibility:public"],
     deps = [
+        "//api/client",
         "//api/client/beacon",
         "//beacon-chain/db",
         "//config/params",

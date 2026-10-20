@@ -3,6 +3,7 @@ package helpers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/theQRL/qrysm/beacon-chain/cache"
@@ -234,6 +235,43 @@ func TestBeaconProposerIndex_OK(t *testing.T) {
 	}
 }
 
+func TestBeaconProposerIndexAtSlot_RejectsLaterState(t *testing.T) {
+	ClearCache()
+	t.Cleanup(ClearCache)
+	cfg := params.BeaconConfig()
+	key := [32]byte{1}
+	roots := make([][]byte, cfg.SlotsPerHistoricalRoot)
+	roots[(2*cfg.SlotsPerEpoch-1)%cfg.SlotsPerHistoricalRoot] = key[:]
+	st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+		Slot: 3 * cfg.SlotsPerEpoch,
+		Validators: []*qrysmpb.Validator{{
+			ExitEpoch:        cfg.FarFutureEpoch,
+			EffectiveBalance: cfg.MaxEffectiveBalance,
+		}},
+		StateRoots:  roots,
+		RandaoMixes: make([][]byte, cfg.EpochsPerHistoricalVector),
+	})
+	require.NoError(t, err)
+	for _, warm := range []bool{false, true} {
+		t.Run(fmt.Sprintf("warm=%t", warm), func(t *testing.T) {
+			ClearCache()
+			if warm {
+				require.NoError(t, proposerIndicesCache.AddProposerIndices(&cache.ProposerIndices{
+					BlockRoot:       key,
+					ProposerIndices: make([]primitives.ValidatorIndex, cfg.SlotsPerEpoch),
+				}))
+			}
+			// Include genesis and epoch 1, which do not use the proposer cache.
+			for epoch := primitives.Epoch(0); epoch < 3; epoch++ {
+				t.Run(fmt.Sprintf("epoch=%d", epoch), func(t *testing.T) {
+					_, err := BeaconProposerIndexAtSlot(context.Background(), st, primitives.Slot(epoch)*cfg.SlotsPerEpoch)
+					require.ErrorContains(t, "using state from later epoch 3", err)
+				})
+			}
+		})
+	}
+}
+
 func TestBeaconProposerIndex_BadState(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	ClearCache()
@@ -339,37 +377,61 @@ func TestActiveValidatorCount_Genesis(t *testing.T) {
 	assert.Equal(t, uint64(c), validatorCount, "Did not get the correct validator count")
 }
 
+func TestActiveValidatorIndices_GenesisIgnoresCache(t *testing.T) {
+	ctx := context.Background()
+	for _, populated := range []bool{false, true} {
+		name := "empty cache"
+		if populated {
+			name = "populated cache"
+		}
+		t.Run(name, func(t *testing.T) {
+			ClearCache()
+			t.Cleanup(ClearCache)
+			st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+				Validators: []*qrysmpb.Validator{
+					{ExitEpoch: params.BeaconConfig().FarFutureEpoch},
+					{ExitEpoch: 1},
+					{ActivationEpoch: 2, ExitEpoch: params.BeaconConfig().FarFutureEpoch},
+					{ExitEpoch: params.BeaconConfig().FarFutureEpoch},
+				},
+			})
+			require.NoError(t, err)
+			seed, err := Seed(st, 1, params.BeaconConfig().DomainBeaconAttester)
+			require.NoError(t, err)
+			var cached []primitives.ValidatorIndex
+			if populated {
+				cached = []primitives.ValidatorIndex{0, 1, 2, 3, 4}
+				require.NoError(t, committeeCache.AddCommitteeShuffledList(ctx, &cache.Committees{
+					Seed: seed, SortedIndices: cached, ShuffledIndices: cached,
+				}))
+			}
+			indices, err := ActiveValidatorIndices(ctx, st, 1)
+			require.NoError(t, err)
+			require.DeepEqual(t, []primitives.ValidatorIndex{0, 3}, indices)
+			after, err := committeeCache.ActiveIndices(ctx, cache.NewCommitteeKey(seed, cached))
+			require.NoError(t, err)
+			require.DeepEqual(t, cached, after, "genesis must leave the shared cache unchanged")
+		})
+	}
+}
+
 func TestChurnLimit_OK(t *testing.T) {
 	tests := []struct {
-		validatorCount int
-		wantedChurn    uint64
+		validatorCount   int
+		wantedActivation uint64
+		wantedExit       uint64
 	}{
-		{validatorCount: 1000, wantedChurn: 10},
-		{validatorCount: 100000, wantedChurn: 10},
-		{validatorCount: 1000000, wantedChurn: 15 /* validatorCount/churnLimitQuotient */},
-		{validatorCount: 2000000, wantedChurn: 30 /* validatorCount/churnLimitQuotient */},
+		{validatorCount: 1000, wantedActivation: 2, wantedExit: 2},
+		{validatorCount: 100000, wantedActivation: 2, wantedExit: 2},
+		{validatorCount: 1000000, wantedActivation: 8, wantedExit: 15 /* validatorCount/churnLimitQuotient */},
+		{validatorCount: 2000000, wantedActivation: 8, wantedExit: 30 /* validatorCount/churnLimitQuotient */},
 	}
-	defer ClearCache()
 	for _, test := range tests {
-		ClearCache()
+		activationChurn := ValidatorActivationChurnLimit(uint64(test.validatorCount))
+		assert.Equal(t, test.wantedActivation, activationChurn, "ValidatorActivationChurnLimit(%d)", test.validatorCount)
 
-		validators := make([]*qrysmpb.Validator, test.validatorCount)
-		for i := range validators {
-			validators[i] = &qrysmpb.Validator{
-				ExitEpoch: params.BeaconConfig().FarFutureEpoch,
-			}
-		}
-
-		beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
-			Slot:        1,
-			Validators:  validators,
-			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
-		})
-		require.NoError(t, err)
-		validatorCount, err := ActiveValidatorCount(context.Background(), beaconState, time.CurrentEpoch(beaconState))
-		require.NoError(t, err)
-		resultChurn := ValidatorActivationChurnLimit(validatorCount)
-		assert.Equal(t, test.wantedChurn, resultChurn, "ValidatorActivationChurnLimit(%d)", test.validatorCount)
+		exitChurn := ValidatorExitChurnLimit(uint64(test.validatorCount))
+		assert.Equal(t, test.wantedExit, exitChurn, "ValidatorExitChurnLimit(%d)", test.validatorCount)
 	}
 }
 
@@ -519,12 +581,24 @@ func TestActiveValidatorIndices(t *testing.T) {
 			},
 			want: []primitives.ValidatorIndex{0, 2, 3},
 		},
+		{
+			name: "impossible_zero_validators", // Regression test for prysmaticlabs/prysm#13051
+			args: args{
+				state: &qrysmpb.BeaconStateZond{
+					RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
+					Validators:  make([]*qrysmpb.Validator, 0),
+				},
+				epoch: 10,
+			},
+			wantedErr: "no active validator indices",
+		},
 	}
 	defer ClearCache()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s, err := state_native.InitializeFromProtoZond(tt.args.state)
 			require.NoError(t, err)
+			require.NoError(t, s.SetValidators(tt.args.state.Validators))
 			got, err := ActiveValidatorIndices(context.Background(), s, tt.args.epoch)
 			if tt.wantedErr != "" {
 				assert.ErrorContains(t, tt.wantedErr, err)
@@ -736,10 +810,10 @@ func TestLastActivatedValidatorIndex_OK(t *testing.T) {
 	balances := make([]uint64, len(validators))
 	for i := range 4 {
 		validators[i] = &qrysmpb.Validator{
-			PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-			WithdrawalCredentials: make([]byte, 32),
-			EffectiveBalance:      32 * 1e9,
-			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
+			PublicKey:           make([]byte, field_params.MLDSA87PubkeyLength),
+			WithdrawalRecipient: make([]byte, 64),
+			EffectiveBalance:    32 * 1e9,
+			ExitEpoch:           params.BeaconConfig().FarFutureEpoch,
 		}
 		balances[i] = validators[i].EffectiveBalance
 	}

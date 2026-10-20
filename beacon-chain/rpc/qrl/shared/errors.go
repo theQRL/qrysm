@@ -1,15 +1,21 @@
 package shared
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/theQRL/qrysm/beacon-chain/rpc/lookup"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	http2 "github.com/theQRL/qrysm/network/http"
 )
+
+// errNilValue is returned when an HTTP request payload contains a nil value
+// where a non-nil object was expected.
+var errNilValue = errors.New("nil value")
 
 // DecodeError represents an error resulting from trying to decode an HTTP request.
 // It tracks the full field name for which decoding failed.
@@ -53,11 +59,22 @@ type IndexedVerificationFailure struct {
 // WriteStateFetchError writes an appropriate error based on the supplied argument.
 // The argument error should be a result of fetching state.
 func WriteStateFetchError(w http.ResponseWriter, err error) {
-	if stateNotFoundErr, ok := err.(*lookup.StateNotFoundError); ok {
-		http2.HandleError(w, "Could not get state: "+stateNotFoundErr.Error(), http.StatusNotFound)
+	if errors.Is(err, stategen.ErrNoDataForSlot) {
+		http2.HandleError(w, "Could not get state: lacking historical data needed to fulfill request", http.StatusNotFound)
+		return
 	}
-	if parseErr, ok := err.(*lookup.StateIdParseError); ok {
+	// Use errors.As so a typed error wrapped in lookup.FetchStateError (e.g.
+	// the wrapping that the optimistic-status check applies before calling
+	// HandleIsOptimisticError) is still recognized.
+	var stateNotFoundErr *lookup.StateNotFoundError
+	if errors.As(err, &stateNotFoundErr) {
+		http2.HandleError(w, "Could not get state: "+stateNotFoundErr.Error(), http.StatusNotFound)
+		return
+	}
+	var parseErr *lookup.StateIdParseError
+	if errors.As(err, &parseErr) {
 		http2.HandleError(w, "Invalid state ID: "+parseErr.Error(), http.StatusBadRequest)
+		return
 	}
 	http2.HandleError(w, "Could not get state: "+err.Error(), http.StatusInternalServerError)
 }
@@ -70,11 +87,11 @@ func WriteBlockFetchError(w http.ResponseWriter, blk interfaces.ReadOnlySignedBe
 		return false
 	}
 	if err != nil {
-		http2.HandleError(w, "Could not get block from block ID: %s"+err.Error(), http.StatusInternalServerError)
+		http2.HandleError(w, "Could not get block from block ID: "+err.Error(), http.StatusInternalServerError)
 		return false
 	}
 	if err = blocks.BeaconBlockIsNil(blk); err != nil {
-		http2.HandleError(w, "Could not find requested block: %s"+err.Error(), http.StatusNotFound)
+		http2.HandleError(w, "Could not find requested block: "+err.Error(), http.StatusNotFound)
 		return false
 	}
 	return true

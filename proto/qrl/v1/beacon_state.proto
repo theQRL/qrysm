@@ -35,7 +35,7 @@ option php_namespace = "TheQRL\\QRL\\v1";
 message PendingAttestation {
   // Bitfield representation of validator indices that have voted exactly
   // the same vote and have been aggregated into this attestation.
-  bytes aggregation_bits = 1 [(theqrl.qrl.ext.ssz_max) = "128", (theqrl.qrl.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
+  bytes aggregation_bits = 1 [(theqrl.qrl.ext.ssz_max) = "32", (theqrl.qrl.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
   AttestationData data = 2;
   // The difference of when attestation gets created and get included on chain.
   uint64 inclusion_delay = 3 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];

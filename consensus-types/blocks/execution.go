@@ -407,6 +407,48 @@ func IsEmptyExecutionData(data interfaces.ExecutionData) (bool, error) {
 		}
 	}
 
+	// The header analogue of the transactions check: a non-zero transactions
+	// root means the header is not empty. (Payload transactions are covered by
+	// the Transactions() check above.)
+	transactionsRoot, err := data.TransactionsRoot()
+	switch {
+	case errors.Is(err, consensus_types.ErrUnsupportedField):
+	case err != nil:
+		return false, err
+	default:
+		if !bytes.Equal(transactionsRoot, make([]byte, fieldparams.RootLength)) {
+			return false, nil
+		}
+	}
+
+	// Withdrawals are part of the execution payload, so a payload carrying any
+	// withdrawal is not empty. Without this check an otherwise all-zero payload
+	// with a withdrawal would be misclassified as empty, which would make
+	// IsExecutionEnabled report execution as disabled and skip both the engine
+	// NewPayload call and ProcessWithdrawals, accepting an invalid block.
+	withdrawals, err := data.Withdrawals()
+	switch {
+	case errors.Is(err, consensus_types.ErrUnsupportedField):
+	case err != nil:
+		return false, err
+	default:
+		if len(withdrawals) != 0 {
+			return false, nil
+		}
+	}
+
+	// The header analogue: a non-zero withdrawals root means the header is not empty.
+	withdrawalsRoot, err := data.WithdrawalsRoot()
+	switch {
+	case errors.Is(err, consensus_types.ErrUnsupportedField):
+	case err != nil:
+		return false, err
+	default:
+		if !bytes.Equal(withdrawalsRoot, make([]byte, fieldparams.RootLength)) {
+			return false, nil
+		}
+	}
+
 	if len(data.ExtraData()) != 0 {
 		return false, nil
 	}

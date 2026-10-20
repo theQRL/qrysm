@@ -2,7 +2,6 @@ package beacon_api
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -61,7 +60,9 @@ func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *emptypb.Empty) 
 		return nil, errors.New("deposit contract data is nil")
 	}
 
-	depositContactAddress, err := hexutil.Decode(depositContractJson.Data.Address)
+	// The deposit contract address is a Q-prefixed execution address, matching the
+	// raw config value the server returns from /qrl/v1/config/deposit_contract.
+	depositContactAddress, err := hexutil.DecodeQ(depositContractJson.Data.Address)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode deposit contract address `%s`", depositContractJson.Data.Address)
 	}
@@ -100,10 +101,7 @@ func (c *beaconApiNodeClient) ListPeers(ctx context.Context, in *emptypb.Empty) 
 }
 
 func NewNodeClientWithFallback(host string, timeout time.Duration, fallbackClient iface.NodeClient) iface.NodeClient {
-	jsonRestHandler := beaconApiJsonRestHandler{
-		httpClient: http.Client{Timeout: timeout},
-		host:       host,
-	}
+	jsonRestHandler := newBeaconAPIJSONRestHandler(host, timeout)
 
 	return &beaconApiNodeClient{
 		jsonRestHandler: jsonRestHandler,

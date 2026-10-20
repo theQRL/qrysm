@@ -1,14 +1,12 @@
 package helpers
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/hash"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
@@ -49,24 +47,11 @@ func ValidateSlotTargetEpoch(data *qrysmpb.AttestationData) error {
 	return nil
 }
 
-// IsAggregator returns true if the signature is from the input validator. The committee
-// count is provided as an argument rather than imported implementation from spec. Having
-// committee count as an argument allows cheaper computation at run time.
-//
-// Spec pseudocode definition:
-//
-//	def is_aggregator(state: BeaconState, slot: Slot, index: CommitteeIndex, slot_signature: BLSSignature) -> bool:
-//	 committee = get_beacon_committee(state, slot, index)
-//	 modulo = max(1, len(committee) // TARGET_AGGREGATORS_PER_COMMITTEE)
-//	 return bytes_to_uint64(hash(slot_signature)[0:8]) % modulo == 0
-func IsAggregator(committeeCount uint64, slotSig []byte) (bool, error) {
-	modulo := uint64(1)
-	if committeeCount/params.BeaconConfig().TargetAggregatorsPerCommittee > 1 {
-		modulo = committeeCount / params.BeaconConfig().TargetAggregatorsPerCommittee
-	}
-
-	b := hash.Hash(slotSig)
-	return binary.LittleEndian.Uint64(b[:8])%modulo == 0, nil
+// IsAggregator determines attestation aggregator eligibility from the shared
+// epoch seed and assigned duty. Committee membership is checked by the caller.
+func IsAggregator(committeeCount uint64, seed []byte, slot primitives.Slot, committeeIndex primitives.CommitteeIndex, validatorIndex primitives.ValidatorIndex) (bool, error) {
+	cfg := params.BeaconConfig()
+	return IsAggregatorSelected(seed, cfg.DomainSelectionProof, slot, uint64(committeeIndex), validatorIndex, committeeCount, cfg.TargetAggregatorsPerCommittee)
 }
 
 // IsAggregated returns true if the attestation is an aggregated attestation,

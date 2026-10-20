@@ -71,3 +71,42 @@ func TestCheckpointStateCache_MaxSize(t *testing.T) {
 
 	assert.Equal(t, maxCheckpointStateSize, len(c.cache.Keys()))
 }
+
+func TestCheckpointStateCache_EvictUpTo(t *testing.T) {
+	c := NewCheckpointStateCache()
+
+	cp1 := &qrysmpb.Checkpoint{Epoch: 1, Root: bytesutil.PadTo([]byte{'A'}, 32)}
+	st1, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{})
+	require.NoError(t, err)
+	require.NoError(t, st1.SetSlot(params.BeaconConfig().SlotsPerEpoch))
+	require.NoError(t, c.AddCheckpointState(cp1, st1))
+
+	cp2 := &qrysmpb.Checkpoint{Epoch: 2, Root: bytesutil.PadTo([]byte{'B'}, 32)}
+	st2, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{})
+	require.NoError(t, err)
+	require.NoError(t, st2.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(2)))
+	require.NoError(t, c.AddCheckpointState(cp2, st2))
+
+	cp5 := &qrysmpb.Checkpoint{Epoch: 5, Root: bytesutil.PadTo([]byte{'C'}, 32)}
+	st5, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{})
+	require.NoError(t, err)
+	require.NoError(t, st5.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(5)))
+	require.NoError(t, c.AddCheckpointState(cp5, st5))
+
+	evicted := c.EvictUpTo(3)
+	assert.Equal(t, 2, evicted)
+	assert.Equal(t, 1, len(c.cache.Keys()))
+
+	got, err := c.StateByCheckpoint(cp1)
+	require.NoError(t, err)
+	assert.Equal(t, state.BeaconState(nil), got)
+
+	got, err = c.StateByCheckpoint(cp2)
+	require.NoError(t, err)
+	assert.Equal(t, state.BeaconState(nil), got)
+
+	got, err = c.StateByCheckpoint(cp5)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, st5.Slot(), got.Slot())
+}

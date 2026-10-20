@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	qrl "github.com/theQRL/go-qrl"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
 	gqrltypes "github.com/theQRL/go-qrl/core/types"
@@ -16,6 +17,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	contracts "github.com/theQRL/qrysm/contracts/deposit"
 	"github.com/theQRL/qrysm/contracts/deposit/mock"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -54,6 +56,8 @@ func TestLatestMainchainInfo_OK(t *testing.T) {
 	require.NoError(t, err)
 	testAcc.Backend.Commit()
 
+	tickerChan := make(chan time.Time)
+	web3Service.executionHeadTicker = &time.Ticker{C: tickerChan}
 	exitRoutine := make(chan bool)
 
 	go func() {
@@ -64,8 +68,6 @@ func TestLatestMainchainInfo_OK(t *testing.T) {
 	header, err := web3Service.HeaderByNumber(web3Service.ctx, nil)
 	require.NoError(t, err)
 
-	tickerChan := make(chan time.Time)
-	web3Service.executionHeadTicker = &time.Ticker{C: tickerChan}
 	tickerChan <- time.Now()
 	web3Service.cancel()
 	exitRoutine <- true
@@ -354,4 +356,30 @@ func TestService_BlockTimeByHeight_ReturnsError_WhenNoExecutionClient(t *testing
 
 	_, err = web3Service.BlockTimeByHeight(ctx, big.NewInt(0))
 	require.ErrorContains(t, "nil rpc client", err)
+}
+
+func TestService_BlockByTimestamp_GenesisBoundary(t *testing.T) {
+	for _, target := range []uint64{99, 100, 105, 110} {
+		t.Run(big.NewInt(int64(target)).String(), func(t *testing.T) {
+			s := &Service{
+				rpcClient: RPCClientEmpty{}, headerCache: newHeaderCache(),
+				latestExecutionData: &qrysmpb.LatestExecutionData{BlockHeight: 1, BlockTime: 110},
+			}
+			for height := int64(0); height <= 1; height++ {
+				require.NoError(t, s.headerCache.AddHeader(&types.HeaderInfo{
+					Number: big.NewInt(height), Hash: common.Hash{byte(height)}, Time: uint64(100 + 10*height),
+				}))
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			got, err := s.BlockByTimestamp(ctx, target)
+			if target < 100 {
+				require.ErrorIs(t, err, qrl.NotFound)
+				require.Equal(t, (*types.HeaderInfo)(nil), got)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, (target-100)/10, got.Number.Uint64())
+		})
+	}
 }

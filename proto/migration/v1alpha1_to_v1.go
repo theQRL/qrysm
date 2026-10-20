@@ -274,13 +274,14 @@ func V1Alpha1ValidatorToV1(v1Alpha1Validator *qrysmpb.Validator) *qrlpb.Validato
 	}
 	return &qrlpb.Validator{
 		Pubkey:                     v1Alpha1Validator.PublicKey,
-		WithdrawalCredentials:      v1Alpha1Validator.WithdrawalCredentials,
+		WithdrawalRecipient:        v1Alpha1Validator.WithdrawalRecipient,
 		EffectiveBalance:           v1Alpha1Validator.EffectiveBalance,
 		Slashed:                    v1Alpha1Validator.Slashed,
 		ActivationEligibilityEpoch: v1Alpha1Validator.ActivationEligibilityEpoch,
 		ActivationEpoch:            v1Alpha1Validator.ActivationEpoch,
 		ExitEpoch:                  v1Alpha1Validator.ExitEpoch,
 		WithdrawableEpoch:          v1Alpha1Validator.WithdrawableEpoch,
+		RandaoCommitment:           v1Alpha1Validator.RandaoCommitment,
 	}
 }
 
@@ -291,13 +292,14 @@ func V1ValidatorToV1Alpha1(v1Validator *qrlpb.Validator) *qrysmpb.Validator {
 	}
 	return &qrysmpb.Validator{
 		PublicKey:                  v1Validator.Pubkey,
-		WithdrawalCredentials:      v1Validator.WithdrawalCredentials,
+		WithdrawalRecipient:        v1Validator.WithdrawalRecipient,
 		EffectiveBalance:           v1Validator.EffectiveBalance,
 		Slashed:                    v1Validator.Slashed,
 		ActivationEligibilityEpoch: v1Validator.ActivationEligibilityEpoch,
 		ActivationEpoch:            v1Validator.ActivationEpoch,
 		ExitEpoch:                  v1Validator.ExitEpoch,
 		WithdrawableEpoch:          v1Validator.WithdrawableEpoch,
+		RandaoCommitment:           v1Validator.RandaoCommitment,
 	}
 }
 
@@ -312,6 +314,11 @@ func V1Alpha1BeaconBlockZondToV1(v1alpha1Block *qrysmpb.BeaconBlockZond) (*qrlpb
 	if err := proto.Unmarshal(marshaledBlk, v1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
+	// Proposer slashing headers have different protobuf field numbers in v1.
+	// Map them explicitly and preserve the independent storage of the conversion.
+	for i, slashing := range v1alpha1Block.GetBody().GetProposerSlashings() {
+		v1Block.Body.ProposerSlashings[i] = proto.Clone(V1Alpha1ProposerSlashingToV1(slashing)).(*qrlpb.ProposerSlashing)
+	}
 	return v1Block, nil
 }
 
@@ -324,6 +331,10 @@ func V1Alpha1BeaconBlockBlindedZondToV1Blinded(v1alpha1Block *qrysmpb.BlindedBea
 	v1Block := &qrlpb.BlindedBeaconBlockZond{}
 	if err := proto.Unmarshal(marshaledBlk, v1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
+	}
+	// Proposer slashing headers have different protobuf field numbers in v1.
+	for i, slashing := range v1alpha1Block.GetBody().GetProposerSlashings() {
+		v1Block.Body.ProposerSlashings[i] = proto.Clone(V1Alpha1ProposerSlashingToV1(slashing)).(*qrlpb.ProposerSlashing)
 	}
 	return v1Block, nil
 }
@@ -445,10 +456,11 @@ func V1Alpha1BeaconBlockZondToV1Blinded(v1alpha1Block *qrysmpb.BeaconBlockZond) 
 		resultDeposits[i] = &qrlpb.Deposit{
 			Proof: bytesutil.SafeCopy2dBytes(d.Proof),
 			Data: &qrlpb.Deposit_Data{
-				Pubkey:                bytesutil.SafeCopyBytes(d.Data.PublicKey),
-				WithdrawalCredentials: bytesutil.SafeCopyBytes(d.Data.WithdrawalCredentials),
-				Amount:                d.Data.Amount,
-				Signature:             bytesutil.SafeCopyBytes(d.Data.Signature),
+				Pubkey:              bytesutil.SafeCopyBytes(d.Data.PublicKey),
+				WithdrawalRecipient: bytesutil.SafeCopyBytes(d.Data.WithdrawalRecipient),
+				Amount:              d.Data.Amount,
+				RandaoCommitment:    bytesutil.SafeCopyBytes(d.Data.RandaoCommitment),
+				Signature:           bytesutil.SafeCopyBytes(d.Data.Signature),
 			},
 		}
 	}
@@ -549,13 +561,14 @@ func BeaconStateZondToProto(st state.BeaconState) (*qrlpb.BeaconStateZond, error
 	for i, validator := range sourceValidators {
 		resultValidators[i] = &qrlpb.Validator{
 			Pubkey:                     bytesutil.SafeCopyBytes(validator.PublicKey),
-			WithdrawalCredentials:      bytesutil.SafeCopyBytes(validator.WithdrawalCredentials),
+			WithdrawalRecipient:        bytesutil.SafeCopyBytes(validator.WithdrawalRecipient),
 			EffectiveBalance:           validator.EffectiveBalance,
 			Slashed:                    validator.Slashed,
 			ActivationEligibilityEpoch: validator.ActivationEligibilityEpoch,
 			ActivationEpoch:            validator.ActivationEpoch,
 			ExitEpoch:                  validator.ExitEpoch,
 			WithdrawableEpoch:          validator.WithdrawableEpoch,
+			RandaoCommitment:           bytesutil.SafeCopyBytes(validator.RandaoCommitment),
 		}
 	}
 

@@ -43,12 +43,15 @@ type ForkchoiceFetcher interface {
 	GetProposerHead() [32]byte
 	SetForkChoiceGenesisTime(uint64)
 	UpdateHead(context.Context, primitives.Slot)
+	InvalidateForkchoiceUpdate()
 	HighestReceivedBlockSlot() primitives.Slot
 	ReceivedBlocksLastEpoch() (uint64, error)
 	InsertNode(context.Context, state.BeaconState, consensus_blocks.ROBlock) error
 	ForkChoiceDump(context.Context) (*qrlpb.ForkChoiceDump, error)
 	NewSlot(context.Context, primitives.Slot) error
 	ProposerBoost() [32]byte
+	ShouldIgnoreData(parentRoot [32]byte, dataSlot primitives.Slot) bool
+	RecentBlockSlot(root [32]byte) (primitives.Slot, error)
 }
 
 // TimeFetcher retrieves the QRL consensus data that's related to time.
@@ -69,6 +72,7 @@ type HeadFetcher interface {
 	HeadRoot(ctx context.Context) ([]byte, error)
 	HeadBlock(ctx context.Context) (interfaces.ReadOnlySignedBeaconBlock, error)
 	HeadState(ctx context.Context) (state.BeaconState, error)
+	HeadStateAndRoot(ctx context.Context) (state.BeaconState, []byte, error)
 	HeadStateReadOnly(ctx context.Context) (state.ReadOnlyBeaconState, error)
 	HeadValidatorsIndices(ctx context.Context, epoch primitives.Epoch) ([]primitives.ValidatorIndex, error)
 	HeadGenesisValidatorsRoot() [32]byte
@@ -210,6 +214,30 @@ func (s *Service) HeadState(ctx context.Context) (state.BeaconState, error) {
 	return s.cfg.StateGen.StateByRoot(ctx, s.headRoot())
 }
 
+// HeadStateAndRoot copies the state and root from the same published head.
+// Reading them separately can combine different branches during a reorg.
+func (s *Service) HeadStateAndRoot(ctx context.Context) (state.BeaconState, []byte, error) {
+	s.headLock.RLock()
+	defer s.headLock.RUnlock()
+	if s.hasHeadState() {
+		return s.headState(ctx), bytesutil.SafeCopyBytes(s.head.root[:]), nil
+	}
+	// Resolve the persisted head once, then load the state for that exact root.
+	b, err := s.cfg.BeaconDB.HeadBlock(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := consensus_blocks.BeaconBlockIsNil(b); err != nil {
+		return nil, nil, err
+	}
+	root, err := b.Block().HashTreeRoot()
+	if err != nil {
+		return nil, nil, err
+	}
+	st, err := s.cfg.StateGen.StateByRoot(ctx, root)
+	return st, root[:], err
+}
+
 // HeadStateReadOnly returns the read only head state of the chain.
 // If the head is nil from service struct, it will attempt to get the
 // head state from DB. Any callers of this method MUST only use the
@@ -306,8 +334,37 @@ func (s *Service) IsCanonical(ctx context.Context, blockRoot [32]byte) (bool, er
 		return s.cfg.ForkChoiceStore.IsCanonical(blockRoot), nil
 	}
 
-	// If the block has been finalized, the block will always be part of the canonical chain.
-	return s.cfg.BeaconDB.IsFinalizedBlock(ctx, blockRoot), nil
+	return s.isFinalizedBlockInDB(ctx, blockRoot)
+}
+
+// isFinalizedBlockInDB distinguishes canonical history from the recent forks
+// that the database also includes in its finalized index. The caller holds the
+// forkchoice lock so persisted finality cannot advance between these reads.
+func (s *Service) isFinalizedBlockInDB(ctx context.Context, root [32]byte) (bool, error) {
+	if !s.cfg.BeaconDB.IsFinalizedBlock(ctx, root) {
+		return false, nil
+	}
+	finalized, err := s.cfg.BeaconDB.FinalizedCheckpoint(ctx)
+	if err != nil {
+		return false, err
+	}
+	finalizedRoot := bytesutil.ToBytes32(finalized.Root)
+	if finalizedRoot == params.BeaconConfig().ZeroHash {
+		finalizedRoot, err = s.cfg.BeaconDB.GenesisBlockRoot(ctx)
+		if err != nil {
+			return false, err
+		}
+	}
+	if root == finalizedRoot {
+		return true, nil
+	}
+	b, err := s.getBlock(ctx, root)
+	if err != nil {
+		return false, err
+	}
+	// Only older epochs are canonical-exact in the index. Use the persisted
+	// checkpoint: accepted forkchoice finality may be ahead after a write fails.
+	return slots.ToEpoch(b.Block().Slot()) < finalized.Epoch, nil
 }
 
 // HeadPublicKeyToValidatorIndex returns the validator index of the `pubkey` in current head state.
@@ -378,7 +435,8 @@ func (s *Service) IsFinalized(ctx context.Context, root [32]byte) bool {
 	if s.cfg.ForkChoiceStore.HasNode(root) {
 		return false
 	}
-	return s.cfg.BeaconDB.IsFinalizedBlock(ctx, root)
+	finalized, err := s.isFinalizedBlockInDB(ctx, root)
+	return err == nil && finalized
 }
 
 // InForkchoice returns true if the given root is found in forkchoice
@@ -455,7 +513,7 @@ func (s *Service) IsOptimisticForRoot(ctx context.Context, root [32]byte) (bool,
 		return false, err
 	}
 	if lastValidated == nil {
-		lastValidated, err = s.recoverStateSummary(ctx, root)
+		lastValidated, err = s.recoverStateSummary(ctx, s.ensureRootNotZeros(bytesutil.ToBytes32(validatedCheckpoint.Root)))
 		if err != nil {
 			return false, err
 		}
@@ -465,6 +523,18 @@ func (s *Service) IsOptimisticForRoot(ctx context.Context, root [32]byte) (bool,
 		return true, nil
 	}
 	return !isCanonical, nil
+}
+
+// TargetRootForEpoch returns forkchoice's canonical target root for the given
+// epoch on the chain containing root. It acquires the forkchoice read lock, so
+// callers must not already hold it. This wrapper exists so that external
+// callers (e.g. gossip attestation validation running on pubsub goroutines)
+// do not read forkchoice's internal maps without synchronization while
+// block processing mutates them under the write lock.
+func (s *Service) TargetRootForEpoch(root [32]byte, epoch primitives.Epoch) ([32]byte, error) {
+	s.cfg.ForkChoiceStore.RLock()
+	defer s.cfg.ForkChoiceStore.RUnlock()
+	return s.cfg.ForkChoiceStore.TargetRootForEpoch(root, epoch)
 }
 
 // Ancestor returns the block root of an ancestry block from the input block root.
@@ -502,34 +572,78 @@ func (s *Service) Ancestor(ctx context.Context, root []byte, slot primitives.Slo
 	return ar[:], nil
 }
 
-// SetOptimisticToInvalid wraps the corresponding method in forkchoice
-func (s *Service) SetOptimisticToInvalid(ctx context.Context, root, parent, lvh [32]byte) ([][32]byte, error) {
-	s.cfg.ForkChoiceStore.Lock()
-	defer s.cfg.ForkChoiceStore.Unlock()
-	return s.cfg.ForkChoiceStore.SetOptimisticToInvalid(ctx, root, parent, lvh)
-}
-
 // SetGenesisTime sets the genesis time of beacon chain.
 func (s *Service) SetGenesisTime(t time.Time) {
 	s.genesisTime = t
 }
 
 func (s *Service) recoverStateSummary(ctx context.Context, blockRoot [32]byte) (*qrysmpb.StateSummary, error) {
-	if s.cfg.BeaconDB.HasBlock(ctx, blockRoot) {
-		b, err := s.cfg.BeaconDB.Block(ctx, blockRoot)
-		if err != nil {
-			return nil, err
-		}
-		summary := &qrysmpb.StateSummary{Slot: b.Block().Slot(), Root: blockRoot[:]}
-		if err := s.cfg.BeaconDB.SaveStateSummary(ctx, summary); err != nil {
-			return nil, err
-		}
-		return summary, nil
+	b, err := s.cfg.BeaconDB.Block(ctx, blockRoot)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errBlockDoesNotExist
+	// Cleanup can remove the block during an optimistic-status lookup. Check
+	// the read result itself; an earlier existence check cannot protect it.
+	if err := consensus_blocks.BeaconBlockIsNil(b); err != nil {
+		return nil, errBlockDoesNotExist
+	}
+	summary := &qrysmpb.StateSummary{Slot: b.Block().Slot(), Root: blockRoot[:]}
+	if err := s.cfg.BeaconDB.SaveStateSummary(ctx, summary); err != nil {
+		return nil, err
+	}
+	return summary, nil
 }
 
 // BlockBeingSynced returns whether the block with the given root is currently being synced
 func (s *Service) BlockBeingSynced(root [32]byte) bool {
 	return s.blockBeingSynced.isSyncing(root)
+}
+
+// RecentBlockSlot returns block slot form fork choice store
+func (s *Service) RecentBlockSlot(root [32]byte) (primitives.Slot, error) {
+	s.cfg.ForkChoiceStore.RLock()
+	defer s.cfg.ForkChoiceStore.RUnlock()
+	return s.cfg.ForkChoiceStore.Slot(root)
+}
+
+// ShouldIgnoreData returns true if a gossiped block (or other slot-anchored
+// data) should be ignored because its parent is canonical and predates the
+// current justified checkpoint. Such data can only ever be a reorg attempt
+// against long-justified history. To avoid wasting resources or amplifying
+// reorg-spam, we drop it instead of forwarding/processing it.
+//
+// Conditions for ignoring:
+//   - The data is for the current epoch (don't ignore stale data from older
+//     epochs; that is handled separately by the finalized-checkpoint guard).
+//   - The parent is in forkchoice.
+//   - A justified checkpoint exists.
+//   - The parent's epoch is strictly before the justified epoch.
+//   - The parent is not the justified checkpoint block itself.
+//   - The parent is on the canonical chain.
+func (s *Service) ShouldIgnoreData(parentRoot [32]byte, dataSlot primitives.Slot) bool {
+	currentEpoch := slots.ToEpoch(s.CurrentSlot())
+	if slots.ToEpoch(dataSlot) < currentEpoch {
+		return false
+	}
+	s.cfg.ForkChoiceStore.RLock()
+	defer s.cfg.ForkChoiceStore.RUnlock()
+	parentSlot, err := s.cfg.ForkChoiceStore.Slot(parentRoot)
+	if err != nil {
+		// The caller should already have checked that the parent is in
+		// forkchoice; if not, fall back to accepting the data.
+		return false
+	}
+	j := s.cfg.ForkChoiceStore.JustifiedCheckpoint()
+	if j == nil {
+		return false
+	}
+	// Skipped slots can place the justified block in an older epoch. A child
+	// of that block still preserves the justified checkpoint.
+	if parentRoot == s.ensureRootNotZeros(j.Root) {
+		return false
+	}
+	if slots.ToEpoch(parentSlot) >= j.Epoch {
+		return false
+	}
+	return s.cfg.ForkChoiceStore.IsCanonical(parentRoot)
 }

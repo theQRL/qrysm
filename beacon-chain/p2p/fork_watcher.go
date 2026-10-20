@@ -1,15 +1,14 @@
 package p2p
 
 import (
-	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
 // A background routine which listens for new and upcoming forks and
 // updates the node's discovery service to reflect any new fork version
 // changes.
-func (s *Service) forkWatcher() {
-	slotTicker := slots.NewSlotTicker(s.genesisTime, params.BeaconConfig().SecondsPerSlot)
+func (s *Service) forkWatcher(secondsPerSlot uint64) {
+	slotTicker := slots.NewSlotTicker(s.genesisTime, secondsPerSlot)
 	for {
 		select {
 		case currSlot := <-slotTicker.C():

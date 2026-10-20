@@ -68,6 +68,8 @@ func NewKVStore(ctx context.Context, dirPath string) (*Store, error) {
 		ctx:          ctx,
 	}
 
+	// An initialization failure must release the file lock, or the database
+	// cannot be reopened until the process exits.
 	if err := kv.db.Update(func(tx *bolt.Tx) error {
 		return createBuckets(
 			tx,
@@ -77,12 +79,25 @@ func NewKVStore(ctx context.Context, dirPath string) (*Store, error) {
 			attestationDataRootsBucket,
 			proposalRecordsBucket,
 			slasherChunksBucket,
+			slasherMigrationsBucket,
 		)
 	}); err != nil {
-		return nil, err
+		return nil, closeOnInitError(boltDB, err)
+	}
+	if err := migrateAttestationRecordKeys(ctx, kv.db); err != nil {
+		return nil, closeOnInitError(boltDB, errors.Wrap(err, "could not migrate attestation record keys"))
 	}
 
-	return kv, err
+	return kv, nil
+}
+
+// closeOnInitError closes a database whose initialization failed and returns
+// the initialization error, with the close error logged.
+func closeOnInitError(boltDB *bolt.DB, initErr error) error {
+	if closeErr := boltDB.Close(); closeErr != nil {
+		log.WithError(closeErr).Error("Could not close the database after a failed initialization")
+	}
+	return initErr
 }
 
 // ClearDB removes the previously stored database in the data directory.

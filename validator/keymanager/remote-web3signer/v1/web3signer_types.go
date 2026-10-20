@@ -232,7 +232,7 @@ type Deposit struct {
 // DepositData Qrysm uses Deposit_data instead of DepositData which is inconsistent naming
 type DepositData struct {
 	PublicKey             hexutil.Bytes `json:"pubkey"`
-	WithdrawalCredentials hexutil.Bytes `json:"withdrawal_credentials"`
+	WithdrawalRecipient hexutil.Bytes `json:"withdrawal_recipient"`
 	Amount                string        `json:"amount"` // uint64
 	Signature             hexutil.Bytes `json:"signature"`
 }

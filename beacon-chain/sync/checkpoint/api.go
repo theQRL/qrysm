@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/api/client"
 	"github.com/theQRL/qrysm/api/client/beacon"
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	"github.com/theQRL/qrysm/config/params"
@@ -19,7 +20,7 @@ type APIInitializer struct {
 // NewAPIInitializer creates an APIInitializer, handling the set up of a beacon node api client
 // using the provided host string.
 func NewAPIInitializer(beaconNodeHost string) (*APIInitializer, error) {
-	c, err := beacon.NewClient(beaconNodeHost)
+	c, err := beacon.NewClient(beaconNodeHost, client.WithMaxBodySize(beacon.MaxStateBodySize))
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse beacon node url or hostname - %s", beaconNodeHost)
 	}

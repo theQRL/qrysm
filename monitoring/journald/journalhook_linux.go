@@ -12,7 +12,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type JournalHook struct{}
+type JournalHook struct {
+	level logrus.Level
+}
 
 var (
 	severityMap = map[logrus.Level]journal.Priority{
@@ -63,14 +65,7 @@ func (hook *JournalHook) Fire(entry *logrus.Entry) error {
 	return journal.Send(entry.Message, severityMap[entry.Level], stringifyEntries(entry.Data))
 }
 
-// Levels returns a slice of `Levels` the hook is fired for.
+// Levels returns the levels the hook is fired for, capped at the requested verbosity.
 func (hook *JournalHook) Levels() []logrus.Level {
-	return []logrus.Level{
-		logrus.PanicLevel,
-		logrus.FatalLevel,
-		logrus.ErrorLevel,
-		logrus.WarnLevel,
-		logrus.InfoLevel,
-		logrus.DebugLevel,
-	}
+	return logrus.AllLevels[:hook.level+1]
 }

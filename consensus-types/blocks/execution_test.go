@@ -191,3 +191,87 @@ func createWrappedPayloadHeaderZond(t testing.TB) interfaces.ExecutionData {
 	require.NoError(t, err)
 	return payload
 }
+
+// TestIsEmptyExecutionData_WithWithdrawals is a regression test for the
+// invalid-block-acceptance bug where an otherwise all-zero execution payload
+// that carried a withdrawal was classified as empty. That misclassification made
+// IsExecutionEnabled report execution as disabled, so the transition skipped both
+// the engine NewPayload call and ProcessWithdrawals, accepting an invalid block.
+func TestIsEmptyExecutionData_WithWithdrawals(t *testing.T) {
+	zeroPayload := func() *enginev1.ExecutionPayloadZond {
+		return &enginev1.ExecutionPayloadZond{
+			ParentHash:    make([]byte, fieldparams.RootLength),
+			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
+			StateRoot:     make([]byte, fieldparams.RootLength),
+			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
+			LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
+			PrevRandao:    make([]byte, fieldparams.RootLength),
+			BaseFeePerGas: make([]byte, fieldparams.RootLength),
+			BlockHash:     make([]byte, fieldparams.RootLength),
+			Transactions:  make([][]byte, 0),
+			Withdrawals:   make([]*enginev1.Withdrawal, 0),
+		}
+	}
+
+	// An all-zero payload with no withdrawals is empty.
+	wrapped, err := blocks.WrappedExecutionPayloadZond(zeroPayload(), 0)
+	require.NoError(t, err)
+	isEmpty, err := blocks.IsEmptyExecutionData(wrapped)
+	require.NoError(t, err)
+	require.Equal(t, true, isEmpty)
+
+	// The same payload carrying a single withdrawal must NOT be empty.
+	withWithdrawal := zeroPayload()
+	withWithdrawal.Withdrawals = []*enginev1.Withdrawal{
+		{Index: 999, ValidatorIndex: 0, Address: make([]byte, fieldparams.FeeRecipientLength), Amount: 1},
+	}
+	wrapped, err = blocks.WrappedExecutionPayloadZond(withWithdrawal, 0)
+	require.NoError(t, err)
+	isEmpty, err = blocks.IsEmptyExecutionData(wrapped)
+	require.NoError(t, err)
+	require.Equal(t, false, isEmpty)
+}
+
+// TestIsEmptyExecutionData_HeaderWithdrawalsRoot is the header analogue: a header
+// whose only non-zero field is the withdrawals root must not be classified empty.
+func TestIsEmptyExecutionData_HeaderWithdrawalsRoot(t *testing.T) {
+	zeroHeader := func() *enginev1.ExecutionPayloadHeaderZond {
+		return &enginev1.ExecutionPayloadHeaderZond{
+			ParentHash:       make([]byte, fieldparams.RootLength),
+			FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
+			StateRoot:        make([]byte, fieldparams.RootLength),
+			ReceiptsRoot:     make([]byte, fieldparams.RootLength),
+			LogsBloom:        make([]byte, fieldparams.LogsBloomLength),
+			PrevRandao:       make([]byte, fieldparams.RootLength),
+			BaseFeePerGas:    make([]byte, fieldparams.RootLength),
+			BlockHash:        make([]byte, fieldparams.RootLength),
+			TransactionsRoot: make([]byte, fieldparams.RootLength),
+			WithdrawalsRoot:  make([]byte, fieldparams.RootLength),
+		}
+	}
+
+	wrapped, err := blocks.WrappedExecutionPayloadHeaderZond(zeroHeader(), 0)
+	require.NoError(t, err)
+	isEmpty, err := blocks.IsEmptyExecutionData(wrapped)
+	require.NoError(t, err)
+	require.Equal(t, true, isEmpty)
+
+	withRoot := zeroHeader()
+	withRoot.WithdrawalsRoot = make([]byte, fieldparams.RootLength)
+	withRoot.WithdrawalsRoot[0] = 0x01
+	wrapped, err = blocks.WrappedExecutionPayloadHeaderZond(withRoot, 0)
+	require.NoError(t, err)
+	isEmpty, err = blocks.IsEmptyExecutionData(wrapped)
+	require.NoError(t, err)
+	require.Equal(t, false, isEmpty)
+
+	// A header whose only non-zero field is the transactions root is also not empty.
+	withTxRoot := zeroHeader()
+	withTxRoot.TransactionsRoot = make([]byte, fieldparams.RootLength)
+	withTxRoot.TransactionsRoot[0] = 0x01
+	wrapped, err = blocks.WrappedExecutionPayloadHeaderZond(withTxRoot, 0)
+	require.NoError(t, err)
+	isEmpty, err = blocks.IsEmptyExecutionData(wrapped)
+	require.NoError(t, err)
+	require.Equal(t, false, isEmpty)
+}

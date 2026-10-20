@@ -42,7 +42,7 @@ var ValidatorCannotExitYetMsg = "validator has not been active long enough to ex
 //	 # Verify signature
 //	 domain = get_domain(state, DOMAIN_VOLUNTARY_EXIT, voluntary_exit.epoch)
 //	 signing_root = compute_signing_root(voluntary_exit, domain)
-//	 assert bls.Verify(validator.pubkey, signing_root, signed_voluntary_exit.signature)
+//	 assert ml_dsa_87.Verify(validator.pubkey, signing_root, signed_voluntary_exit.signature)
 //	 # Initiate exit
 //	 initiate_validator_exit(state, voluntary_exit.validator_index)
 func ProcessVoluntaryExits(
@@ -100,7 +100,7 @@ func ProcessVoluntaryExits(
 //	 # Verify signature
 //	 domain = get_domain(state, DOMAIN_VOLUNTARY_EXIT, voluntary_exit.epoch)
 //	 signing_root = compute_signing_root(voluntary_exit, domain)
-//	 assert bls.Verify(validator.pubkey, signing_root, signed_voluntary_exit.signature)
+//	 assert ml_dsa_87.Verify(validator.pubkey, signing_root, signed_voluntary_exit.signature)
 //	 # Initiate exit
 //	 initiate_validator_exit(state, voluntary_exit.validator_index)
 func VerifyExitAndSignature(
@@ -162,7 +162,7 @@ func VerifyExitAndSignature(
 //	 # Verify signature
 //	 domain = get_domain(state, DOMAIN_VOLUNTARY_EXIT, voluntary_exit.epoch)
 //	 signing_root = compute_signing_root(voluntary_exit, domain)
-//	 assert bls.Verify(validator.pubkey, signing_root, signed_voluntary_exit.signature)
+//	 assert ml_dsa_87.Verify(validator.pubkey, signing_root, signed_voluntary_exit.signature)
 //	 # Initiate exit
 //	 initiate_validator_exit(state, voluntary_exit.validator_index)
 func verifyExitConditions(validator state.ReadOnlyValidator, currentSlot primitives.Slot, exit *qrysmpb.VoluntaryExit) error {

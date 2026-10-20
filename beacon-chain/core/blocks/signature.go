@@ -2,7 +2,7 @@ package blocks
 
 import (
 	"context"
-	"encoding/binary"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
@@ -83,6 +83,9 @@ func VerifyBlockSignature(beaconState state.ReadOnlyBeaconState,
 
 // VerifyBlockHeaderSignature verifies the proposer signature of a beacon block header.
 func VerifyBlockHeaderSignature(beaconState state.BeaconState, header *qrysmpb.SignedBeaconBlockHeader) error {
+	if header == nil || header.Header == nil {
+		return errors.New("nil block header cannot be verified")
+	}
 	currentEpoch := slots.ToEpoch(beaconState.Slot())
 	domain, err := signing.Domain(beaconState.Fork(), currentEpoch, params.BeaconConfig().DomainBeaconProposer, beaconState.GenesisValidatorsRoot())
 	if err != nil {
@@ -96,10 +99,19 @@ func VerifyBlockHeaderSignature(beaconState state.BeaconState, header *qrysmpb.S
 	return signing.VerifyBlockHeaderSigningRoot(header.Header, proposerPubKey, header.Signature, domain)
 }
 
+// ErrInvalidSignature is returned when a block's proposer signature fails verification.
+// Callers can use errors.Is to distinguish this from transient errors (state lookup,
+// fork resolution, etc.) so that only true signature failures mark the block as bad.
+var ErrInvalidSignature = errors.New("invalid signature")
+
+// ErrInvalidProposerIndex is returned when a block's proposer index is not in
+// the validator registry of the state it is verified against.
+var ErrInvalidProposerIndex = errors.New("invalid proposer index")
+
 // VerifyBlockSignatureUsingCurrentFork verifies the proposer signature of a beacon block. This differs
 // from the above method by not using fork data from the state and instead retrieving it
 // via the respective epoch.
-func VerifyBlockSignatureUsingCurrentFork(beaconState state.ReadOnlyBeaconState, blk interfaces.ReadOnlySignedBeaconBlock) error {
+func VerifyBlockSignatureUsingCurrentFork(beaconState state.ReadOnlyBeaconState, blk interfaces.ReadOnlySignedBeaconBlock, blkRoot [32]byte) error {
 	currentEpoch := slots.ToEpoch(blk.Block().Slot())
 	fork, err := forks.Fork(currentEpoch)
 	if err != nil {
@@ -109,13 +121,25 @@ func VerifyBlockSignatureUsingCurrentFork(beaconState state.ReadOnlyBeaconState,
 	if err != nil {
 		return err
 	}
-	proposer, err := beaconState.ValidatorAtIndex(blk.Block().ProposerIndex())
+	// A proposer index outside the validator registry can never be valid.
+	// Report it distinctly so gossip validation can reject (and downscore)
+	// instead of ignoring the block as a transient failure.
+	proposerIndex := blk.Block().ProposerIndex()
+	if numVals := beaconState.NumValidators(); uint64(proposerIndex) >= uint64(numVals) {
+		return errors.Wrapf(ErrInvalidProposerIndex, "proposer index %d out of range for %d validators", proposerIndex, numVals)
+	}
+	proposer, err := beaconState.ValidatorAtIndex(proposerIndex)
 	if err != nil {
 		return err
 	}
 	proposerPubKey := proposer.PublicKey
 	sig := blk.Signature()
-	return signing.VerifyBlockSigningRoot(proposerPubKey, sig[:], domain, blk.Block().HashTreeRoot)
+	if err := signing.VerifyBlockSigningRoot(proposerPubKey, sig[:], domain, func() ([32]byte, error) {
+		return blkRoot, nil
+	}); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidSignature, err)
+	}
+	return nil
 }
 
 // BlockSignatureBatch retrieves the block signature batch from the provided block and its corresponding state.
@@ -134,43 +158,6 @@ func BlockSignatureBatch(beaconState state.ReadOnlyBeaconState,
 	}
 	proposerPubKey := proposer.PublicKey
 	return signing.BlockSignatureBatch(proposerPubKey, sig, domain, rootFunc)
-}
-
-// RandaoSignatureBatch retrieves the relevant randao specific signature batch object
-// from a block and its corresponding state.
-func RandaoSignatureBatch(
-	ctx context.Context,
-	beaconState state.ReadOnlyBeaconState,
-	reveal []byte,
-) (*ml_dsa_87.SignatureBatch, error) {
-	buf, proposerPub, domain, err := randaoSigningData(ctx, beaconState)
-	if err != nil {
-		return nil, err
-	}
-	set, err := signatureBatch(buf, proposerPub, reveal, domain, signing.RandaoSignature)
-	if err != nil {
-		return nil, err
-	}
-	return set, nil
-}
-
-// retrieves the randao related signing data from the state.
-func randaoSigningData(ctx context.Context, beaconState state.ReadOnlyBeaconState) ([]byte, []byte, []byte, error) {
-	proposerIdx, err := helpers.BeaconProposerIndex(ctx, beaconState)
-	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "could not get beacon proposer index")
-	}
-	proposerPub := beaconState.PubkeyAtIndex(proposerIdx)
-
-	currentEpoch := slots.ToEpoch(beaconState.Slot())
-	buf := make([]byte, 32)
-	binary.LittleEndian.PutUint64(buf, uint64(currentEpoch))
-
-	domain, err := signing.Domain(beaconState.Fork(), currentEpoch, params.BeaconConfig().DomainRandao, beaconState.GenesisValidatorsRoot())
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return buf, proposerPub[:], domain, nil
 }
 
 // Method to break down attestations of the same domain and collect them into a single signature batch.

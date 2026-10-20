@@ -75,7 +75,7 @@ func main() {
 		case "json":
 			logrus.SetFormatter(&logrus.JSONFormatter{})
 		case "journald":
-			if err := journald.Enable(); err != nil {
+			if err := journald.Enable(level); err != nil {
 				return err
 			}
 		default:
@@ -135,7 +135,7 @@ func run(ctx *cli.Context) error {
 				}
 				err = upd.Update(r)
 				if err != nil {
-					log.WithError(err).Error("client-stats collector error")
+					log.WithError(err).Error("Client stats collector error")
 					continue
 				}
 			}

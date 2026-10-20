@@ -78,15 +78,24 @@ func IsExecutionEnabledUsingHeader(header interfaces.ExecutionData, body interfa
 }
 
 // ValidatePayload validates if payload is valid versus input beacon state.
-// These validation steps apply to both pre merge and post merge.
 //
 // Spec code:
 //
+//	# Verify consistency of the parent hash with respect to the previous execution payload header
+//	assert payload.parent_hash == state.latest_execution_payload_header.block_hash
 //	# Verify random
 //	assert payload.random == get_randao_mix(state, get_current_epoch(state))
 //	# Verify timestamp
 //	assert payload.timestamp == compute_timestamp_at_slot(state, state.slot)
 func ValidatePayload(st state.BeaconState, payload interfaces.ExecutionData) error {
+	header, err := st.LatestExecutionPayloadHeader()
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(payload.ParentHash(), header.BlockHash()) {
+		return ErrInvalidPayloadBlockHash
+	}
+
 	random, err := helpers.RandaoMix(st, time.CurrentEpoch(st))
 	if err != nil {
 		return err
@@ -106,15 +115,12 @@ func ValidatePayload(st state.BeaconState, payload interfaces.ExecutionData) err
 }
 
 // ProcessPayload processes input execution payload using beacon state.
-// ValidatePayloadWhenMergeCompletes validates if payload is valid versus input beacon state.
-// These validation steps ONLY apply to post merge.
 //
 // Spec code:
 // def process_execution_payload(state: BeaconState, payload: ExecutionPayload, execution_engine: ExecutionEngine) -> None:
 //
 //	# Verify consistency of the parent hash with respect to the previous execution payload header
-//	if is_merge_complete(state):
-//	    assert payload.parent_hash == state.latest_execution_payload_header.block_hash
+//	assert payload.parent_hash == state.latest_execution_payload_header.block_hash
 //	# Verify random
 //	assert payload.random == get_randao_mix(state, get_current_epoch(state))
 //	# Verify timestamp
@@ -156,6 +162,14 @@ func ProcessPayload(st state.BeaconState, payload interfaces.ExecutionData) (sta
 
 // ValidatePayloadHeader validates the payload header.
 func ValidatePayloadHeader(st state.BeaconState, header interfaces.ExecutionData) error {
+	h, err := st.LatestExecutionPayloadHeader()
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(header.ParentHash(), h.BlockHash()) {
+		return ErrInvalidPayloadBlockHash
+	}
+
 	// Validate header's random mix matches with state in current epoch
 	random, err := helpers.RandaoMix(st, time.CurrentEpoch(st))
 	if err != nil {

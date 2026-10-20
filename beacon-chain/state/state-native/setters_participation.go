@@ -3,6 +3,7 @@ package state_native
 import (
 	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
 	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 // SetPreviousParticipationBits for the beacon state. Updates the entire
@@ -44,7 +45,7 @@ func (b *BeaconState) AppendCurrentParticipationBits(val byte) error {
 	participation := b.currentEpochParticipation
 	if b.sharedFieldReferences[types.CurrentEpochParticipationBits].Refs() > 1 {
 		// Copy elements in underlying array by reference.
-		participation = make([]byte, 0, len(b.currentEpochParticipation)+1)
+		participation = make([]byte, 0, len(b.currentEpochParticipation)+int(params.BeaconConfig().MaxDeposits))
 		participation = append(participation, b.currentEpochParticipation...)
 		b.sharedFieldReferences[types.CurrentEpochParticipationBits].MinusRef()
 		b.sharedFieldReferences[types.CurrentEpochParticipationBits] = stateutil.NewRef(1)
@@ -64,7 +65,7 @@ func (b *BeaconState) AppendPreviousParticipationBits(val byte) error {
 
 	bits := b.previousEpochParticipation
 	if b.sharedFieldReferences[types.PreviousEpochParticipationBits].Refs() > 1 {
-		bits = make([]byte, 0, len(b.previousEpochParticipation)+1)
+		bits = make([]byte, 0, len(b.previousEpochParticipation)+int(params.BeaconConfig().MaxDeposits))
 		bits = append(bits, b.previousEpochParticipation...)
 		b.sharedFieldReferences[types.PreviousEpochParticipationBits].MinusRef()
 		b.sharedFieldReferences[types.PreviousEpochParticipationBits] = stateutil.NewRef(1)
@@ -80,59 +81,31 @@ func (b *BeaconState) AppendPreviousParticipationBits(val byte) error {
 // ModifyPreviousParticipationBits modifies the previous participation bitfield via
 // the provided mutator function.
 func (b *BeaconState) ModifyPreviousParticipationBits(mutator func(val []byte) ([]byte, error)) error {
-	b.lock.Lock()
+	b.lock.RLock()
+	participation := b.previousEpochParticipationVal()
+	b.lock.RUnlock()
 
-	participation := b.previousEpochParticipation
-	if b.sharedFieldReferences[types.PreviousEpochParticipationBits].Refs() > 1 {
-		// Copy elements in underlying array by reference.
-		participation = make([]byte, 0, len(b.previousEpochParticipation)+1)
-		participation = append(participation, b.previousEpochParticipation...)
-		b.sharedFieldReferences[types.PreviousEpochParticipationBits].MinusRef()
-		b.sharedFieldReferences[types.PreviousEpochParticipationBits] = stateutil.NewRef(1)
-	}
-	// Lock is released so that mutator can
-	// acquire it.
-	b.lock.Unlock()
-
+	// Work on a private copy: the callback can fail or copy the state itself.
 	var err error
 	participation, err = mutator(participation)
 	if err != nil {
 		return err
 	}
-	b.lock.Lock()
-	defer b.lock.Unlock()
-	b.previousEpochParticipation = participation
-	b.markFieldAsDirty(types.PreviousEpochParticipationBits)
-	b.rebuildTrie[types.PreviousEpochParticipationBits] = true
-	return nil
+	return b.SetPreviousParticipationBits(participation)
 }
 
 // ModifyCurrentParticipationBits modifies the current participation bitfield via
 // the provided mutator function.
 func (b *BeaconState) ModifyCurrentParticipationBits(mutator func(val []byte) ([]byte, error)) error {
-	b.lock.Lock()
+	b.lock.RLock()
+	participation := b.currentEpochParticipationVal()
+	b.lock.RUnlock()
 
-	participation := b.currentEpochParticipation
-	if b.sharedFieldReferences[types.CurrentEpochParticipationBits].Refs() > 1 {
-		// Copy elements in underlying array by reference.
-		participation = make([]byte, 0, len(b.currentEpochParticipation)+1)
-		participation = append(participation, b.currentEpochParticipation...)
-		b.sharedFieldReferences[types.CurrentEpochParticipationBits].MinusRef()
-		b.sharedFieldReferences[types.CurrentEpochParticipationBits] = stateutil.NewRef(1)
-	}
-	// Lock is released so that mutator can
-	// acquire it.
-	b.lock.Unlock()
-
+	// Work on a private copy: the callback can fail or copy the state itself.
 	var err error
 	participation, err = mutator(participation)
 	if err != nil {
 		return err
 	}
-	b.lock.Lock()
-	defer b.lock.Unlock()
-	b.currentEpochParticipation = participation
-	b.markFieldAsDirty(types.CurrentEpochParticipationBits)
-	b.rebuildTrie[types.CurrentEpochParticipationBits] = true
-	return nil
+	return b.SetCurrentParticipationBits(participation)
 }

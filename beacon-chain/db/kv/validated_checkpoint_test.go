@@ -70,7 +70,7 @@ func BenchmarkStore_SaveLastValidatedCheckpoint(b *testing.B) {
 	}
 }
 
-func TestStore_LastValidatedCheckpoint_DefaultIsFinalized(t *testing.T) {
+func TestStore_LastValidatedCheckpoint_FinalizationDoesNotImplyValidation(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
 
@@ -103,5 +103,26 @@ func TestStore_LastValidatedCheckpoint_DefaultIsFinalized(t *testing.T) {
 
 	retrieved, err := db.LastValidatedCheckpoint(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, true, proto.Equal(cp, retrieved), "Wanted %v, received %v", cp, retrieved)
+	assert.DeepEqual(t, &qrysmpb.Checkpoint{Root: genesis[:]}, retrieved)
+
+	// Execution validation is recorded separately from consensus finality.
+	require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, cp))
+	retrieved, err = db.LastValidatedCheckpoint(ctx)
+	require.NoError(t, err)
+	assert.DeepEqual(t, cp, retrieved)
+}
+
+// Startup needs the real genesis root even before any finalization or
+// explicit execution-validation marker has been saved.
+func TestStore_LastValidatedCheckpoint_FallsBackToGenesisRoot(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	genesis := bytesutil.ToBytes32([]byte{'G', 'E', 'N', 'E', 'S', 'I', 'S'})
+	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
+
+	retrieved, err := db.LastValidatedCheckpoint(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, retrieved)
+	assert.DeepEqual(t, genesis[:], retrieved.Root)
 }

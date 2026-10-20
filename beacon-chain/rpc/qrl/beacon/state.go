@@ -80,10 +80,10 @@ func (bs *Server) GetRandao(ctx context.Context, req *qrlpb.RandaoRequest) (*qrl
 	// future epochs and epochs too far back are not supported.
 	randaoEpochLowerBound := uint64(0)
 	// Lower bound should not underflow.
-	if uint64(stEpoch) > uint64(st.RandaoMixesLength()) {
-		randaoEpochLowerBound = uint64(stEpoch) - uint64(st.RandaoMixesLength())
+	if uint64(stEpoch) >= uint64(st.RandaoMixesLength()) {
+		randaoEpochLowerBound = uint64(stEpoch) - uint64(st.RandaoMixesLength()) + 1
 	}
-	if epoch > stEpoch || uint64(epoch) < randaoEpochLowerBound+1 {
+	if epoch > stEpoch || uint64(epoch) < randaoEpochLowerBound {
 		return nil, status.Errorf(codes.InvalidArgument, "Epoch is out of range for the randao mixes of the state")
 	}
 	idx := epoch % params.BeaconConfig().EpochsPerHistoricalVector

@@ -22,7 +22,7 @@ import (
 )
 
 func TestProcessSyncCommitteeUpdates_CanRotate(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateZond(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	s, _ := util.DeterministicGenesisStateZond(t, testValidatorSetSize)
 	h := &qrysmpb.BeaconBlockHeader{
 		StateRoot:  bytesutil.PadTo([]byte{'a'}, 32),
 		ParentRoot: bytesutil.PadTo([]byte{'b'}, 32),
@@ -67,13 +67,13 @@ func TestProcessSyncCommitteeUpdates_CanRotate(t *testing.T) {
 }
 
 func TestProcessParticipationFlagUpdates_CanRotate(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateZond(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	s, _ := util.DeterministicGenesisStateZond(t, testValidatorSetSize)
 	c, err := s.CurrentEpochParticipation()
 	require.NoError(t, err)
-	require.DeepEqual(t, make([]byte, params.BeaconConfig().MaxValidatorsPerCommittee), c)
+	require.DeepEqual(t, make([]byte, testValidatorSetSize), c)
 	p, err := s.PreviousEpochParticipation()
 	require.NoError(t, err)
-	require.DeepEqual(t, make([]byte, params.BeaconConfig().MaxValidatorsPerCommittee), p)
+	require.DeepEqual(t, make([]byte, testValidatorSetSize), p)
 
 	newC := []byte{'a'}
 	newP := []byte{'b'}
@@ -90,7 +90,7 @@ func TestProcessParticipationFlagUpdates_CanRotate(t *testing.T) {
 	require.NoError(t, err)
 	c, err = s.CurrentEpochParticipation()
 	require.NoError(t, err)
-	require.DeepEqual(t, make([]byte, params.BeaconConfig().MaxValidatorsPerCommittee), c)
+	require.DeepEqual(t, make([]byte, testValidatorSetSize), c)
 	p, err = s.PreviousEpochParticipation()
 	require.NoError(t, err)
 	require.DeepEqual(t, newC, p)

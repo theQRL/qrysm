@@ -10,11 +10,11 @@ These rules allow for variable substitution for hardcoded tag values like ssz-si
 mainnet = {
     "block_roots.size": "1024,32",  # SLOTS_PER_HISTORICAL_ROOT, [32]byte
     "state_roots.size": "1024,32",  # SLOTS_PER_HISTORICAL_ROOT, [32]byte
-    "execution_data_votes.size": "2048",  # SLOTS_PER_EXECUTION_VOTING_PERIOD
+    "execution_data_votes.size": "512",  # SLOTS_PER_EXECUTION_VOTING_PERIOD = EPOCHS_PER_EXECUTION_VOTING_PERIOD (4) * SLOTS_PER_EPOCH (128)
     "randao_mixes.size": "65536,32",  # EPOCHS_PER_HISTORICAL_VECTOR, [32]byte
-    "previous_epoch_attestations.max": "16384",  # MAX_ATTESTATIONS * SLOTS_PER_EPOCH
-    "current_epoch_attestations.max": "16384",  # MAX_ATTESTATIONS * SLOTS_PER_EPOCH
-    "slashings.size": "1024",  # EPOCHS_PER_SLASHINGS_VECTOR
+    "previous_epoch_attestations.max": "512",  # MAX_ATTESTATIONS * SLOTS_PER_EPOCH
+    "current_epoch_attestations.max": "512",  # MAX_ATTESTATIONS * SLOTS_PER_EPOCH
+    "slashings.size": "512",  # EPOCHS_PER_SLASHINGS_VECTOR
     "sync_committee_bits.size": "128", # SYNC_COMMITTEE_SIZE
     "sync_committee_bytes.size": "16",
     "sync_committee_bits.type": "github.com/theQRL/go-bitfield.Bitvector128",

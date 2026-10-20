@@ -126,6 +126,24 @@ func TestKV_Unaggregated_SaveUnaggregatedAttestations(t *testing.T) {
 	}
 }
 
+func TestKV_Unaggregated_UnaggregatedAttestations(t *testing.T) {
+	t.Run("not returned when hasSeenBit fails", func(t *testing.T) {
+		att := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b101}})
+		r, err := hashFn(att.Data)
+		require.NoError(t, err)
+
+		cache := NewAttCaches()
+		require.NoError(t, cache.SaveUnaggregatedAttestation(att))
+		cache.seenAtt.Delete(string(r[:]))
+		// cache a bitlist whose length is different from the attestation bitlist's length
+		cache.seenAtt.Set(string(r[:]), []bitfield.Bitlist{{0b1001}}, c.DefaultExpiration)
+
+		atts, err := cache.UnaggregatedAttestations()
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(atts))
+	})
+}
+
 func TestKV_Unaggregated_DeleteUnaggregatedAttestation(t *testing.T) {
 	t.Run("nil attestation", func(t *testing.T) {
 		cache := NewAttCaches()
@@ -152,6 +170,35 @@ func TestKV_Unaggregated_DeleteUnaggregatedAttestation(t *testing.T) {
 		returned, err := cache.UnaggregatedAttestations()
 		require.NoError(t, err)
 		assert.DeepEqual(t, []*qrysmpb.Attestation{}, returned)
+	})
+
+	t.Run("absent attestation is not marked seen", func(t *testing.T) {
+		cache := NewAttCaches()
+		att := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b101}})
+		require.NoError(t, cache.DeleteUnaggregatedAttestation(att))
+		seen, err := cache.hasSeenBit(att)
+		require.NoError(t, err)
+		assert.Equal(t, false, seen, "a block-included vote the pool never authenticated must not be seen")
+		require.NoError(t, cache.SaveUnaggregatedAttestation(att))
+		require.NoError(t, cache.DeleteUnaggregatedAttestation(att))
+		seen, err = cache.hasSeenBit(att)
+		require.NoError(t, err)
+		assert.Equal(t, true, seen)
+	})
+
+	t.Run("deleted when insertSeenBit fails", func(t *testing.T) {
+		att := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b101}})
+		r, err := hashFn(att.Data)
+		require.NoError(t, err)
+
+		cache := NewAttCaches()
+		require.NoError(t, cache.SaveUnaggregatedAttestation(att))
+		cache.seenAtt.Delete(string(r[:]))
+		// cache a bitlist whose length is different from the attestation bitlist's length
+		cache.seenAtt.Set(string(r[:]), []bitfield.Bitlist{{0b1001}}, c.DefaultExpiration)
+
+		require.NoError(t, cache.DeleteUnaggregatedAttestation(att))
+		assert.Equal(t, 0, len(cache.unAggregatedAtt), "Attestation was not deleted")
 	})
 }
 
@@ -229,6 +276,23 @@ func TestKV_Unaggregated_DeleteSeenUnaggregatedAttestations(t *testing.T) {
 		returned, err := cache.UnaggregatedAttestations()
 		require.NoError(t, err)
 		assert.DeepEqual(t, []*qrysmpb.Attestation{}, returned)
+	})
+
+	t.Run("deleted when hasSeenBit fails", func(t *testing.T) {
+		att := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b101}})
+		r, err := hashFn(att.Data)
+		require.NoError(t, err)
+
+		cache := NewAttCaches()
+		require.NoError(t, cache.SaveUnaggregatedAttestation(att))
+		cache.seenAtt.Delete(string(r[:]))
+		// cache a bitlist whose length is different from the attestation bitlist's length
+		cache.seenAtt.Set(string(r[:]), []bitfield.Bitlist{{0b1001}}, c.DefaultExpiration)
+
+		count, err := cache.DeleteSeenUnaggregatedAttestations()
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+		assert.Equal(t, 0, len(cache.unAggregatedAtt), "Attestation was not deleted")
 	})
 }
 

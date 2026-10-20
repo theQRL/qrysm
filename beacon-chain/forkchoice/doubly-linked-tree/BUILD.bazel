@@ -47,14 +47,19 @@ go_library(
 go_test(
     name = "doubly-linked-tree_test",
     srcs = [
+        "cancellation_test.go",
+        "checkpoint_recovery_test.go",
+        "epoch_transition_test.go",
         "ffg_update_test.go",
         "forkchoice_test.go",
         "last_root_test.go",
         "no_vote_test.go",
         "node_test.go",
+        "on_tick_retry_test.go",
         "on_tick_test.go",
         "optimistic_sync_test.go",
         "proposer_boost_test.go",
+        "pruning_recovery_test.go",
         "reorg_late_blocks_test.go",
         "store_test.go",
         "unrealized_justification_test.go",
@@ -62,6 +67,7 @@ go_test(
     ],
     embed = [":doubly-linked-tree"],
     deps = [
+        "//beacon-chain/core/epoch/precompute",
         "//beacon-chain/forkchoice",
         "//beacon-chain/forkchoice/types",
         "//beacon-chain/state",
@@ -77,5 +83,6 @@ go_test(
         "//testing/assert",
         "//testing/require",
         "//testing/util",
+        "@com_github_theqrl_go_bitfield//:go-bitfield",
     ],
 )

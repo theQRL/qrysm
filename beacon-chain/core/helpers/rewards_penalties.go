@@ -22,7 +22,7 @@ var balanceCache = cache.NewEffectiveBalanceCache()
 //	 """
 //	 Return the combined effective balance of the ``indices``.
 //	 ``EFFECTIVE_BALANCE_INCREMENT`` Shor minimum to avoid divisions by zero.
-//	 Math safe up to ~10B ETH, afterwhich this overflows uint64.
+//	 Math safe up to ~18B Quanta, after which this overflows uint64.
 //	 """
 //	 return Shor(max(EFFECTIVE_BALANCE_INCREMENT, sum([state.validators[index].effective_balance for index in indices])))
 func TotalBalance(state state.ReadOnlyValidators, indices []primitives.ValidatorIndex) uint64 {
@@ -71,7 +71,15 @@ func TotalActiveBalance(s state.ReadOnlyBeaconState) (uint64, error) {
 	epoch := slots.ToEpoch(s.Slot())
 	if err := s.ReadFromEveryValidator(func(idx int, val state.ReadOnlyValidator) error {
 		if IsActiveValidatorUsingTrie(val, epoch) {
-			total += val.EffectiveBalance()
+			// Checked addition: total active balance feeds consensus-critical
+			// arithmetic (rewards, penalties, slashings). Rather than silently
+			// wrapping uint64 if the active stake ever exceeds it, surface an
+			// error so the epoch transition fails loudly.
+			var err error
+			total, err = mathutil.Add64(total, val.EffectiveBalance())
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	}); err != nil {

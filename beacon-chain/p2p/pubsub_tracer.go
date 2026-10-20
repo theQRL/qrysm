@@ -26,6 +26,16 @@ func (g gossipTracer) RemovePeer(p peer.ID) {
 	// no-op
 }
 
+// OnNewOutboundStream .
+func (g gossipTracer) OnNewOutboundStream(p peer.ID, proto protocol.ID) {
+	// no-op
+}
+
+// OnClosedOutboundStream .
+func (g gossipTracer) OnClosedOutboundStream(p peer.ID) {
+	// no-op
+}
+
 // Join .
 func (g gossipTracer) Join(topic string) {
 	pubsubTopicsActive.WithLabelValues(topic).Set(1)

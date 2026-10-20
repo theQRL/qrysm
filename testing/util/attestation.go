@@ -174,7 +174,11 @@ func GenerateAttestations(
 			sigs := make([][]byte, 0)
 			for b := i; b < i+bitsPerAtt; b++ {
 				aggregationBits.SetBitAt(b, true)
-				sigs = append(sigs, privs[committee[b]].Sign(dataRoot[:]).Marshal())
+				sig, err := privs[committee[b]].Sign(dataRoot[:])
+				if err != nil {
+					return nil, err
+				}
+				sigs = append(sigs, sig.Marshal())
 			}
 
 			att := &qrysmpb.Attestation{
@@ -196,7 +200,7 @@ func HydrateAttestation(a *qrysmpb.Attestation) *qrysmpb.Attestation {
 		a.Signatures = [][]byte{sig}
 	}
 	if a.AggregationBits == nil {
-		a.AggregationBits = make([]byte, 1)
+		a.AggregationBits = bitfield.NewBitlist(0)
 	}
 	if a.Data == nil {
 		a.Data = &qrysmpb.AttestationData{}
@@ -213,7 +217,7 @@ func HydrateV1Attestation(a *qrlpb.Attestation) *qrlpb.Attestation {
 		a.Signatures = [][]byte{sig}
 	}
 	if a.AggregationBits == nil {
-		a.AggregationBits = make([]byte, 1)
+		a.AggregationBits = bitfield.NewBitlist(0)
 	}
 	if a.Data == nil {
 		a.Data = &qrlpb.AttestationData{}

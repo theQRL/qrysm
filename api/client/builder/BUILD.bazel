@@ -11,6 +11,8 @@ go_library(
     importpath = "github.com/theQRL/qrysm/api/client/builder",
     visibility = ["//visibility:public"],
     deps = [
+        "//api",
+        "//api/client",
         "//beacon-chain/rpc/qrl/shared",
         "//config/fieldparams",
         "//consensus-types",
@@ -37,11 +39,13 @@ go_test(
     name = "builder_test",
     srcs = [
         "client_test.go",
+        "response_limits_test.go",
         "types_test.go",
     ],
     data = glob(["testdata/**"]),
     embed = [":builder"],
     deps = [
+        "//api/client",
         "//beacon-chain/rpc/qrl/shared",
         "//config/fieldparams",
         "//config/params",
@@ -53,7 +57,12 @@ go_test(
         "//proto/qrysm/v1alpha1",
         "//testing/assert",
         "//testing/require",
+        "//testing/util",
         "@com_github_theqrl_go_bitfield//:go-bitfield",
+        "@com_github_theqrl_go_qrl//common",
         "@com_github_theqrl_go_qrl//common/hexutil",
+        "@com_github_theqrl_go_qrl//core/types",
+        "@com_github_theqrl_go_qrl//crypto/pqcrypto/wallet",
+        "@com_github_theqrl_go_qrl//params",
     ],
 )

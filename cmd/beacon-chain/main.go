@@ -2,9 +2,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	runtimeDebug "runtime/debug"
+	"syscall"
 
 	golog "github.com/ipfs/go-log/v2"
 	joonix "github.com/joonix/log"
@@ -47,7 +50,6 @@ var appFlags = []cli.Flag{
 	flags.GRPCGatewayPort,
 	flags.GPRCGatewayCorsDomain,
 	flags.MinSyncPeers,
-	flags.ContractDeploymentBlock,
 	flags.SetGCPercent,
 	flags.BlockBatchLimit,
 	flags.BlockBatchLimitBurstFactor,
@@ -63,6 +65,7 @@ var appFlags = []cli.Flag{
 	flags.WeakSubjectivityCheckpoint,
 	flags.ExecutionHeaderReqLimit,
 	flags.MinPeersPerSubnet,
+	flags.MaxConcurrentDials,
 	flags.SuggestedFeeRecipient,
 	flags.MevRelayEndpoint,
 	flags.MaxBuilderEpochMissedSlots,
@@ -85,9 +88,9 @@ var appFlags = []cli.Flag{
 	cmd.P2PMaxPeers,
 	cmd.P2PPrivKey,
 	cmd.P2PStaticID,
-	cmd.P2PMetadata,
 	cmd.P2PAllowList,
 	cmd.P2PDenyList,
+	cmd.P2PColocationWhitelist,
 	cmd.DataDirFlag,
 	cmd.VerbosityFlag,
 	cmd.EnableTracingFlag,
@@ -153,6 +156,14 @@ func main() {
 			return err
 		}
 
+		// Apply verbosity before installing formatters/hooks so non-text formats and the
+		// journald hook honour --verbosity instead of falling back to logrus' default Info.
+		level, err := logrus.ParseLevel(ctx.String(cmd.VerbosityFlag.Name))
+		if err != nil {
+			return err
+		}
+		logrus.SetLevel(level)
+
 		format := ctx.String(cmd.LogFormat.Name)
 		switch format {
 		case "text":
@@ -172,7 +183,7 @@ func main() {
 		case "json":
 			logrus.SetFormatter(&logrus.JSONFormatter{})
 		case "journald":
-			if err := journald.Enable(); err != nil {
+			if err := journald.Enable(level); err != nil {
 				return err
 			}
 		default:
@@ -207,7 +218,20 @@ func main() {
 		}
 	}()
 
-	if err := app.Run(os.Args); err != nil {
+	// Build a cancellable root context that's cancelled on SIGINT/SIGTERM so
+	// the entire process tree can shut down via context propagation rather
+	// than each subsystem having to wire its own signal handler.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		log.Info("Received shutdown signal, cancelling root context")
+		cancel()
+	}()
+
+	if err := app.RunContext(ctx, os.Args); err != nil {
 		log.Error(err.Error())
 	}
 }
@@ -260,17 +284,8 @@ func startNode(ctx *cli.Context) error {
 		genesis.BeaconNodeOptions,
 		checkpoint.BeaconNodeOptions,
 	}
-	for _, of := range optFuncs {
-		ofo, err := of(ctx)
-		if err != nil {
-			return err
-		}
-		if ofo != nil {
-			opts = append(opts, ofo)
-		}
-	}
 
-	beacon, err := node.New(ctx, opts...)
+	beacon, err := node.New(ctx, optFuncs, opts...)
 	if err != nil {
 		return fmt.Errorf("unable to start beacon node: %w", err)
 	}

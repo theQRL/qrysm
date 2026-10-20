@@ -17,6 +17,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	"github.com/theQRL/qrysm/crypto/randao"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
@@ -30,6 +31,7 @@ import (
 
 type mocks struct {
 	validatorClient *validatormock.MockValidatorClient
+	beaconClient    *validatormock.MockBeaconChainClient
 	nodeClient      *validatormock.MockNodeClient
 	signfunc        func(context.Context, *validatorpb.SignRequest) (ml_dsa_87.Signature, error)
 }
@@ -65,6 +67,7 @@ func setupWithKey(t *testing.T, validatorKey ml_dsa_87.MLDSA87Key) (*validator, 
 	ctrl := gomock.NewController(t)
 	m := &mocks{
 		validatorClient: validatormock.NewMockValidatorClient(ctrl),
+		beaconClient:    validatormock.NewMockBeaconChainClient(ctrl),
 		nodeClient:      validatormock.NewMockNodeClient(ctrl),
 		signfunc: func(ctx context.Context, req *validatorpb.SignRequest) (ml_dsa_87.Signature, error) {
 			return mockSignature{}, nil
@@ -76,12 +79,30 @@ func setupWithKey(t *testing.T, validatorKey ml_dsa_87.MLDSA87Key) (*validator, 
 		db:                             valDB,
 		keyManager:                     newMockKeymanager(t, keypair{pub: pubKey, pri: validatorKey}),
 		validatorClient:                m.validatorClient,
+		beaconClient:                   m.beaconClient,
 		graffiti:                       []byte{},
 		attLogs:                        make(map[[32]byte]*attSubmitted),
 		aggregatedSlotCommitteeIDCache: aggregatedSlotCommitteeIDCache,
 	}
 
 	return validator, m, validatorKey, ctrl.Finish
+}
+
+// expectRandaoCommitment serves, from the mocked head state, the RANDAO
+// commitment that the mock keymanager's 64-layer onion can open.
+func expectRandaoCommitment(m *mocks, validatorKey ml_dsa_87.MLDSA87Key) {
+	commitment := randao.Commitment(validatorKey.Marshal(), 64)
+	m.beaconClient.EXPECT().ListValidators(
+		gomock.Any(), // ctx
+		gomock.Any(), // request
+	).Return(&qrysmpb.Validators{
+		ValidatorList: []*qrysmpb.Validators_ValidatorContainer{{
+			Validator: &qrysmpb.Validator{
+				PublicKey:        validatorKey.PublicKey().Marshal(),
+				RandaoCommitment: commitment[:],
+			},
+		}},
+	}, nil).AnyTimes()
 }
 
 func TestProposeBlock_DoesNotProposeGenesisBlock(t *testing.T) {
@@ -95,36 +116,57 @@ func TestProposeBlock_DoesNotProposeGenesisBlock(t *testing.T) {
 	require.LogsContain(t, hook, "Assigned to genesis slot, skipping proposal")
 }
 
-func TestProposeBlock_DomainDataFailed(t *testing.T) {
+func TestProposeBlock_RandaoCommitmentLookupFailed(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 	var pubKey [field_params.MLDSA87PubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
-	m.validatorClient.EXPECT().DomainData(
+	m.beaconClient.EXPECT().ListValidators(
 		gomock.Any(), // ctx
-		gomock.Any(), // epoch
+		gomock.Any(), // request
 	).Return(nil /*response*/, errors.New("uh oh"))
 
 	validator.ProposeBlock(context.Background(), 1, pubKey)
-	require.LogsContain(t, hook, "Failed to sign randao reveal")
+	require.LogsContain(t, hook, "Failed to derive randao reveal")
 }
 
-func TestProposeBlock_DomainDataIsNil(t *testing.T) {
+func TestProposeBlock_RandaoCommitmentNotFound(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 	var pubKey [field_params.MLDSA87PubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
-	m.validatorClient.EXPECT().DomainData(
+	m.beaconClient.EXPECT().ListValidators(
 		gomock.Any(), // ctx
-		gomock.Any(), // epoch
-	).Return(nil /*response*/, nil)
+		gomock.Any(), // request
+	).Return(&qrysmpb.Validators{}, nil)
 
 	validator.ProposeBlock(context.Background(), 1, pubKey)
-	require.LogsContain(t, hook, domainDataErr)
+	require.LogsContain(t, hook, "Failed to derive randao reveal")
+}
+
+func TestProposeBlock_RandaoCommitmentUnknown(t *testing.T) {
+	hook := logTest.NewGlobal()
+	validator, m, validatorKey, finish := setup(t)
+	defer finish()
+	var pubKey [field_params.MLDSA87PubkeyLength]byte
+	copy(pubKey[:], validatorKey.PublicKey().Marshal())
+
+	// A commitment that is not a layer of this validator's onion.
+	m.beaconClient.EXPECT().ListValidators(
+		gomock.Any(), // ctx
+		gomock.Any(), // request
+	).Return(&qrysmpb.Validators{
+		ValidatorList: []*qrysmpb.Validators_ValidatorContainer{{
+			Validator: &qrysmpb.Validator{PublicKey: pubKey[:], RandaoCommitment: bytesutil.PadTo([]byte("nope"), 32)},
+		}},
+	}, nil)
+
+	validator.ProposeBlock(context.Background(), 1, pubKey)
+	require.LogsContain(t, hook, "Failed to derive randao reveal")
 }
 
 func TestProposeBlock_RequestBlockFailed(t *testing.T) {
@@ -148,10 +190,7 @@ func TestProposeBlock_RequestBlockFailed(t *testing.T) {
 			var pubKey [field_params.MLDSA87PubkeyLength]byte
 			copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
-			m.validatorClient.EXPECT().DomainData(
-				gomock.Any(), // ctx
-				gomock.Any(), // epoch
-			).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+			expectRandaoCommitment(m, validatorKey)
 
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
@@ -187,10 +226,7 @@ func TestProposeBlock_ProposeBlockFailed(t *testing.T) {
 			var pubKey [field_params.MLDSA87PubkeyLength]byte
 			copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
-			m.validatorClient.EXPECT().DomainData(
-				gomock.Any(), // ctx
-				gomock.Any(), // epoch
-			).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			expectRandaoCommitment(m, validatorKey)
 
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
@@ -254,10 +290,7 @@ func TestProposeBlock_BlocksDoubleProposal(t *testing.T) {
 			err := validator.db.SaveProposalHistoryForSlot(context.Background(), pubKey, 0, dummyRoot[:])
 			require.NoError(t, err)
 
-			m.validatorClient.EXPECT().DomainData(
-				gomock.Any(), // ctx
-				gomock.Any(), // epoch
-			).Times(1).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			expectRandaoCommitment(m, validatorKey)
 
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
@@ -272,7 +305,7 @@ func TestProposeBlock_BlocksDoubleProposal(t *testing.T) {
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Times(3).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Times(2).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			m.validatorClient.EXPECT().ProposeBeaconBlock(
 				gomock.Any(), // ctx
@@ -300,10 +333,7 @@ func TestProposeBlock_BlocksDoubleProposal_After54KEpochs(t *testing.T) {
 	err := validator.db.SaveProposalHistoryForSlot(context.Background(), pubKey, 0, dummyRoot[:])
 	require.NoError(t, err)
 
-	m.validatorClient.EXPECT().DomainData(
-		gomock.Any(), // ctx
-		gomock.Any(), // epoch
-	).Times(1).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	expectRandaoCommitment(m, validatorKey)
 
 	testBlock := util.NewBeaconBlockZond()
 	farFuture := params.BeaconConfig().SlotsPerEpoch.Mul(uint64(params.BeaconConfig().WeakSubjectivityPeriod + 9))
@@ -333,7 +363,7 @@ func TestProposeBlock_BlocksDoubleProposal_After54KEpochs(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(3).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(2).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().ProposeBeaconBlock(
 		gomock.Any(), // ctx
@@ -375,10 +405,7 @@ func TestProposeBlock_AllowsPastProposals(t *testing.T) {
 			err := validator.db.SaveProposalHistoryForSlot(context.Background(), pubKey, 0, []byte{})
 			require.NoError(t, err)
 
-			m.validatorClient.EXPECT().DomainData(
-				gomock.Any(), // ctx
-				gomock.Any(), // epoch
-			).Times(2).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			expectRandaoCommitment(m, validatorKey)
 
 			blk := util.NewBeaconBlockZond()
 			blk.Block.Slot = slot
@@ -471,10 +498,7 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 
 			validator.graffiti = graffiti
 
-			m.validatorClient.EXPECT().DomainData(
-				gomock.Any(), // ctx
-				gomock.Any(), // epoch
-			).Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			expectRandaoCommitment(m, validatorKey)
 
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx

@@ -42,12 +42,18 @@ func (s *Store) StateSummary(ctx context.Context, blockRoot [32]byte) (*qrysmpb.
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.StateSummary")
 	defer span.End()
 
-	if s.stateSummaryCache.has(blockRoot) {
-		return s.stateSummaryCache.get(blockRoot), nil
+	// A single lookup: a flush can remove the entry between a has() and a get(),
+	// which would report a summary that is in the database as missing.
+	if cached := s.stateSummaryCache.get(blockRoot); cached != nil {
+		return cached, nil
 	}
 	var enc []byte
 	if err := s.db.View(func(tx *bolt.Tx) error {
-		enc = tx.Bucket(stateSummaryBucket).Get(blockRoot[:])
+		v := tx.Bucket(stateSummaryBucket).Get(blockRoot[:])
+		if len(v) > 0 {
+			enc = make([]byte, len(v))
+			copy(enc, v)
+		}
 		return nil
 	}); err != nil {
 		return nil, err
@@ -82,9 +88,18 @@ func (s *Store) HasStateSummary(ctx context.Context, blockRoot [32]byte) bool {
 	return hasSummary
 }
 
-// This saves all cached state summary objects to DB, and clears up the cache.
+// This saves all cached state summary objects to DB and removes them from the
+// cache. Summaries added to the cache while the write is in flight are kept:
+// dropping the whole cache afterwards would lose them, since they were never
+// written, and a block whose summary is missing is skipped as the head.
 func (s *Store) saveCachedStateSummariesDB(ctx context.Context) error {
+	s.stateSummaryCache.flushLock.Lock()
+	defer s.stateSummaryCache.flushLock.Unlock()
+
 	summaries := s.stateSummaryCache.getAll()
+	if len(summaries) == 0 {
+		return nil
+	}
 	encs := make([][]byte, len(summaries))
 	for i, s := range summaries {
 		enc, err := encode(ctx, s)
@@ -104,12 +119,16 @@ func (s *Store) saveCachedStateSummariesDB(ctx context.Context) error {
 	}); err != nil {
 		return err
 	}
-	s.stateSummaryCache.clear()
+	s.stateSummaryCache.deleteMany(summaries)
 	return nil
 }
 
 // deleteStateSummary deletes a state summary object from the db using input block root.
 func (s *Store) deleteStateSummary(blockRoot [32]byte) error {
+	// Exclude a concurrent flush: its snapshot could otherwise be written back
+	// after this deletion and resurrect the summary.
+	s.stateSummaryCache.flushLock.Lock()
+	defer s.stateSummaryCache.flushLock.Unlock()
 	s.stateSummaryCache.delete(blockRoot)
 	return s.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(stateSummaryBucket)

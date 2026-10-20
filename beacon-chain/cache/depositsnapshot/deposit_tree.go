@@ -101,11 +101,13 @@ func (d *DepositTree) getProof(index uint64) ([32]byte, [][32]byte, error) {
 	if d.depositCount <= 0 {
 		return [32]byte{}, nil, ErrInvalidDepositCount
 	}
+	// GetFinalized returns the count of finalized deposits, whose indices are
+	// 0..count-1; a deposit is only provable from the sparse tree once it is beyond
+	// that finalized range. Rejecting index < count also correctly allows index 0
+	// when nothing is finalized yet (count == 0), which the previous
+	// decrement-then-`<=` form wrongly rejected.
 	finalizedDeposits, _ := d.tree.GetFinalized([][32]byte{})
-	if finalizedDeposits != 0 {
-		finalizedDeposits = finalizedDeposits - 1
-	}
-	if index <= finalizedDeposits {
+	if index < finalizedDeposits {
 		return [32]byte{}, nil, ErrInvalidIndex
 	}
 	leaf, proof := generateProof(d.tree, index, DepositContractDepth)

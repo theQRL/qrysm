@@ -105,9 +105,14 @@ func (bs *Server) ListValidatorAssignments(
 	}
 
 	// Initialize all committee related data.
-	committeeAssignments, proposerIndexToSlots, err := helpers.CommitteeAssignments(ctx, requestedState, requestedEpoch)
+	committeeAssignments, err := helpers.CommitteeAssignments(ctx, requestedState, requestedEpoch, filteredIndices[start:end])
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not compute committee assignments: %v", err)
+	}
+
+	proposerIndexToSlots, err := helpers.ProposerAssignments(ctx, requestedState, requestedEpoch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute proposer slots: %v", err)
 	}
 
 	for _, index := range filteredIndices[start:end] {
@@ -115,11 +120,14 @@ func (bs *Server) ListValidatorAssignments(
 			return nil, status.Errorf(codes.OutOfRange, "Validator index %d >= validator count %d",
 				index, requestedState.NumValidators())
 		}
-		comAssignment := committeeAssignments[index]
+		ca, ok := committeeAssignments[index]
+		if !ok {
+			ca = &helpers.CommitteeAssignmentContainer{}
+		}
 		assign := &qrysmpb.ValidatorAssignments_CommitteeAssignment{
-			BeaconCommittees: comAssignment.Committee,
-			CommitteeIndex:   comAssignment.CommitteeIndex,
-			AttesterSlot:     comAssignment.AttesterSlot,
+			BeaconCommittees: ca.Committee,
+			CommitteeIndex:   ca.CommitteeIndex,
+			AttesterSlot:     ca.AttesterSlot,
 			ProposerSlots:    proposerIndexToSlots[index],
 			ValidatorIndex:   index,
 		}

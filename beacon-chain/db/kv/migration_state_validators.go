@@ -31,9 +31,19 @@ func shouldMigrateValidators(db *bolt.DB) (bool, error) {
 			if bytes.Equal(b, migrationCompleted) {
 				log.Warning("migration of historical states already completed. The node will work as if --enable-historical-state-representation=true.")
 				return nil
-			} else {
-				return nil
 			}
+			// A migration that was interrupted (the node was killed before the
+			// completion marker was written) has already stripped the validator
+			// registry from some states. Reading those with the flag off would
+			// silently return states without validators, so the migration must
+			// be finished regardless of the flag.
+			if idx := tx.Bucket(blockRootValidatorHashesBucket); idx != nil {
+				if k, _ := idx.Cursor().First(); k != nil {
+					log.Warning("An interrupted migration of historical states was found; resuming it. The node will work as if --enable-historical-state-representation=true.")
+					migrateDB = true
+				}
+			}
+			return nil
 		}
 
 		// if the migration flag is enabled (checked in the above condition)
@@ -125,6 +135,18 @@ func performValidatorStateMigration(ctx context.Context, bar *progressbar.Progre
 		count := 0
 		index := batchIndex
 		for _, v := cursor.Seek(keys[index]); count < batchSize && index < len(keys); _, v = cursor.Next() {
+			// A state that already has a validator index entry was migrated by
+			// an earlier run that was interrupted before it recorded completion.
+			// Skip it so the migration resumes instead of failing on the
+			// already stripped state and keeping the node from starting.
+			if indexBkt.Get(keys[index]) != nil {
+				count++
+				index++
+				if barErr := bar.Add(1); barErr != nil {
+					return barErr
+				}
+				continue
+			}
 			enc, err := snappy.Decode(nil, v)
 			if err != nil {
 				return err
@@ -185,7 +207,7 @@ func performValidatorStateMigration(ctx context.Context, bar *progressbar.Progre
 func stateBucketKeys(stateBucket *bolt.Bucket) ([][]byte, error) {
 	var keys [][]byte
 	if err := stateBucket.ForEach(func(pubKey, v []byte) error {
-		keys = append(keys, pubKey)
+		keys = append(keys, bytes.Clone(pubKey))
 		return nil
 	}); err != nil {
 		return nil, err

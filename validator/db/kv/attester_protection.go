@@ -33,7 +33,12 @@ type AttestationRecord struct {
 	PubKey      [field_params.MLDSA87PubkeyLength]byte
 	Source      primitives.Epoch
 	Target      primitives.Epoch
-	SigningRoot [32]byte
+	SigningRoot []byte
+	// done, when non-nil, is signaled exactly once with the result of the flush that
+	// persists this record. It lets a SaveAttestationForPubKey caller wait for the
+	// specific batch its record was written in, instead of any flush. Buffered (cap 1)
+	// and set only for batched single saves; nil for read records and synchronous saves.
+	done chan saveAttestationsResponse
 }
 
 // NewQueuedAttestationRecords constructor allocates the underlying slice and
@@ -127,8 +132,9 @@ func (s *Store) AttestationHistoryForPubKey(ctx context.Context, pubKey [field_p
 					Target: targetEpoch,
 				}
 				signingRoot := signingRootsBucket.Get(bytesutil.EpochToBytesBigEndian(targetEpoch))
-				if signingRoot != nil {
-					copy(record.SigningRoot[:], signingRoot)
+				if len(signingRoot) != 0 {
+					record.SigningRoot = make([]byte, field_params.RootLength)
+					copy(record.SigningRoot, signingRoot)
 				}
 				records = append(records, record)
 			}
@@ -141,7 +147,7 @@ func (s *Store) AttestationHistoryForPubKey(ctx context.Context, pubKey [field_p
 // CheckSlashableAttestation verifies an incoming attestation is
 // not a double vote for a validator public key nor a surround vote.
 func (s *Store) CheckSlashableAttestation(
-	ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signingRoot [32]byte, att *qrysmpb.IndexedAttestation,
+	ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signingRoot []byte, att *qrysmpb.IndexedAttestation,
 ) (SlashingKind, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.CheckSlashableAttestation")
 	defer span.End()
@@ -161,13 +167,12 @@ func (s *Store) CheckSlashableAttestation(
 		if signingRootsBucket != nil {
 			targetEpochBytes := bytesutil.EpochToBytesBigEndian(att.Data.Target.Epoch)
 			existingSigningRoot := signingRootsBucket.Get(targetEpochBytes)
-			if existingSigningRoot != nil {
-				var existing [32]byte
-				copy(existing[:], existingSigningRoot)
-				if slashings.SigningRootsDiffer(existing, signingRoot) {
-					slashKind = DoubleVote
-					return fmt.Errorf(doubleVoteMessage, att.Data.Target.Epoch, existingSigningRoot)
-				}
+
+			// If a signing root exists in the database, and if this database signing root is empty => We consider the new attestation as a double vote.
+			// If a signing root exists in the database, and if this database signing differs from the signing root of the new attestation => We consider the new attestation as a double vote.
+			if existingSigningRoot != nil && (len(existingSigningRoot) == 0 || slashings.SigningRootsDiffer(existingSigningRoot, signingRoot)) {
+				slashKind = DoubleVote
+				return fmt.Errorf(doubleVoteMessage, att.Data.Target.Epoch, existingSigningRoot)
 			}
 		}
 
@@ -281,7 +286,7 @@ func (*Store) checkSurroundingVote(
 
 // SaveAttestationsForPubKey stores a batch of attestations all at once.
 func (s *Store) SaveAttestationsForPubKey(
-	ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signingRoots [][32]byte, atts []*qrysmpb.IndexedAttestation,
+	ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signingRoots [][]byte, atts []*qrysmpb.IndexedAttestation,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "Validator.SaveAttestationsForPubKey")
 	defer span.End()
@@ -311,28 +316,32 @@ func (s *Store) SaveAttestationForPubKey(
 ) error {
 	ctx, span := trace.StartSpan(ctx, "Validator.SaveAttestationForPubKey")
 	defer span.End()
+	if att == nil || att.Data == nil || att.Data.Source == nil || att.Data.Target == nil {
+		return errors.New("incoming attestation does not contain source and/or target epoch")
+	}
+	// done is signaled by the flush that actually persists this record, so we only
+	// return once our record is durably written. A shared broadcast feed (the previous
+	// approach) could wake us on an earlier flush that did not include this record —
+	// e.g. a ticker flush that fired while the record was still in the channel buffer —
+	// letting us report the attestation as saved before it is on disk. That is a
+	// slashing-safety hole: a crash and restart in that window could lose the record
+	// and permit a second, slashable vote. Buffered (cap 1) so the flusher never blocks
+	// and a flush that completes before we start waiting is not lost.
+	done := make(chan saveAttestationsResponse, 1)
 	s.batchedAttestationsChan <- &AttestationRecordSaveRequest{
 		ctx: ctx,
 		record: &AttestationRecord{
 			PubKey:      pubKey,
 			Source:      att.Data.Source.Epoch,
 			Target:      att.Data.Target.Epoch,
-			SigningRoot: signingRoot,
+			SigningRoot: signingRoot[:],
+			done:        done,
 		},
 	}
 
-	// Subscribe to be notified when the attestation record queued
-	// for saving to the DB is indeed saved. If an error occurred
-	// during the process of saving the attestation record, the sender
-	// will give us that error. We use a buffered channel
-	// to prevent blocking the sender from notifying us of the result.
 	_, innerSpan := trace.StartSpan(ctx, "Validator.SaveAttestationForPubKey.WaitForResponse")
 	defer innerSpan.End()
-	responseChan := make(chan saveAttestationsResponse, 1)
-	defer close(responseChan)
-	sub := s.batchAttestationsFlushedFeed.Subscribe(responseChan)
-	defer sub.Unsubscribe()
-	res := <-responseChan
+	res := <-done
 	return res.err
 }
 
@@ -411,12 +420,19 @@ func (s *Store) flushAttestationRecords(ctx context.Context, records []*Attestat
 			s.batchedAttestations.Append(ar)
 		}
 	}
-	// Forward the error, if any, to all subscribers via an event feed.
-	// We use a struct wrapper around the error as the event feed
-	// cannot handle sending a raw `nil` in case there is no error.
-	s.batchAttestationsFlushedFeed.Send(saveAttestationsResponse{
-		err: err,
-	})
+	// Signal each waiting caller via its own record channel, so a caller only returns
+	// once the flush that actually included its record has completed. The send is
+	// non-blocking: each channel is buffered (cap 1) and drained by exactly one waiter,
+	// and a record re-queued after an error retains its channel, which may already have
+	// been signaled.
+	for _, ar := range records {
+		if ar.done != nil {
+			select {
+			case ar.done <- saveAttestationsResponse{err: err}:
+			default:
+			}
+		}
+	}
 }
 
 // Saves a list of attestation records to the database in a single boltDB
@@ -448,7 +464,7 @@ func (s *Store) saveAttestationRecords(ctx context.Context, atts []*AttestationR
 			if err != nil {
 				return errors.Wrap(err, "could not create signing roots bucket")
 			}
-			if err := signingRootsBucket.Put(targetEpochBytes, att.SigningRoot[:]); err != nil {
+			if err := signingRootsBucket.Put(targetEpochBytes, att.SigningRoot); err != nil {
 				return errors.Wrapf(err, "could not save signing root for epoch %d", att.Target)
 			}
 			sourceEpochsBucket, err := pkBucket.CreateBucketIfNotExists(attestationSourceEpochsBucket)
@@ -537,24 +553,48 @@ func (s *Store) AttestedPublicKeys(ctx context.Context) ([][field_params.MLDSA87
 
 // SigningRootAtTargetEpoch checks for an existing signing root at a specified
 // target epoch for a given validator public key.
-func (s *Store) SigningRootAtTargetEpoch(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, target primitives.Epoch) ([32]byte, error) {
+func (s *Store) SigningRootAtTargetEpoch(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, target primitives.Epoch) ([]byte, error) {
 	_, span := trace.StartSpan(ctx, "Validator.SigningRootAtTargetEpoch")
 	defer span.End()
-	var signingRoot [32]byte
+
+	var (
+		signingRoot32     [32]byte
+		signingRootExists bool
+	)
+
+	signingRoot := make([]byte, 0, 32)
+
 	err := s.view(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(pubKeysBucket)
+
+		// If no bucket exists for this public key, we return nil.
 		pkBucket := bucket.Bucket(pubKey[:])
 		if pkBucket == nil {
 			return nil
 		}
+
+		// If no attestation bucket exists for this public key, we return nil.
 		signingRootsBucket := pkBucket.Bucket(attestationSigningRootsBucket)
 		if signingRootsBucket == nil {
 			return nil
 		}
+
+		// If no signing root exists for this target epoch, we return nil.
 		sr := signingRootsBucket.Get(bytesutil.EpochToBytesBigEndian(target))
-		copy(signingRoot[:], sr)
+		if len(sr) == 0 {
+			return nil
+		}
+
+		signingRootExists = true
+		copy(signingRoot32[:], sr)
+
 		return nil
 	})
+
+	if signingRootExists {
+		signingRoot = signingRoot32[:]
+	}
+
 	return signingRoot, err
 }
 

@@ -180,6 +180,18 @@ func generateAttesterSlashings(
 		if err != nil {
 			return nil, err
 		}
+		// A fixture with fewer active validators than slots per epoch leaves
+		// some slots with an empty committee; fall back to the active set so
+		// the modulo below never divides by zero.
+		if len(committee) == 0 {
+			committee, err = helpers.ActiveValidatorIndices(context.Background(), bState, time.CurrentEpoch(bState))
+			if err != nil {
+				return nil, err
+			}
+			if len(committee) == 0 {
+				return nil, errors.New("no active validators to build an attester slashing for")
+			}
+		}
 		randIndex := randGen.Uint64() % uint64(len(committee))
 		valIndex := committee[randIndex]
 		slashing, err := GenerateAttesterSlashingForValidator(bState, privs[valIndex], valIndex)
@@ -331,7 +343,7 @@ func HydrateBeaconBlockBodyZond(b *qrysmpb.BeaconBlockBodyZond) *qrysmpb.BeaconB
 		b = &qrysmpb.BeaconBlockBodyZond{}
 	}
 	if b.RandaoReveal == nil {
-		b.RandaoReveal = make([]byte, fieldparams.MLDSA87SignatureLength)
+		b.RandaoReveal = make([]byte, fieldparams.RandaoRevealLength)
 	}
 	if b.Graffiti == nil {
 		b.Graffiti = make([]byte, fieldparams.RootLength)
@@ -351,7 +363,7 @@ func HydrateBeaconBlockBodyZond(b *qrysmpb.BeaconBlockBodyZond) *qrysmpb.BeaconB
 	if b.ExecutionPayload == nil {
 		b.ExecutionPayload = &enginev1.ExecutionPayloadZond{
 			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, 20),
+			FeeRecipient:  make([]byte, 64),
 			StateRoot:     make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
 			LogsBloom:     make([]byte, 256),
@@ -420,7 +432,7 @@ func HydrateBlindedBeaconBlockBodyZond(b *qrysmpb.BlindedBeaconBlockBodyZond) *q
 		b = &qrysmpb.BlindedBeaconBlockBodyZond{}
 	}
 	if b.RandaoReveal == nil {
-		b.RandaoReveal = make([]byte, fieldparams.MLDSA87SignatureLength)
+		b.RandaoReveal = make([]byte, fieldparams.RandaoRevealLength)
 	}
 	if b.Graffiti == nil {
 		b.Graffiti = make([]byte, 32)
@@ -440,7 +452,7 @@ func HydrateBlindedBeaconBlockBodyZond(b *qrysmpb.BlindedBeaconBlockBodyZond) *q
 	if b.ExecutionPayloadHeader == nil {
 		b.ExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       make([]byte, 32),
-			FeeRecipient:     make([]byte, 20),
+			FeeRecipient:     make([]byte, 64),
 			StateRoot:        make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:     make([]byte, fieldparams.RootLength),
 			LogsBloom:        make([]byte, 256),
@@ -509,7 +521,7 @@ func HydrateV1BlindedBeaconBlockBodyZond(b *qrlpb.BlindedBeaconBlockBodyZond) *q
 		b = &qrlpb.BlindedBeaconBlockBodyZond{}
 	}
 	if b.RandaoReveal == nil {
-		b.RandaoReveal = make([]byte, fieldparams.MLDSA87SignatureLength)
+		b.RandaoReveal = make([]byte, fieldparams.RandaoRevealLength)
 	}
 	if b.Graffiti == nil {
 		b.Graffiti = make([]byte, 32)
@@ -529,7 +541,7 @@ func HydrateV1BlindedBeaconBlockBodyZond(b *qrlpb.BlindedBeaconBlockBodyZond) *q
 	if b.ExecutionPayloadHeader == nil {
 		b.ExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       make([]byte, 32),
-			FeeRecipient:     make([]byte, 20),
+			FeeRecipient:     make([]byte, 64),
 			StateRoot:        make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:     make([]byte, fieldparams.RootLength),
 			LogsBloom:        make([]byte, 256),
@@ -576,7 +588,7 @@ func HydrateV1ZondBeaconBlockBody(b *qrlpb.BeaconBlockBodyZond) *qrlpb.BeaconBlo
 		b = &qrlpb.BeaconBlockBodyZond{}
 	}
 	if b.RandaoReveal == nil {
-		b.RandaoReveal = make([]byte, fieldparams.MLDSA87SignatureLength)
+		b.RandaoReveal = make([]byte, fieldparams.RandaoRevealLength)
 	}
 	if b.Graffiti == nil {
 		b.Graffiti = make([]byte, fieldparams.RootLength)
@@ -596,7 +608,7 @@ func HydrateV1ZondBeaconBlockBody(b *qrlpb.BeaconBlockBodyZond) *qrlpb.BeaconBlo
 	if b.ExecutionPayload == nil {
 		b.ExecutionPayload = &enginev1.ExecutionPayloadZond{
 			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, 20),
+			FeeRecipient:  make([]byte, 64),
 			StateRoot:     make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
 			LogsBloom:     make([]byte, 256),

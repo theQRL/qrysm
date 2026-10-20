@@ -315,9 +315,11 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 								Proof: [][]byte{[]byte("A")},
 								Data: &qrysmpb.Deposit_Data{
 									PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-									WithdrawalCredentials: make([]byte, 32),
+									WithdrawalRecipient: make([]byte, 64),
 									Amount:                0,
 									Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+
+									RandaoCommitment: make([]byte, 32),
 								},
 							},
 						},
@@ -450,9 +452,11 @@ func TestMapBeaconBlockBody(t *testing.T) {
 							Proof: [][]byte{[]byte("A")},
 							Data: &qrysmpb.Deposit_Data{
 								PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
-								WithdrawalCredentials: make([]byte, 32),
+								WithdrawalRecipient: make([]byte, 64),
 								Amount:                0,
 								Signature:             make([]byte, field_params.MLDSA87SignatureLength),
+
+								RandaoCommitment: make([]byte, 32),
 							},
 						},
 					},

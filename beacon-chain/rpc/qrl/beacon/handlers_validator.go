@@ -39,7 +39,7 @@ func (s *Server) GetValidators(w http.ResponseWriter, r *http.Request) {
 
 	isOptimistic, err := helpers.IsOptimistic(ctx, []byte(stateId), s.OptimisticModeFetcher, s.Stater, s.ChainInfoFetcher, s.BeaconDB)
 	if err != nil {
-		http2.HandleError(w, "Could not check optimistic status: "+err.Error(), http.StatusInternalServerError)
+		helpers.HandleIsOptimisticError(w, err)
 		return
 	}
 	blockRoot, err := st.LatestBlockHeader().HashTreeRoot()
@@ -70,7 +70,6 @@ func (s *Server) GetValidators(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	epoch := slots.ToEpoch(st.Slot())
-	allBalances := st.Balances()
 
 	statuses := r.URL.Query()["status"]
 	for i, ss := range statuses {
@@ -86,11 +85,16 @@ func (s *Server) GetValidators(w http.ResponseWriter, r *http.Request) {
 				http2.HandleError(w, "Could not get validator status: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			if len(ids) == 0 {
-				containers[i] = valContainerFromReadOnlyVal(val, primitives.ValidatorIndex(i), allBalances[i], valStatus)
-			} else {
-				containers[i] = valContainerFromReadOnlyVal(val, ids[i], allBalances[ids[i]], valStatus)
+			id := primitives.ValidatorIndex(i)
+			if len(ids) > 0 {
+				id = ids[i]
 			}
+			balance, err := st.BalanceAtIndex(id)
+			if err != nil {
+				http2.HandleError(w, "Could not get validator balance: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			containers[i] = valContainerFromReadOnlyVal(val, id, balance, valStatus)
 		}
 		resp := &GetValidatorsResponse{
 			Data:                containers,
@@ -123,12 +127,16 @@ func (s *Server) GetValidators(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if filteredStatuses[valStatus] || filteredStatuses[valSubStatus] {
-			var container *ValidatorContainer
-			if len(ids) == 0 {
-				container = valContainerFromReadOnlyVal(val, primitives.ValidatorIndex(i), allBalances[i], valSubStatus)
-			} else {
-				container = valContainerFromReadOnlyVal(val, ids[i], allBalances[ids[i]], valSubStatus)
+			id := primitives.ValidatorIndex(i)
+			if len(ids) > 0 {
+				id = ids[i]
 			}
+			balance, err := st.BalanceAtIndex(id)
+			if err != nil {
+				http2.HandleError(w, "Could not get validator balance: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			container := valContainerFromReadOnlyVal(val, id, balance, valSubStatus)
 			valContainers = append(valContainers, container)
 		}
 	}
@@ -188,7 +196,7 @@ func (s *Server) GetValidator(w http.ResponseWriter, r *http.Request) {
 
 	isOptimistic, err := helpers.IsOptimistic(ctx, []byte(stateId), s.OptimisticModeFetcher, s.Stater, s.ChainInfoFetcher, s.BeaconDB)
 	if err != nil {
-		http2.HandleError(w, "Could not check optimistic status: "+err.Error(), http.StatusInternalServerError)
+		helpers.HandleIsOptimisticError(w, err)
 		return
 	}
 	blockRoot, err := st.LatestBlockHeader().HashTreeRoot()
@@ -224,7 +232,7 @@ func (bs *Server) GetValidatorBalances(w http.ResponseWriter, r *http.Request) {
 
 	isOptimistic, err := helpers.IsOptimistic(ctx, []byte(stateId), bs.OptimisticModeFetcher, bs.Stater, bs.ChainInfoFetcher, bs.BeaconDB)
 	if err != nil {
-		http2.HandleError(w, "Could not check optimistic status: "+err.Error(), http.StatusInternalServerError)
+		helpers.HandleIsOptimisticError(w, err)
 		return
 	}
 	blockRoot, err := st.LatestBlockHeader().HashTreeRoot()
@@ -295,7 +303,7 @@ func decodeIds(w http.ResponseWriter, st state.BeaconState, rawIds []string, ign
 				if ignoreUnknown {
 					continue
 				}
-				http2.HandleError(w, fmt.Sprintf("Unknown pubkey %s", pubkey), http.StatusBadRequest)
+				http2.HandleError(w, fmt.Sprintf("Unknown validator: %s", hexutil.Encode(pubkey)), http.StatusNotFound)
 				return nil, false
 			}
 			ids = append(ids, valIndex)
@@ -361,19 +369,21 @@ func valContainerFromReadOnlyVal(
 	valStatus validator.ValidatorStatus,
 ) *ValidatorContainer {
 	pubkey := val.PublicKey()
+	randaoCommitment := val.RandaoCommitment()
 	return &ValidatorContainer{
 		Index:   strconv.FormatUint(uint64(id), 10),
 		Balance: strconv.FormatUint(bal, 10),
 		Status:  valStatus.String(),
 		Validator: &Validator{
 			Pubkey:                     hexutil.Encode(pubkey[:]),
-			WithdrawalCredentials:      hexutil.Encode(val.WithdrawalCredentials()),
+			WithdrawalRecipient:        hexutil.Encode(val.WithdrawalRecipient()),
 			EffectiveBalance:           strconv.FormatUint(val.EffectiveBalance(), 10),
 			Slashed:                    val.Slashed(),
 			ActivationEligibilityEpoch: strconv.FormatUint(uint64(val.ActivationEligibilityEpoch()), 10),
 			ActivationEpoch:            strconv.FormatUint(uint64(val.ActivationEpoch()), 10),
 			ExitEpoch:                  strconv.FormatUint(uint64(val.ExitEpoch()), 10),
 			WithdrawableEpoch:          strconv.FormatUint(uint64(val.WithdrawableEpoch()), 10),
+			RandaoCommitment:           hexutil.Encode(randaoCommitment[:]),
 		},
 	}
 }

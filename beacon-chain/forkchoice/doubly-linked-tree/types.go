@@ -17,7 +17,9 @@ type ForkChoice struct {
 	balances            []uint64                    // tracks individual validator's balances last accounted in votes.
 	justifiedBalances   []uint64                    // tracks individual validator's last justified balances.
 	numActiveValidators uint64                      // tracks the total number of active validators.
-	balancesByRoot      forkchoice.BalancesByRooter // handler to obtain balances for the state with a given root
+	balancesByRoot      forkchoice.BalancesByRooter // handler to obtain the balances of the justified checkpoint state
+	lastProcessedEpoch  primitives.Epoch            // last epoch whose checkpoint realization and pruning completed
+	pendingEpoch        *primitives.Epoch           // epoch transition awaiting successful realization and pruning
 }
 
 // Store defines the fork choice store which includes block nodes and the last view of checkpoint information.
@@ -30,6 +32,7 @@ type Store struct {
 	proposerBoostRoot             [fieldparams.RootLength]byte           // latest block root that was boosted after being received in a timely manner.
 	previousProposerBoostRoot     [fieldparams.RootLength]byte           // previous block root that was boosted after being received in a timely manner.
 	previousProposerBoostScore    uint64                                 // previous proposer boosted root score.
+	finalizedPayloadBlockHash     [fieldparams.RootLength]byte           // cached payload hash at the finalized checkpoint. Refreshed before pruning at finalization since the node it resolves from is removed by prune.
 	committeeWeight               uint64                                 // tracks the total active validator balance divided by the number of slots per Epoch.
 	treeRootNode                  *Node                                  // the root node of the store tree.
 	headNode                      *Node                                  // last head Node
@@ -40,7 +43,7 @@ type Store struct {
 	genesisTime                   uint64
 	highestReceivedNode           *Node                                      // The highest slot node.
 	receivedBlocksLastEpoch       [fieldparams.SlotsPerEpoch]primitives.Slot // Using `highestReceivedSlot`. The slot of blocks received in the last epoch.
-	allTipsAreInvalid             bool                                       // tracks if all tips are not viable for head
+	allTipsAreInvalid             bool                                       // execution invalidation left no viable branch; cleared when a viable head becomes available
 }
 
 // Node defines the individual block which includes its block parent, ancestor and how much weight accounted for it.
@@ -53,8 +56,10 @@ type Node struct {
 	children                 []*Node                      // the list of direct children of this Node
 	justifiedEpoch           primitives.Epoch             // justifiedEpoch of this node.
 	unrealizedJustifiedEpoch primitives.Epoch             // the epoch that would be justified if the block would be advanced to the next epoch.
+	unrealizedJustifiedRoot  [fieldparams.RootLength]byte // root of the unrealized justified checkpoint observed in this node's state.
 	finalizedEpoch           primitives.Epoch             // finalizedEpoch of this node.
 	unrealizedFinalizedEpoch primitives.Epoch             // the epoch that would be finalized if the block would be advanced to the next epoch.
+	unrealizedFinalizedRoot  [fieldparams.RootLength]byte // root of the unrealized finalized checkpoint observed in this node's state.
 	balance                  uint64                       // the balance that voted for this node directly
 	weight                   uint64                       // weight of this node: the total balance including children
 	bestDescendant           *Node                        // bestDescendant node of this node.

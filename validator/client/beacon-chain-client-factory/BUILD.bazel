@@ -2,7 +2,10 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
     name = "beacon-chain-client-factory",
-    srcs = ["beacon_chain_client_factory.go"],
+    srcs = [
+        "beacon_chain_client_factory.go",
+        "qrysm_chain_client_factory.go",
+    ],
     importpath = "github.com/theQRL/qrysm/validator/client/beacon-chain-client-factory",
     visibility = ["//visibility:public"],
     deps = [

@@ -8,6 +8,7 @@ import (
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation"
 	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestAggregateAttestations_MaxCover_NewMaxCover(t *testing.T) {
@@ -447,4 +448,32 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 			assert.DeepEqual(t, extractSignatures(tt.atts), extractSignatures(tt.wantAtts))
 		})
 	}
+}
+
+func TestAggregateAttestations_TailParticipantSignatureAlignment(t *testing.T) {
+	att := func(indices []uint64, signatures ...[]byte) *qrysmpb.Attestation {
+		bits := bitfield.NewBitlist(8)
+		for _, index := range indices {
+			bits.SetBitAt(index, true)
+		}
+		return &qrysmpb.Attestation{
+			AggregationBits: bits,
+			Signatures:      signatures,
+		}
+	}
+
+	atts := []*qrysmpb.Attestation{
+		att([]uint64{0}, []byte{0}),
+		att([]uint64{4, 7}, []byte{4}, []byte{7}),
+		att([]uint64{5}, []byte{5}),
+	}
+	coverage := bitfield.NewBitlist64(8)
+	for _, index := range []uint64{0, 4, 5, 7} {
+		coverage.SetBitAt(index, true)
+	}
+
+	target, err := aggregateAttestations(atts, []int{0, 1, 2}, coverage)
+	require.NoError(t, err)
+	require.Equal(t, 0, target)
+	require.DeepEqual(t, [][]byte{{0}, {4}, {5}, {7}}, atts[0].Signatures)
 }

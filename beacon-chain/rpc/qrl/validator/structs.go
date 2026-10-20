@@ -35,9 +35,10 @@ type ProduceSyncCommitteeContributionResponse struct {
 }
 
 type GetAttesterDutiesResponse struct {
-	DependentRoot       string          `json:"dependent_root"`
-	ExecutionOptimistic bool            `json:"execution_optimistic"`
-	Data                []*AttesterDuty `json:"data"`
+	DependentRoot           string          `json:"dependent_root"`
+	AggregatorSelectionSeed string          `json:"aggregator_selection_seed"`
+	ExecutionOptimistic     bool            `json:"execution_optimistic"`
+	Data                    []*AttesterDuty `json:"data"`
 }
 
 type AttesterDuty struct {

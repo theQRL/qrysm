@@ -10,6 +10,7 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-bitfield"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
@@ -18,6 +19,13 @@ import (
 	"github.com/theQRL/qrysm/testing/require"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+func forceSyncCommitteeAggregatorSelection(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	cfg := params.BeaconConfig().Copy()
+	cfg.TargetAggregatorsPerSyncSubcommittee = cfg.SyncCommitteeSize / cfg.SyncCommitteeSubnetCount
+	params.OverrideBeaconConfig(cfg)
+}
 
 func TestSubmitSyncCommitteeMessage_ValidatorDutiesRequestFailure(t *testing.T) {
 	hook := logTest.NewGlobal()
@@ -46,9 +54,10 @@ func TestSubmitSyncCommitteeMessage_BadDomainData(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 		{
-			PublicKey:      validatorKey.PublicKey().Marshal(),
-			Committee:      committee,
-			ValidatorIndex: validatorIndex,
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
 		},
 	}}
 
@@ -78,9 +87,10 @@ func TestSubmitSyncCommitteeMessage_CouldNotSubmit(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 		{
-			PublicKey:      validatorKey.PublicKey().Marshal(),
-			Committee:      committee,
-			ValidatorIndex: validatorIndex,
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
 		},
 	}}
 
@@ -119,9 +129,10 @@ func TestSubmitSyncCommitteeMessage_OK(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 		{
-			PublicKey:      validatorKey.PublicKey().Marshal(),
-			Committee:      committee,
-			ValidatorIndex: validatorIndex,
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
 		},
 	}}
 
@@ -177,9 +188,10 @@ func TestSubmitSignedContributionAndProof_GetSyncSubcommitteeIndexFailure(t *tes
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 		{
-			PublicKey:      validatorKey.PublicKey().Marshal(),
-			Committee:      committee,
-			ValidatorIndex: validatorIndex,
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
 		},
 	}}
 	defer finish()
@@ -205,9 +217,10 @@ func TestSubmitSignedContributionAndProof_NothingToDo(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 		{
-			PublicKey:      validatorKey.PublicKey().Marshal(),
-			Committee:      committee,
-			ValidatorIndex: validatorIndex,
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
 		},
 	}}
 	defer finish()
@@ -233,9 +246,10 @@ func TestSubmitSignedContributionAndProof_BadDomain(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 		{
-			PublicKey:      validatorKey.PublicKey().Marshal(),
-			Committee:      committee,
-			ValidatorIndex: validatorIndex,
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
 		},
 	}}
 	defer finish()
@@ -263,9 +277,10 @@ func TestSubmitSignedContributionAndProof_BadDomain(t *testing.T) {
 }
 
 func TestSubmitSignedContributionAndProof_CouldNotGetContribution(t *testing.T) {
+	forceSyncCommitteeAggregatorSelection(t)
 	hook := logTest.NewGlobal()
-	slot := primitives.Slot(10) // Chosen so this test key is selected as sync committee aggregator.
-	// Hardcode secret key in order to have a valid aggregator signature.
+	slot := primitives.Slot(10)
+	// Use a fixed secret key so the validator public key is stable in mock expectations.
 	rawKey, err := hex.DecodeString("659e875e1b062c03f2f2a57332974d475b97df6cfc581d322e79642d39aca8fd659e875e1b062c03f2f2a57332974d4a")
 	assert.NoError(t, err)
 	validatorKey, err := ml_dsa_87.SecretKeyFromSeed(rawKey)
@@ -276,9 +291,10 @@ func TestSubmitSignedContributionAndProof_CouldNotGetContribution(t *testing.T) 
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 		{
-			PublicKey:      validatorKey.PublicKey().Marshal(),
-			Committee:      committee,
-			ValidatorIndex: validatorIndex,
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
 		},
 	}}
 	defer finish()
@@ -314,9 +330,10 @@ func TestSubmitSignedContributionAndProof_CouldNotGetContribution(t *testing.T) 
 }
 
 func TestSubmitSignedContributionAndProof_CouldNotSubmitContribution(t *testing.T) {
+	forceSyncCommitteeAggregatorSelection(t)
 	hook := logTest.NewGlobal()
-	slot := primitives.Slot(10) // Chosen so this test key is selected as sync committee aggregator.
-	// Hardcode secret key in order to have a valid aggregator signature.
+	slot := primitives.Slot(10)
+	// Use a fixed secret key so the validator public key is stable in mock expectations.
 	rawKey, err := hex.DecodeString("659e875e1b062c03f2f2a57332974d475b97df6cfc581d322e79642d39aca8fd659e875e1b062c03f2f2a57332974d4a")
 	assert.NoError(t, err)
 	validatorKey, err := ml_dsa_87.SecretKeyFromSeed(rawKey)
@@ -327,9 +344,10 @@ func TestSubmitSignedContributionAndProof_CouldNotSubmitContribution(t *testing.
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 		{
-			PublicKey:      validatorKey.PublicKey().Marshal(),
-			Committee:      committee,
-			ValidatorIndex: validatorIndex,
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
 		},
 	}}
 	defer finish()
@@ -394,8 +412,9 @@ func TestSubmitSignedContributionAndProof_CouldNotSubmitContribution(t *testing.
 }
 
 func TestSubmitSignedContributionAndProof_Ok(t *testing.T) {
-	slot := primitives.Slot(10) // Chosen so this test key is selected as sync committee aggregator.
-	// Hardcode secret key in order to have a valid aggregator signature.
+	forceSyncCommitteeAggregatorSelection(t)
+	slot := primitives.Slot(10)
+	// Use a fixed secret key so the validator public key is stable in mock expectations.
 	rawKey, err := hex.DecodeString("659e875e1b062c03f2f2a57332974d475b97df6cfc581d322e79642d39aca8fd659e875e1b062c03f2f2a57332974d4a")
 	assert.NoError(t, err)
 	validatorKey, err := ml_dsa_87.SecretKeyFromSeed(rawKey)
@@ -406,9 +425,10 @@ func TestSubmitSignedContributionAndProof_Ok(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
 		{
-			PublicKey:      validatorKey.PublicKey().Marshal(),
-			Committee:      committee,
-			ValidatorIndex: validatorIndex,
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
 		},
 	}}
 	defer finish()
@@ -463,6 +483,87 @@ func TestSubmitSignedContributionAndProof_Ok(t *testing.T) {
 					AggregationBits:   bitfield.NewBitvector128(),
 					Slot:              slot,
 					SubcommitteeIndex: 1,
+				},
+			},
+		}),
+	).Return(&emptypb.Empty{}, nil)
+
+	validator.SubmitSignedContributionAndProof(context.Background(), slot, pubKey)
+}
+
+func TestSubmitSignedContributionAndProof_OncePerPubkeyAndSubcommittee(t *testing.T) {
+	forceSyncCommitteeAggregatorSelection(t)
+	slot := primitives.Slot(10)
+	rawKey, err := hex.DecodeString("659e875e1b062c03f2f2a57332974d475b97df6cfc581d322e79642d39aca8fd659e875e1b062c03f2f2a57332974d4a")
+	assert.NoError(t, err)
+	validatorKey, err := ml_dsa_87.SecretKeyFromSeed(rawKey)
+	assert.NoError(t, err)
+
+	validator, m, validatorKey, finish := setupWithKey(t, validatorKey)
+	validatorIndex := primitives.ValidatorIndex(7)
+	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
+	validator.duties = &qrysmpb.DutiesResponse{CurrentEpochDuties: []*qrysmpb.DutiesResponse_Duty{
+		{
+			PublicKey:               validatorKey.PublicKey().Marshal(),
+			Committee:               committee,
+			ValidatorIndex:          validatorIndex,
+			AggregatorSelectionSeed: make([]byte, 32),
+		},
+	}}
+	defer finish()
+
+	// Validator selected twice; with SyncCommitteeSubnetCount=1 both fall in subnet 0.
+	aggregatorCommitteeIndices := []primitives.CommitteeIndex{1, 2}
+	var pubKey [field_params.MLDSA87PubkeyLength]byte
+	copy(pubKey[:], validatorKey.PublicKey().Marshal())
+	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
+		gomock.Any(), // ctx
+		&qrysmpb.SyncSubcommitteeIndexRequest{
+			Slot:      slot,
+			PublicKey: pubKey[:],
+		},
+	).Return(&qrysmpb.SyncSubcommitteeIndexResponse{Indices: aggregatorCommitteeIndices}, nil)
+
+	// Both indices fall in subnet 0, so a single selection proof over
+	// (slot, subcommittee 0) is signed and reused for the second index: one
+	// DomainData call for the selection proofs.
+	m.validatorClient.EXPECT().
+		DomainData(gomock.Any(), gomock.Any()).
+		Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+
+	aggBits := bitfield.NewBitvector128()
+	aggBits.SetBitAt(0, true)
+	// Contribution fetched only once for subnet 0, despite two selections.
+	m.validatorClient.EXPECT().GetSyncCommitteeContribution(
+		gomock.Any(), // ctx
+		&qrysmpb.SyncCommitteeContributionRequest{
+			Slot:      slot,
+			PublicKey: pubKey[:],
+			SubnetId:  0,
+		},
+	).Return(&qrysmpb.SyncCommitteeContribution{
+		BlockRoot:       make([]byte, field_params.RootLength),
+		Signatures:      [][]byte{},
+		AggregationBits: aggBits,
+	}, nil)
+
+	// One DomainData call for signing the single ContributionAndProof.
+	m.validatorClient.EXPECT().
+		DomainData(gomock.Any(), gomock.Any()).
+		Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+
+	// Submit must happen exactly once.
+	m.validatorClient.EXPECT().SubmitSignedContributionAndProof(
+		gomock.Any(), // ctx
+		gomock.AssignableToTypeOf(&qrysmpb.SignedContributionAndProof{
+			Message: &qrysmpb.ContributionAndProof{
+				AggregatorIndex: validatorIndex,
+				Contribution: &qrysmpb.SyncCommitteeContribution{
+					BlockRoot:         make([]byte, 32),
+					Signatures:        [][]byte{},
+					AggregationBits:   bitfield.NewBitvector128(),
+					Slot:              slot,
+					SubcommitteeIndex: 0,
 				},
 			},
 		}),

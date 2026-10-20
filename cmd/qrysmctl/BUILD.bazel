@@ -1,6 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary")
 load("@qrysm//tools/go:def.bzl", "go_library")
-load("//tools:qrysm_image.bzl", "qrysm_image_upload")
 
 go_library(
     name = "qrysmctl_lib",
@@ -24,16 +23,4 @@ go_binary(
     embed = [":qrysmctl_lib"],
     gotags = ["noMainnetGenesis"],
     visibility = ["//visibility:public"],
-)
-
-qrysm_image_upload(
-    name = "push_oci_image",
-    binary = ":qrysmctl",
-    entrypoint = ["/qrysmctl"],
-    repository = "index.docker.io/qrledger/qrysm",
-    symlinks = {
-        # Backwards compatiability for images that depended on the old filepath.
-        "/app/cmd/qrysmctl/qrysmctl": "/qrysmctl",
-    },
-    tags = ["qrysmctl-manual"],
 )

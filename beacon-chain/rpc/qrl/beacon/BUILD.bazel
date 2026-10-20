@@ -92,6 +92,7 @@ go_test(
     deps = [
         "//api",
         "//beacon-chain/blockchain/testing",
+        "//beacon-chain/core/blocks",
         "//beacon-chain/core/signing",
         "//beacon-chain/core/transition",
         "//beacon-chain/db",

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/holiman/uint256"
+	"github.com/theQRL/go-qrl/common/uint512"
 	"github.com/theQRL/go-qrl/qrl/tracers/logger"
 )
 
@@ -12,7 +12,7 @@ import (
 func TestMarshalling(t *testing.T) {
 	log := new(logger.StructLog)
 	for i := range 10 {
-		el := uint256.NewInt(uint64(i))
+		el := uint512.NewInt(uint64(i))
 		log.Stack = append(log.Stack, *el)
 	}
 	if out := CustomMarshal(log); !json.Valid(out) {
@@ -24,7 +24,7 @@ func BenchmarkMarshalling(b *testing.B) {
 
 	log := new(logger.StructLog)
 	for i := range 10 {
-		el := uint256.NewInt(uint64(i))
+		el := uint512.NewInt(uint64(i))
 		log.Stack = append(log.Stack, *el)
 	}
 	var outp1 []byte

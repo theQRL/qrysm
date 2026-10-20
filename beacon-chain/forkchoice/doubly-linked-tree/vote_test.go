@@ -10,7 +10,7 @@ import (
 )
 
 func TestVotes_CanFindHead(t *testing.T) {
-	f := setup(1, 1)
+	f := setup(1, 0)
 	f.justifiedBalances = []uint64{1, 1}
 	ctx := context.Background()
 
@@ -23,7 +23,7 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//         0
 	//        /
 	//       2 <- head
-	state, blkRoot, err := prepareForkchoiceState(context.Background(), 0, indexToHash(2), params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 1, 1)
+	state, blkRoot, err := prepareForkchoiceState(context.Background(), 1, indexToHash(2), params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
@@ -35,7 +35,7 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//            0
 	//           / \
 	//  head -> 2  1
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 0, indexToHash(1), params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 1, 1)
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 1, indexToHash(1), params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
@@ -67,7 +67,7 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//  head -> 2  1
 	//             |
 	//             3
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 0, indexToHash(3), indexToHash(1), params.BeaconConfig().ZeroHash, 1, 1)
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 2, indexToHash(3), indexToHash(1), params.BeaconConfig().ZeroHash, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
@@ -105,7 +105,7 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//             3
 	//             |
 	//             4 <- head
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 0, indexToHash(4), indexToHash(3), params.BeaconConfig().ZeroHash, 1, 1)
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 3, indexToHash(4), indexToHash(3), params.BeaconConfig().ZeroHash, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
@@ -124,8 +124,8 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//            /
 	//           5 <- head, justified epoch = 2
 	//
-	// We set this node's slot to be 64 so that when pruning below we do not prune its child
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 2*params.BeaconConfig().SlotsPerEpoch, indexToHash(5), indexToHash(4), params.BeaconConfig().ZeroHash, 2, 2)
+	// Place block 5 at the epoch-2 boundary, where it will be finalized below.
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 2*params.BeaconConfig().SlotsPerEpoch, indexToHash(5), indexToHash(4), params.BeaconConfig().ZeroHash, 2, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
@@ -143,7 +143,7 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//             4
 	//            / \
 	//           5  6 <- head, justified epoch = 3
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 0, indexToHash(6), indexToHash(4), params.BeaconConfig().ZeroHash, 3, 2)
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 2*params.BeaconConfig().SlotsPerEpoch, indexToHash(6), indexToHash(4), params.BeaconConfig().ZeroHash, 3, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 	r, err = f.Head(context.Background())
@@ -168,10 +168,10 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//           7
 	//           |
 	//           8
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 0, indexToHash(7), indexToHash(5), params.BeaconConfig().ZeroHash, 2, 2)
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 2*params.BeaconConfig().SlotsPerEpoch+1, indexToHash(7), indexToHash(5), params.BeaconConfig().ZeroHash, 2, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 0, indexToHash(8), indexToHash(7), params.BeaconConfig().ZeroHash, 2, 2)
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 2*params.BeaconConfig().SlotsPerEpoch+2, indexToHash(8), indexToHash(7), params.BeaconConfig().ZeroHash, 2, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 	r, err = f.Head(context.Background())
@@ -195,7 +195,7 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//           8
 	//           |
 	//           10 <- head
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 0, indexToHash(10), indexToHash(8), params.BeaconConfig().ZeroHash, 3, 2)
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 2*params.BeaconConfig().SlotsPerEpoch+3, indexToHash(10), indexToHash(8), params.BeaconConfig().ZeroHash, 3, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 	r, err = f.Head(context.Background())
@@ -218,7 +218,7 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//            8
 	//           / \
 	//	    9  10
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 0, indexToHash(9), indexToHash(8), params.BeaconConfig().ZeroHash, 3, 2)
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 2*params.BeaconConfig().SlotsPerEpoch+3, indexToHash(9), indexToHash(8), params.BeaconConfig().ZeroHash, 3, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
@@ -283,6 +283,7 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//          8
 	//         / \
 	//        9  10
+	f.store.finalizedCheckpoint.Epoch = 2
 	f.store.finalizedCheckpoint.Root = indexToHash(5)
 	require.NoError(t, f.store.prune(context.Background()))
 	assert.Equal(t, 5, len(f.store.nodeByRoot), "Incorrect nodes length after prune")
@@ -303,7 +304,7 @@ func TestVotes_CanFindHead(t *testing.T) {
 	//        10  9
 	//        |
 	// head-> 11
-	state, blkRoot, err = prepareForkchoiceState(context.Background(), 0, indexToHash(11), indexToHash(10), params.BeaconConfig().ZeroHash, 3, 2)
+	state, blkRoot, err = prepareForkchoiceState(context.Background(), 2*params.BeaconConfig().SlotsPerEpoch+4, indexToHash(11), indexToHash(10), params.BeaconConfig().ZeroHash, 3, 2)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 

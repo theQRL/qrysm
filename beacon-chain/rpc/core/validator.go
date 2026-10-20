@@ -31,6 +31,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+var errOptimisticMode = errors.New("the node is currently optimistic and cannot serve validators")
+
 // AggregateBroadcastFailedError represents an error scenario where
 // broadcasting an aggregate selection proof failed.
 type AggregateBroadcastFailedError struct {
@@ -186,6 +188,9 @@ func (s *Service) SubmitSignedContributionAndProof(
 	ctx context.Context,
 	req *qrysmpb.SignedContributionAndProof,
 ) *RpcError {
+	if err := s.validateSyncContribution(ctx, req); err != nil {
+		return err
+	}
 	errs, ctx := errgroup.WithContext(ctx)
 
 	// Broadcasting and saving contribution into the pool in parallel. As one fail should not affect another.
@@ -335,42 +340,57 @@ func (s *Service) GetAttestationData(
 		return nil, &RpcError{Reason: BadRequest, Err: errors.Errorf("invalid request: %v", err)}
 	}
 
-	res, err := s.AttestationCache.Get(ctx, req)
-	if err != nil {
-		return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not retrieve data from attestation cache: %v", err)}
-	}
-	if res != nil {
-		res.CommitteeIndex = req.CommitteeIndex
-		return res, nil
-	}
-
-	if err := s.AttestationCache.MarkInProgress(req); err != nil {
-		if errors.Is(err, cache.ErrAlreadyInProgress) {
-			res, err := s.AttestationCache.Get(ctx, req)
-			if err != nil {
-				return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not retrieve data from attestation cache: %v", err)}
-			}
-			if res == nil {
-				return nil, &RpcError{Reason: Internal, Err: errors.New("a request was in progress and resolved to nil")}
-			}
+	for {
+		res, err := s.AttestationCache.Get(ctx, req)
+		if err != nil {
+			return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not retrieve data from attestation cache: %v", err)}
+		}
+		if res != nil {
 			res.CommitteeIndex = req.CommitteeIndex
 			return res, nil
 		}
-		return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not mark attestation as in-progress: %v", err)}
+		if err := s.AttestationCache.MarkInProgress(req); err != nil {
+			if errors.Is(err, cache.ErrAlreadyInProgress) {
+				// Wait for that producer on the next Get. It may fail or be
+				// invalidated, leaving this request to compute a fresh result.
+				continue
+			}
+			return nil, &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not mark attestation as in-progress")}
+		}
+		res, rpcErr := s.computeAttestationData(ctx, req)
+		if rpcErr != nil && errors.Is(rpcErr.Err, cache.ErrAttestationDataStale) {
+			continue
+		}
+		return res, rpcErr
 	}
+}
+
+// computeAttestationData owns the in-progress cache entry for req until it
+// returns, including when a head change invalidates its result.
+func (s *Service) computeAttestationData(ctx context.Context, req *qrysmpb.AttestationDataRequest) (*qrysmpb.AttestationData, *RpcError) {
 	defer func() {
 		if err := s.AttestationCache.MarkNotInProgress(req); err != nil {
 			log.WithError(err).Error("Could not mark attestation as not-in-progress")
 		}
 	}()
-
-	headState, err := s.HeadFetcher.HeadState(ctx)
-	if err != nil {
-		return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not retrieve head state: %v", err)}
+	// Reject an optimistic node early. The root from the snapshot is checked
+	// separately below, since the head may change after this check.
+	if s.OptimisticModeFetcher != nil {
+		optimistic, err := s.OptimisticModeFetcher.IsOptimistic(ctx)
+		if err != nil {
+			return nil, &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not determine if the node is optimistic")}
+		}
+		if optimistic {
+			return nil, &RpcError{Reason: Unavailable, Err: errOptimisticMode}
+		}
 	}
-	headRoot, err := s.HeadFetcher.HeadRoot(ctx)
+
+	headState, headRoot, err := s.HeadFetcher.HeadStateAndRoot(ctx)
 	if err != nil {
-		return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not retrieve head root: %v", err)}
+		return nil, &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not retrieve head snapshot")}
+	}
+	if headState == nil || headState.IsNil() {
+		return nil, &RpcError{Reason: Internal, Err: errors.New("could not lookup parent state from head")}
 	}
 
 	// In the case that we receive an attestation request after a newer state/block has been processed.
@@ -386,6 +406,15 @@ func (s *Service) GetAttestationData(
 	}
 	if headState == nil || headState.IsNil() {
 		return nil, &RpcError{Reason: Internal, Err: errors.New("could not lookup parent state from head")}
+	}
+	if s.OptimisticModeFetcher != nil {
+		optimistic, err := s.OptimisticModeFetcher.IsOptimisticForRoot(ctx, bytesutil.ToBytes32(headRoot))
+		if err != nil {
+			return nil, &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not determine if the attested block is optimistic")}
+		}
+		if optimistic {
+			return nil, &RpcError{Reason: Unavailable, Err: errOptimisticMode}
+		}
 	}
 
 	if coreTime.CurrentEpoch(headState) < slots.ToEpoch(req.Slot) {
@@ -413,7 +442,7 @@ func (s *Service) GetAttestationData(
 		}
 	}
 
-	res = &qrysmpb.AttestationData{
+	res := &qrysmpb.AttestationData{
 		Slot:            req.Slot,
 		CommitteeIndex:  req.CommitteeIndex,
 		BeaconBlockRoot: headRoot,
@@ -425,6 +454,9 @@ func (s *Service) GetAttestationData(
 	}
 
 	if err := s.AttestationCache.Put(ctx, req, res); err != nil {
+		if errors.Is(err, cache.ErrAttestationDataStale) {
+			return nil, &RpcError{Reason: Internal, Err: err}
+		}
 		log.WithError(err).Error("Could not store attestation data in cache")
 	}
 	return res, nil
@@ -433,12 +465,11 @@ func (s *Service) GetAttestationData(
 // SubmitSyncMessage submits the sync committee message to the network.
 // It also saves the sync committee message into the pending pool for block inclusion.
 func (s *Service) SubmitSyncMessage(ctx context.Context, msg *qrysmpb.SyncCommitteeMessage) *RpcError {
-	errs, ctx := errgroup.WithContext(ctx)
-
-	headSyncCommitteeIndices, err := s.HeadFetcher.HeadSyncCommitteeIndices(ctx, msg.ValidatorIndex, msg.Slot)
-	if err != nil {
-		return &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not get head sync committee indices")}
+	headSyncCommitteeIndices, rpcErr := s.validateSyncMessage(ctx, msg)
+	if rpcErr != nil {
+		return rpcErr
 	}
+	errs, ctx := errgroup.WithContext(ctx)
 	// Broadcasting and saving message into the pool in parallel. As one fail should not affect another.
 	// This broadcasts for all subnets.
 	for _, index := range headSyncCommitteeIndices {
@@ -454,7 +485,7 @@ func (s *Service) SubmitSyncMessage(ctx context.Context, msg *qrysmpb.SyncCommit
 	}
 
 	// Wait for p2p broadcast to complete and return the first error (if any)
-	if err = errs.Wait(); err != nil {
+	if err := errs.Wait(); err != nil {
 		return &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not broadcast sync committee message")}
 	}
 	return nil

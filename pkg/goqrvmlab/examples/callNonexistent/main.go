@@ -91,7 +91,7 @@ func runit() error {
 		code = extCodeSizeAttack()
 	}
 
-	aAddr, _ := common.NewAddressFromString("Q000000000000000000000000000000000000ff0a")
+	aAddr, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ff0a")
 	alloc := make(core.GenesisAlloc)
 	alloc[aAddr] = core.GenesisAccount{
 		Nonce:   0,

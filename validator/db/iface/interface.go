@@ -34,7 +34,7 @@ type ValidatorDB interface {
 	HighestSignedProposal(ctx context.Context, publicKey [field_params.MLDSA87PubkeyLength]byte) (primitives.Slot, bool, error)
 	LowestSignedProposal(ctx context.Context, publicKey [field_params.MLDSA87PubkeyLength]byte) (primitives.Slot, bool, error)
 	ProposalHistoryForPubKey(ctx context.Context, publicKey [field_params.MLDSA87PubkeyLength]byte) ([]*kv.Proposal, error)
-	ProposalHistoryForSlot(ctx context.Context, publicKey [field_params.MLDSA87PubkeyLength]byte, slot primitives.Slot) ([32]byte, bool, error)
+	ProposalHistoryForSlot(ctx context.Context, publicKey [field_params.MLDSA87PubkeyLength]byte, slot primitives.Slot) ([32]byte, bool, bool, error)
 	SaveProposalHistoryForSlot(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, slot primitives.Slot, signingRoot []byte) error
 	ProposedPublicKeys(ctx context.Context) ([][field_params.MLDSA87PubkeyLength]byte, error)
 
@@ -43,18 +43,18 @@ type ValidatorDB interface {
 	// slashing protection imports.
 	EIPImportBlacklistedPublicKeys(ctx context.Context) ([][field_params.MLDSA87PubkeyLength]byte, error)
 	SaveEIPImportBlacklistedPublicKeys(ctx context.Context, publicKeys [][field_params.MLDSA87PubkeyLength]byte) error
-	SigningRootAtTargetEpoch(ctx context.Context, publicKey [field_params.MLDSA87PubkeyLength]byte, target primitives.Epoch) ([32]byte, error)
+	SigningRootAtTargetEpoch(ctx context.Context, publicKey [field_params.MLDSA87PubkeyLength]byte, target primitives.Epoch) ([]byte, error)
 	LowestSignedTargetEpoch(ctx context.Context, publicKey [field_params.MLDSA87PubkeyLength]byte) (primitives.Epoch, bool, error)
 	LowestSignedSourceEpoch(ctx context.Context, publicKey [field_params.MLDSA87PubkeyLength]byte) (primitives.Epoch, bool, error)
 	AttestedPublicKeys(ctx context.Context) ([][field_params.MLDSA87PubkeyLength]byte, error)
 	CheckSlashableAttestation(
-		ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signingRoot [32]byte, att *qrysmpb.IndexedAttestation,
+		ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signingRoot []byte, att *qrysmpb.IndexedAttestation,
 	) (kv.SlashingKind, error)
 	SaveAttestationForPubKey(
 		ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signingRoot [32]byte, att *qrysmpb.IndexedAttestation,
 	) error
 	SaveAttestationsForPubKey(
-		ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signingRoots [][32]byte, atts []*qrysmpb.IndexedAttestation,
+		ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signingRoots [][]byte, atts []*qrysmpb.IndexedAttestation,
 	) error
 	AttestationHistoryForPubKey(
 		ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte,

@@ -7,6 +7,7 @@ go_library(
         "block.go",
         "forkchoice.go",
         "kv.go",
+        "recovery.go",
         "seen_bits.go",
         "unaggregated.go",
     ],
@@ -25,6 +26,7 @@ go_library(
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_theqrl_go_bitfield//:go-bitfield",
         "@io_opencensus_go//trace",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 
@@ -35,6 +37,7 @@ go_test(
         "benchmark_test.go",
         "block_test.go",
         "forkchoice_test.go",
+        "recovery_test.go",
         "seen_bits_test.go",
         "unaggregated_test.go",
     ],

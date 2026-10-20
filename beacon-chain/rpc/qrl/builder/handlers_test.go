@@ -118,13 +118,12 @@ func TestExpectedWithdrawals(t *testing.T) {
 			mlDSA87Key, err := ml_dsa_87.RandKey()
 			require.NoError(t, err)
 			val := &qrysmpb.Validator{
-				PublicKey:             mlDSA87Key.PublicKey().Marshal(),
-				WithdrawalCredentials: make([]byte, 32),
-				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
-				WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
-				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
+				PublicKey:           mlDSA87Key.PublicKey().Marshal(),
+				WithdrawalRecipient: make([]byte, 64),
+				ExitEpoch:           params.BeaconConfig().FarFutureEpoch,
+				WithdrawableEpoch:   params.BeaconConfig().FarFutureEpoch,
+				EffectiveBalance:    params.BeaconConfig().MaxEffectiveBalance,
 			}
-			val.WithdrawalCredentials[0] = params.BeaconConfig().ExecutionAddressWithdrawalPrefixByte
 			validators = append(validators, val)
 			balances = append(balances, params.BeaconConfig().MaxEffectiveBalance)
 		}
@@ -172,26 +171,31 @@ func TestExpectedWithdrawals(t *testing.T) {
 		assert.Equal(t, true, resp.ExecutionOptimistic)
 		assert.Equal(t, false, resp.Finalized)
 		assert.Equal(t, 3, len(resp.Data))
+		// Advancing the state to the proposal slot runs epoch processing, which
+		// lowers every balance by the same amount (inactivity and missed-duty
+		// penalties). Validator 5 withdraws its whole balance, which pins it.
+		const fullWithdrawal = uint64(39995900344532)
+		epochDecrease := params.BeaconConfig().MaxEffectiveBalance - fullWithdrawal
 		expectedWithdrawal1 := &ExpectedWithdrawal{
 			Index:          strconv.FormatUint(0, 10),
 			ValidatorIndex: strconv.FormatUint(5, 10),
-			Address:        hexutil.Encode(validators[5].WithdrawalCredentials[12:]),
+			Address:        hexutil.Encode(validators[5].WithdrawalRecipient),
 			// Decreased due to epoch processing when state advanced forward
-			Amount: strconv.FormatUint(39995900344532, 10),
+			Amount: strconv.FormatUint(fullWithdrawal, 10),
 		}
 		expectedWithdrawal2 := &ExpectedWithdrawal{
 			Index:          strconv.FormatUint(1, 10),
 			ValidatorIndex: strconv.FormatUint(14, 10),
-			Address:        hexutil.Encode(validators[14].WithdrawalCredentials[12:]),
-			// MaxEffectiveBalance + MinDepositAmount + decrease after epoch processing
-			Amount: strconv.FormatUint(39996900344532, 10),
+			Address:        hexutil.Encode(validators[14].WithdrawalRecipient),
+			// MaxEffectiveBalance + MinDepositAmount - decrease after epoch processing
+			Amount: strconv.FormatUint(params.BeaconConfig().MaxEffectiveBalance+params.BeaconConfig().MinDepositAmount-epochDecrease, 10),
 		}
 		expectedWithdrawal3 := &ExpectedWithdrawal{
 			Index:          strconv.FormatUint(2, 10),
 			ValidatorIndex: strconv.FormatUint(15, 10),
-			Address:        hexutil.Encode(validators[15].WithdrawalCredentials[12:]),
-			// Decreased due to epoch processing when state advanced forward
-			Amount: strconv.FormatUint(900344532, 10),
+			Address:        hexutil.Encode(validators[15].WithdrawalRecipient),
+			// Excess over MaxEffectiveBalance, decreased by epoch processing
+			Amount: strconv.FormatUint(5*params.BeaconConfig().MinDepositAmount-epochDecrease, 10),
 		}
 		require.DeepEqual(t, expectedWithdrawal1, resp.Data[0])
 		require.DeepEqual(t, expectedWithdrawal2, resp.Data[1])

@@ -95,6 +95,9 @@ func ExecuteStateTransition(
 func ProcessSlot(ctx context.Context, state state.BeaconState) (state.BeaconState, error) {
 	ctx, span := trace.StartSpan(ctx, "core.state.ProcessSlot")
 	defer span.End()
+	if state == nil || state.IsNil() {
+		return nil, errors.New("nil state")
+	}
 	span.AddAttributes(trace.Int64Attribute("slot", int64(state.Slot()))) // lint:ignore uintcast -- This is OK for tracing.
 
 	prevStateRoot, err := state.HashTreeRoot(ctx)
@@ -111,6 +114,9 @@ func ProcessSlot(ctx context.Context, state state.BeaconState) (state.BeaconStat
 	zeroHash := params.BeaconConfig().ZeroHash
 	// Cache latest block header state root.
 	header := state.LatestBlockHeader()
+	if header == nil {
+		return nil, errors.New("nil latest block header in state")
+	}
 	if header.StateRoot == nil || bytes.Equal(header.StateRoot, zeroHash[:]) {
 		header.StateRoot = prevStateRoot[:]
 		if err := state.SetLatestBlockHeader(header); err != nil {
@@ -230,9 +236,7 @@ func ProcessSlots(ctx context.Context, state state.BeaconState, slot primitives.
 			tracing.AnnotateError(span, ctx.Err())
 			// Cache last best value.
 			if highestSlot < state.Slot() {
-				if SkipSlotCache.Put(ctx, key, state); err != nil {
-					log.WithError(err).Error("Failed to put skip slot cache value")
-				}
+				SkipSlotCache.Put(ctx, key, state)
 			}
 			return nil, ctx.Err()
 		}

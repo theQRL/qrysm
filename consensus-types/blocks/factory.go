@@ -137,6 +137,14 @@ func BuildSignedBeaconBlockFromExecutionPayload(
 	if err != nil {
 		return nil, err
 	}
+	if empty {
+		// Default payloads and headers have different list roots. Only skip
+		// the root comparison when both objects use their default values.
+		empty, err = IsEmptyExecutionData(payloadHeader)
+		if err != nil {
+			return nil, err
+		}
+	}
 	if !empty {
 		payloadRoot, err := wrappedPayload.HashTreeRoot()
 		if err != nil {

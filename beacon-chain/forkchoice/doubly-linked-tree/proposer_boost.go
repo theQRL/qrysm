@@ -3,7 +3,17 @@ package doublylinkedtree
 import (
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
+
+// expireProposerBoost clears boosts from earlier slots. A delayed slot tick
+// must preserve a boost already assigned to a block in that slot.
+func (s *Store) expireProposerBoost(slot primitives.Slot) {
+	node := s.nodeByRoot[s.proposerBoostRoot]
+	if node == nil || node.slot < slot {
+		s.proposerBoostRoot = [32]byte{}
+	}
+}
 
 // applyProposerBoostScore applies the current proposer boost scores to the
 // relevant nodes.
@@ -15,7 +25,12 @@ func (f *ForkChoice) applyProposerBoostScore() error {
 		if !ok || previousNode == nil {
 			log.WithError(errInvalidProposerBoostRoot).Errorf("invalid prev root %#x", s.previousProposerBoostRoot)
 		} else {
-			previousNode.balance -= s.previousProposerBoostScore
+			if previousNode.balance < s.previousProposerBoostScore {
+				log.Errorf("invalid proposer boost score %d for node balance %d", s.previousProposerBoostScore, previousNode.balance)
+				previousNode.balance = 0
+			} else {
+				previousNode.balance -= s.previousProposerBoostScore
+			}
 		}
 	}
 

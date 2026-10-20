@@ -52,6 +52,7 @@ type ChainService struct {
 	InitSyncBlockRoots          map[[32]byte]bool
 	DB                          db.Database
 	State                       state.BeaconState
+	HeadStateErr                error
 	Block                       interfaces.ReadOnlySignedBeaconBlock
 	VerifyBlkDescendantErr      error
 	stateNotifier               statefeed.Notifier
@@ -62,19 +63,29 @@ type ChainService struct {
 	Root                        []byte
 	SyncCommitteeDomain         []byte
 	SyncSelectionProofDomain    []byte
+	AggregatorSelectionSeed     [32]byte
 	SyncContributionProofDomain []byte
 	SyncCommitteePubkeys        [][]byte
 	Genesis                     time.Time
 	ForkChoiceStore             forkchoice.ForkChoicer
 	ReceiveBlockMockErr         error
 	OptimisticCheckRootReceived [32]byte
-	FinalizedRoots              map[[32]byte]bool
-	OptimisticRoots             map[[32]byte]bool
-	BlockSlot                   primitives.Slot
-	SyncingRoot                 [32]byte
+	// Ancestors, when set, answers Ancestor by root instead of using ForkChoiceStore.
+	Ancestors       map[[32]byte][32]byte
+	FinalizedRoots  map[[32]byte]bool
+	OptimisticRoots map[[32]byte]bool
+	BlockSlot       primitives.Slot
+	SyncingRoot     [32]byte
 }
 
 func (s *ChainService) Ancestor(ctx context.Context, root []byte, slot primitives.Slot) ([]byte, error) {
+	if s.Ancestors != nil {
+		r, ok := s.Ancestors[bytesutil.ToBytes32(root)]
+		if !ok {
+			return nil, errors.New("ancestor not found")
+		}
+		return r[:], nil
+	}
 	r, err := s.ForkChoiceStore.AncestorRoot(ctx, bytesutil.ToBytes32(root), slot)
 	return r[:], err
 }
@@ -292,8 +303,23 @@ func (s *ChainService) HeadState(context.Context) (state.BeaconState, error) {
 	return s.State, nil
 }
 
+// HeadStateAndRoot mocks the published head snapshot.
+func (s *ChainService) HeadStateAndRoot(ctx context.Context) (state.BeaconState, []byte, error) {
+	root, err := s.HeadRoot(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if s.State == nil || s.State.IsNil() {
+		return s.State, bytesutil.SafeCopyBytes(root), nil
+	}
+	return s.State.Copy(), bytesutil.SafeCopyBytes(root), nil
+}
+
 // HeadStateReadOnly mocks HeadStateReadOnly method in chain service.
 func (s *ChainService) HeadStateReadOnly(context.Context) (state.ReadOnlyBeaconState, error) {
+	if s.HeadStateErr != nil {
+		return nil, s.HeadStateErr
+	}
 	return s.State, nil
 }
 
@@ -449,6 +475,10 @@ func (s *ChainService) HeadSyncSelectionProofDomain(_ context.Context, _ primiti
 	return s.SyncSelectionProofDomain, nil
 }
 
+func (s *ChainService) HeadAggregatorSelectionSeed(_ context.Context, _ primitives.Slot) ([32]byte, error) {
+	return s.AggregatorSelectionSeed, nil
+}
+
 // HeadSyncContributionProofDomain mocks HeadSyncContributionProofDomain and always return empty nil.
 func (s *ChainService) HeadSyncContributionProofDomain(_ context.Context, _ primitives.Slot) ([]byte, error) {
 	return s.SyncContributionProofDomain, nil
@@ -464,11 +494,19 @@ func (s *ChainService) InForkchoice(_ [32]byte) bool {
 	return !s.NotFinalized
 }
 
+// ShouldIgnoreData mocks the same method in the chain service.
+func (*ChainService) ShouldIgnoreData(_ [32]byte, _ primitives.Slot) bool {
+	return false
+}
+
 // IsOptimisticForRoot mocks the same method in the chain service.
 func (s *ChainService) IsOptimisticForRoot(_ context.Context, root [32]byte) (bool, error) {
 	s.OptimisticCheckRootReceived = root
 	return s.OptimisticRoots[root], nil
 }
+
+// InvalidateForkchoiceUpdate mocks the same method in the chain service.
+func (*ChainService) InvalidateForkchoiceUpdate() {}
 
 // UpdateHead mocks the same method in the chain service.
 func (s *ChainService) UpdateHead(ctx context.Context, slot primitives.Slot) {
