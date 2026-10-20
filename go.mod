@@ -61,8 +61,8 @@ require (
 	github.com/status-im/keycard-go v0.2.0
 	github.com/stretchr/testify v1.11.1
 	github.com/theQRL/go-bitfield v0.0.0-20231204084259-f3b877be8f63
-	github.com/theQRL/go-qrl v0.0.0-20260326201015-e36df34a2434
-	github.com/theQRL/go-qrllib v0.10.0
+	github.com/theQRL/go-qrl v0.0.0-20261020122726-084f26fd8144
+	github.com/theQRL/go-qrllib v0.11.0
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
 	github.com/trailofbits/go-mutexasserts v0.0.0-20250212181730-4c2b8e9e784b
 	github.com/urfave/cli/v2 v2.27.5
@@ -269,7 +269,3 @@ replace github.com/json-iterator/go => github.com/prestonvanloon/go v1.1.7-0.201
 
 // See https://github.com/prysmaticlabs/grpc-gateway/issues/2
 replace github.com/grpc-ecosystem/grpc-gateway/v2 => github.com/theQRL/grpc-gateway/v2 v2.0.0-20250214142603-49067762c97f
-
-// Use cyyber/go-qrl until its 64-byte address and VM word changes are
-// available from the canonical theQRL module.
-replace github.com/theQRL/go-qrl => github.com/cyyber/go-qrl v0.3.2-0.20260918165407-a9f196d809aa
