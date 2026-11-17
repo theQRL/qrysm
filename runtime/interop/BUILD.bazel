@@ -51,6 +51,7 @@ go_test(
     srcs = [
         "generate_genesis_state_zond_test.go",
         "generate_keys_test.go",
+        "genesis_test.go",
         "premine-state_test.go",
     ],
     data = [
@@ -64,6 +65,8 @@ go_test(
         "//config/fieldparams",
         "//config/params",
         "//container/trie",
+        "//contracts/deposit",
+        "//contracts/deposit/mock",
         "//crypto/ml_dsa_87",
         "//crypto/randao",
         "//proto/engine/v1:engine",
@@ -72,6 +75,9 @@ go_test(
         "//testing/assert",
         "//testing/require",
         "@com_github_go_yaml_yaml//:yaml",
+        "@com_github_theqrl_go_qrl//accounts/abi/bind",
+        "@com_github_theqrl_go_qrl//accounts/abi/bind/backends",
+        "@com_github_theqrl_go_qrl//common",
         "@com_github_theqrl_go_qrl//common/hexutil",
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],

@@ -17,12 +17,23 @@ in sync with `MinDepositAmount` in `config/params/mainnet_config.go`. Consensus
 does not check the floor, so the contract is the only guard against cheap,
 never-activated validator records.
 
-`bytecode.bin` is the creation bytecode produced by `hypc` with default
-settings (no optimizer); `bytecode.go` derives the runtime code from it for
-genesis allocations. To regenerate after editing the source:
+`bytecode.bin` is the creation bytecode produced by the released `hypc` 0.3.1
+(`0.3.1+commit.f8af5b22`) with default settings (no optimizer); `bytecode.go`
+derives the runtime code from it for genesis allocations. To regenerate after
+editing the source, use a released compiler, not a development build, so that
+the bytecode can be reproduced:
 
 ```
 hypc --bin --abi -o out --overwrite contracts/deposit/deposit_contract.hyp
 tr -d '\n' < out/DepositContract.bin > contracts/deposit/bytecode.bin
 # out/DepositContract.abi must equal abi.json; update contract.go bindings accordingly.
 ```
+
+A genesis allocation does not run the constructor, so the storage it writes
+(the zero hashes) is precomputed in `DefaultDepositContractStorage`
+(`runtime/interop/genesis.go`). The test
+`TestGqrlTestnetGenesis_DepositContractMatchesConstructor` in `runtime/interop`
+compares that code and storage with a contract created by its constructor; run
+it after regenerating. `apps/el-gen/genesis_gqrl.py` in qrl-genesis-generator
+embeds the same runtime code and storage and has to be updated together with
+`bytecode.bin`.
