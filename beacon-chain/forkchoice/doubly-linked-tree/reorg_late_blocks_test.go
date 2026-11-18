@@ -132,7 +132,11 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 	}
 	f.ProcessAttestation(ctx, attesters, blk.Root(), 0)
 
-	driftGenesisTime(f, 3, 1)
+	// Start exactly at the slot boundary: GetProposerHead only reorgs while
+	// fewer than orphanLateBlockProposingEarly (2) whole seconds of the
+	// proposal slot have elapsed, so a delay of 1 fails "head is weak"
+	// whenever the wall clock crosses a second boundary before the call.
+	driftGenesisTime(f, 3, 0)
 	childRoot := [32]byte{'b'}
 	st, blk, err = prepareForkchoiceState(ctx, 2, childRoot, [32]byte{'a'}, [32]byte{'B'}, 0, 0)
 	require.NoError(t, err)
