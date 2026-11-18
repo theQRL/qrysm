@@ -854,7 +854,8 @@ var blockJson = `
     }
   ],
   "transactionsRoot": "0x46e27176677a4b37c1fa9bae97ffb48b86a316f9e6568b3320e10dd6954b5d1a",
-  "withdrawals": []
+  "withdrawals": [],
+  "withdrawalsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
 }
 `
 var blockNoTxJson = `
@@ -890,7 +891,8 @@ var blockNoTxJson = `
     "0x03d033a7910eb2b5023ef9102805c06e30449b9926af32b47c6de3f5ccf45634"
   ],
   "transactionsRoot": "0x46e27176677a4b37c1fa9bae97ffb48b86a316f9e6568b3320e10dd6954b5d1a",
-  "withdrawals": []
+  "withdrawals": [],
+  "withdrawalsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
 }
 `
 

@@ -716,6 +716,8 @@ func TestReconstructFullBlock(t *testing.T) {
 		jsonPayload["size"] = encodedNum
 		jsonPayload["baseFeePerGas"] = encodedNum
 		jsonPayload["withdrawals"] = []*gqrltypes.Withdrawal{}
+		jsonPayload["withdrawalsRoot"] = gqrltypes.EmptyWithdrawalsHash
+		jsonPayload["prevRandao"] = common.BytesToHash(payload.PrevRandao)
 
 		wrappedPayload, err := blocks.WrappedExecutionPayloadZond(payload, 0)
 		require.NoError(t, err)
@@ -811,6 +813,8 @@ func TestReconstructFullBlockBatch(t *testing.T) {
 		jsonPayload["size"] = encodedNum
 		jsonPayload["baseFeePerGas"] = encodedNum
 		jsonPayload["withdrawals"] = []*gqrltypes.Withdrawal{}
+		jsonPayload["withdrawalsRoot"] = gqrltypes.EmptyWithdrawalsHash
+		jsonPayload["prevRandao"] = common.BytesToHash(payload.PrevRandao)
 
 		wrappedPayload, err := blocks.WrappedExecutionPayloadZond(payload, 0)
 		require.NoError(t, err)

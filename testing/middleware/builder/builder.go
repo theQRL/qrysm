@@ -16,7 +16,6 @@ import (
 	gMux "github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-qrl/beacon/engine"
-	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
 	gqrltypes "github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/rpc"
@@ -477,14 +476,7 @@ func executableDataToBlock(params engine.ExecutableData) (*gqrltypes.Block, erro
 	if err != nil {
 		return nil, err
 	}
-	// Only set withdrawalsRoot if it is non-nil. This allows CLs to use
-	// ExecutableData before withdrawals are enabled by marshaling
-	// Withdrawals as the json null value.
-	var withdrawalsRoot *common.Hash
-	if params.Withdrawals != nil {
-		h := gqrltypes.DeriveSha(gqrltypes.Withdrawals(params.Withdrawals), trie.NewStackTrie(nil))
-		withdrawalsRoot = &h
-	}
+	withdrawalsRoot := gqrltypes.DeriveSha(gqrltypes.Withdrawals(params.Withdrawals), trie.NewStackTrie(nil))
 	header := &gqrltypes.Header{
 		ParentHash:      params.ParentHash,
 		Coinbase:        params.FeeRecipient,
