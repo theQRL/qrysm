@@ -145,17 +145,20 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 	secondsPerSlot := params.BeaconConfig().SecondsPerSlot
 	slotsPerEpoch := params.BeaconConfig().SlotsPerEpoch
 	orphanLateBlockFirstThreshold := secondsPerSlot / params.BeaconConfig().IntervalsPerSlot
-	// headArrival is how many seconds into its own slot the head arrived. One
-	// second past the voting window makes it a late block.
-	headArrival := orphanLateBlockFirstThreshold + 1
-	// proposerHead returns GetProposerHead as computed delay seconds into
+	// lateArrival is how many seconds into its own slot a late head arrived:
+	// one second past the voting window.
+	lateArrival := orphanLateBlockFirstThreshold + 1
+	// proposerHeadArrived returns GetProposerHead as computed delay seconds
+	// into slot, for a head that arrived headArrival seconds into its own
 	// slot. GetProposerHead reads the wall clock, so the clock is pinned by
 	// moving genesis, and a result is only accepted when it was computed
 	// entirely within the pinned second. The head's arrival is stamped
 	// relative to the same genesis. Each case below is therefore independent
 	// of how long the test takes and differs from "head is weak" only in the
 	// condition it is named after, so that condition decides its result.
-	proposerHead := func(t *testing.T, slot primitives.Slot, delay uint64) [32]byte {
+	// Cases restore what they change with t.Cleanup, so a failed assertion
+	// does not leak into the cases after it.
+	proposerHeadArrived := func(t *testing.T, slot primitives.Slot, delay, headArrival uint64) [32]byte {
 		for attempt := 0; attempt < 10; attempt++ {
 			now := uint64(time.Now().Unix())
 			genesis := now - uint64(slot)*secondsPerSlot - delay
@@ -170,14 +173,25 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 		t.Fatal("wall clock crossed a second boundary on every attempt")
 		return [32]byte{}
 	}
+	proposerHead := func(t *testing.T, slot primitives.Slot, delay uint64) [32]byte {
+		return proposerHeadArrived(t, slot, delay, lateArrival)
+	}
+	// setSlots moves the head and its parent for the duration of a case.
+	setSlots := func(t *testing.T, headSlot, parentSlot primitives.Slot) {
+		head := f.store.headNode
+		parent := head.parent
+		savedHead, savedParent := head.slot, parent.slot
+		t.Cleanup(func() { head.slot, parent.slot = savedHead, savedParent })
+		head.slot, parent.slot = headSlot, parentSlot
+	}
 	t.Run("head is weak", func(t *testing.T) {
 		require.Equal(t, parentRoot, proposerHead(t, 3, 0))
 	})
 	t.Run("head is nil", func(t *testing.T) {
 		saved := f.store.headNode
+		t.Cleanup(func() { f.store.headNode = saved })
 		f.store.headNode = nil
 		require.Equal(t, [32]byte{}, f.GetProposerHead())
-		f.store.headNode = saved
 	})
 	t.Run("head is not from previous slot", func(t *testing.T) {
 		require.Equal(t, childRoot, proposerHead(t, 4, 0))
@@ -186,57 +200,53 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 		require.Equal(t, childRoot, proposerHead(t, 3, orphanLateBlockProposingEarly))
 	})
 	t.Run("head is from epoch boundary", func(t *testing.T) {
-		head := f.store.headNode
-		savedHead, savedParent := head.slot, head.parent.slot
-		head.slot, head.parent.slot = slotsPerEpoch-1, slotsPerEpoch-2
+		setSlots(t, slotsPerEpoch-1, slotsPerEpoch-2)
 		require.Equal(t, childRoot, proposerHead(t, slotsPerEpoch, 0))
-		head.slot, head.parent.slot = savedHead, savedParent
 	})
 	t.Run("head is early", func(t *testing.T) {
-		headArrival = orphanLateBlockFirstThreshold - 1
-		require.Equal(t, childRoot, proposerHead(t, 3, 0))
-		headArrival = orphanLateBlockFirstThreshold + 1
+		require.Equal(t, childRoot, proposerHeadArrived(t, 3, 0, orphanLateBlockFirstThreshold-1))
 	})
 	t.Run("chain not finalizing", func(t *testing.T) {
-		head := f.store.headNode
-		savedHead, savedParent := head.slot, head.parent.slot
 		// Finalized epoch is 0. limit is the last proposal slot that is not
 		// more than ReorgMaxEpochsSinceFinalization epochs past it. The next
 		// slot is an epoch boundary, so the first proposal slot past the
 		// window that only this guard rejects is limit+2.
 		limit := primitives.Slot(params.BeaconConfig().ReorgMaxEpochsSinceFinalization+1)*slotsPerEpoch - 1
-		head.slot, head.parent.slot = limit-1, limit-2
+		setSlots(t, limit-1, limit-2)
 		require.Equal(t, parentRoot, proposerHead(t, limit, 0))
-		head.slot, head.parent.slot = limit+1, limit
+		setSlots(t, limit+1, limit)
 		require.Equal(t, childRoot, proposerHead(t, limit+2, 0))
-		head.slot, head.parent.slot = savedHead, savedParent
 	})
 	t.Run("Not single block reorg", func(t *testing.T) {
-		saved := f.store.headNode.parent.slot
-		f.store.headNode.parent.slot = 0
+		setSlots(t, f.store.headNode.slot, 0)
 		require.Equal(t, childRoot, proposerHead(t, 3, 0))
-		f.store.headNode.parent.slot = saved
 	})
 	t.Run("head advanced justification", func(t *testing.T) {
-		saved := f.store.headNode.unrealizedJustifiedEpoch
-		f.store.headNode.unrealizedJustifiedEpoch = f.store.headNode.parent.unrealizedJustifiedEpoch + 1
+		head := f.store.headNode
+		saved := head.unrealizedJustifiedEpoch
+		t.Cleanup(func() { head.unrealizedJustifiedEpoch = saved })
+		head.unrealizedJustifiedEpoch = head.parent.unrealizedJustifiedEpoch + 1
 		require.Equal(t, childRoot, proposerHead(t, 3, 0))
-		f.store.headNode.unrealizedJustifiedEpoch = saved
 	})
 	t.Run("parent is nil", func(t *testing.T) {
-		saved := f.store.headNode.parent
-		f.store.headNode.parent = nil
+		head := f.store.headNode
+		saved := head.parent
+		t.Cleanup(func() { head.parent = saved })
+		head.parent = nil
 		require.Equal(t, childRoot, proposerHead(t, 3, 0))
-		f.store.headNode.parent = saved
 	})
 	t.Run("parent is weak", func(t *testing.T) {
-		saved := f.store.headNode.parent.weight
-		f.store.headNode.parent.weight = 0
+		parent := f.store.headNode.parent
+		saved := parent.weight
+		t.Cleanup(func() { parent.weight = saved })
+		parent.weight = 0
 		require.Equal(t, childRoot, proposerHead(t, 3, 0))
-		f.store.headNode.parent.weight = saved
 	})
 	t.Run("Head is strong", func(t *testing.T) {
-		f.store.headNode.weight = f.store.committeeWeight
+		head := f.store.headNode
+		saved := head.weight
+		t.Cleanup(func() { head.weight = saved })
+		head.weight = f.store.committeeWeight
 		require.Equal(t, childRoot, proposerHead(t, 3, 0))
 	})
 }

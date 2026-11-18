@@ -34,6 +34,12 @@ A genesis allocation does not run the constructor, so the storage it writes
 (`runtime/interop/genesis.go`). The test
 `TestGqrlTestnetGenesis_DepositContractMatchesConstructor` in `runtime/interop`
 compares that code and storage with a contract created by its constructor; run
-it after regenerating. `apps/el-gen/genesis_gqrl.py` in qrl-genesis-generator
+it after regenerating. If it reports a storage difference, the constructor now
+writes other slots or values: set `DefaultDepositContractStorage` to exactly the
+non-zero 64-byte words the constructor leaves in storage, remove the slots it
+no longer writes, and run the test again. For slots up to `lastSlot` (0x40) the
+test prints the slot and both values. If only the storage roots differ, the
+difference is in a slot above that range; raise `lastSlot` in the test until
+the scan names it. `apps/el-gen/genesis_gqrl.py` in qrl-genesis-generator
 embeds the same runtime code and storage and has to be updated together with
 `bytecode.bin`.

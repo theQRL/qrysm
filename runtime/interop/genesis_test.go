@@ -43,6 +43,8 @@ func TestGqrlTestnetGenesis_DepositContractMatchesConstructor(t *testing.T) {
 
 	// branch, deposit_count and zero_hashes take slots 0x00 to 0x20. The range also covers the
 	// slots of the Ethereum layout, up to 0x40, so that values left there are reported as well.
+	// This scan only names the slot that differs; the storage roots compared below cover every
+	// slot.
 	const lastSlot = 0x40
 	for slot := int64(0); slot <= lastSlot; slot++ {
 		key := common.BigToHash(big.NewInt(slot))
@@ -51,15 +53,21 @@ func TestGqrlTestnetGenesis_DepositContractMatchesConstructor(t *testing.T) {
 		require.Equal(t, common.BytesToStorageValue64(want), account.Storage[key],
 			"Genesis storage differs from the constructor's at slot %#x", slot)
 	}
-	for key := range account.Storage {
-		require.Equal(t, true, key.Big().Cmp(big.NewInt(lastSlot)) <= 0, "Genesis storage sets slot %s, which the contract does not use", key.Hex())
-	}
 
-	// The root of the empty tree depends on every zero hash and on the deposit count.
 	backend := backends.NewSimulatedBackend(alloc, 20000000)
 	t.Cleanup(func() {
 		require.NoError(t, backend.Close())
 	})
+
+	// The storage trie root covers all of the contract's storage, whichever slots it uses.
+	deployedState, err := deployed.Backend.Blockchain().State()
+	require.NoError(t, err)
+	genesisState, err := backend.Blockchain().State()
+	require.NoError(t, err)
+	require.Equal(t, deployedState.GetStorageRoot(deployed.ContractAddr), genesisState.GetStorageRoot(addr),
+		"Genesis storage is not the storage the constructor leaves, in a slot above %#x", lastSlot)
+
+	// The root of the empty tree depends on every zero hash and on the deposit count.
 	contract, err := contracts.NewDepositContract(addr, backend)
 	require.NoError(t, err)
 	root, err := contract.GetDepositRoot(&bind.CallOpts{})
