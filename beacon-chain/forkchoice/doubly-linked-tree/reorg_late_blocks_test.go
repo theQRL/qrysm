@@ -142,36 +142,36 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 	headRoot, err := f.Head(ctx)
 	require.NoError(t, err)
 	require.Equal(t, blk.Root(), headRoot)
-	orphanLateBlockFirstThreshold := params.BeaconConfig().SecondsPerSlot / params.BeaconConfig().IntervalsPerSlot
-	// setClock puts the wall clock delay seconds into slot and returns the
-	// second it read. It also stamps the head as having arrived one second
-	// after the voting window of its own slot. The stamp is relative to the
-	// new genesis, so the head stays late however long the test takes and
-	// every subtest below reaches the guard it is named after.
-	setClock := func(slot primitives.Slot, delay uint64) uint64 {
-		now := uint64(time.Now().Unix())
-		genesis := now - uint64(slot)*params.BeaconConfig().SecondsPerSlot - delay
-		f.SetGenesisTime(genesis)
-		head := f.store.headNode
-		head.timestamp = genesis + uint64(head.slot)*params.BeaconConfig().SecondsPerSlot + orphanLateBlockFirstThreshold + 1
-		return now
-	}
-	setClock(3, 0)
-	t.Run("head is weak", func(t *testing.T) {
-		// GetProposerHead reads the wall clock and only reorgs while fewer
-		// than orphanLateBlockProposingEarly whole seconds of the proposal
-		// slot have elapsed. Only accept a result computed entirely within
-		// the pinned second, so a stalled test cannot fail the assertion.
+	secondsPerSlot := params.BeaconConfig().SecondsPerSlot
+	slotsPerEpoch := params.BeaconConfig().SlotsPerEpoch
+	orphanLateBlockFirstThreshold := secondsPerSlot / params.BeaconConfig().IntervalsPerSlot
+	// headArrival is how many seconds into its own slot the head arrived. One
+	// second past the voting window makes it a late block.
+	headArrival := orphanLateBlockFirstThreshold + 1
+	// proposerHead returns GetProposerHead as computed delay seconds into
+	// slot. GetProposerHead reads the wall clock, so the clock is pinned by
+	// moving genesis, and a result is only accepted when it was computed
+	// entirely within the pinned second. The head's arrival is stamped
+	// relative to the same genesis. Each case below is therefore independent
+	// of how long the test takes and differs from "head is weak" only in the
+	// condition it is named after, so that condition decides its result.
+	proposerHead := func(t *testing.T, slot primitives.Slot, delay uint64) [32]byte {
 		for attempt := 0; attempt < 10; attempt++ {
-			pinned := setClock(3, 0)
+			now := uint64(time.Now().Unix())
+			genesis := now - uint64(slot)*secondsPerSlot - delay
+			f.SetGenesisTime(genesis)
+			head := f.store.headNode
+			head.timestamp = genesis + uint64(head.slot)*secondsPerSlot + headArrival
 			got := f.GetProposerHead()
-			if uint64(time.Now().Unix()) != pinned {
-				continue
+			if uint64(time.Now().Unix()) == now {
+				return got
 			}
-			require.Equal(t, parentRoot, got)
-			return
 		}
 		t.Fatal("wall clock crossed a second boundary on every attempt")
+		return [32]byte{}
+	}
+	t.Run("head is weak", func(t *testing.T) {
+		require.Equal(t, parentRoot, proposerHead(t, 3, 0))
 	})
 	t.Run("head is nil", func(t *testing.T) {
 		saved := f.store.headNode
@@ -180,61 +180,63 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 		f.store.headNode = saved
 	})
 	t.Run("head is not from previous slot", func(t *testing.T) {
-		setClock(4, 0)
-		require.Equal(t, childRoot, f.GetProposerHead())
-		setClock(3, 0)
+		require.Equal(t, childRoot, proposerHead(t, 4, 0))
+	})
+	t.Run("not proposing early", func(t *testing.T) {
+		require.Equal(t, childRoot, proposerHead(t, 3, orphanLateBlockProposingEarly))
 	})
 	t.Run("head is from epoch boundary", func(t *testing.T) {
-		saved := f.store.headNode.slot
-		f.store.headNode.slot = params.BeaconConfig().SlotsPerEpoch - 1
-		setClock(params.BeaconConfig().SlotsPerEpoch, 0)
-		require.Equal(t, childRoot, f.GetProposerHead())
-		f.store.headNode.slot = saved
-		setClock(3, 0)
+		head := f.store.headNode
+		savedHead, savedParent := head.slot, head.parent.slot
+		head.slot, head.parent.slot = slotsPerEpoch-1, slotsPerEpoch-2
+		require.Equal(t, childRoot, proposerHead(t, slotsPerEpoch, 0))
+		head.slot, head.parent.slot = savedHead, savedParent
 	})
 	t.Run("head is early", func(t *testing.T) {
-		saved := f.store.headNode.timestamp
-		f.store.headNode.timestamp = saved - 2
-		require.Equal(t, childRoot, f.GetProposerHead())
-		f.store.headNode.timestamp = saved
+		headArrival = orphanLateBlockFirstThreshold - 1
+		require.Equal(t, childRoot, proposerHead(t, 3, 0))
+		headArrival = orphanLateBlockFirstThreshold + 1
 	})
 	t.Run("chain not finalizing", func(t *testing.T) {
-		saved := f.store.headNode.slot
-		// First slot whose successor is more than
-		// ReorgMaxEpochsSinceFinalization epochs past finalized epoch 0.
-		stale := primitives.Slot(params.BeaconConfig().ReorgMaxEpochsSinceFinalization+1) * params.BeaconConfig().SlotsPerEpoch
-		f.store.headNode.slot = stale
-		setClock(stale+1, 0)
-		require.Equal(t, childRoot, f.GetProposerHead())
-		f.store.headNode.slot = saved
-		setClock(3, 0)
+		head := f.store.headNode
+		savedHead, savedParent := head.slot, head.parent.slot
+		// Finalized epoch is 0. limit is the last proposal slot that is not
+		// more than ReorgMaxEpochsSinceFinalization epochs past it. The next
+		// slot is an epoch boundary, so the first proposal slot past the
+		// window that only this guard rejects is limit+2.
+		limit := primitives.Slot(params.BeaconConfig().ReorgMaxEpochsSinceFinalization+1)*slotsPerEpoch - 1
+		head.slot, head.parent.slot = limit-1, limit-2
+		require.Equal(t, parentRoot, proposerHead(t, limit, 0))
+		head.slot, head.parent.slot = limit+1, limit
+		require.Equal(t, childRoot, proposerHead(t, limit+2, 0))
+		head.slot, head.parent.slot = savedHead, savedParent
 	})
 	t.Run("Not single block reorg", func(t *testing.T) {
 		saved := f.store.headNode.parent.slot
 		f.store.headNode.parent.slot = 0
-		require.Equal(t, childRoot, f.GetProposerHead())
+		require.Equal(t, childRoot, proposerHead(t, 3, 0))
 		f.store.headNode.parent.slot = saved
 	})
 	t.Run("head advanced justification", func(t *testing.T) {
 		saved := f.store.headNode.unrealizedJustifiedEpoch
 		f.store.headNode.unrealizedJustifiedEpoch = f.store.headNode.parent.unrealizedJustifiedEpoch + 1
-		require.Equal(t, childRoot, f.GetProposerHead())
+		require.Equal(t, childRoot, proposerHead(t, 3, 0))
 		f.store.headNode.unrealizedJustifiedEpoch = saved
 	})
 	t.Run("parent is nil", func(t *testing.T) {
 		saved := f.store.headNode.parent
 		f.store.headNode.parent = nil
-		require.Equal(t, childRoot, f.GetProposerHead())
+		require.Equal(t, childRoot, proposerHead(t, 3, 0))
 		f.store.headNode.parent = saved
 	})
 	t.Run("parent is weak", func(t *testing.T) {
 		saved := f.store.headNode.parent.weight
 		f.store.headNode.parent.weight = 0
-		require.Equal(t, childRoot, f.GetProposerHead())
+		require.Equal(t, childRoot, proposerHead(t, 3, 0))
 		f.store.headNode.parent.weight = saved
 	})
 	t.Run("Head is strong", func(t *testing.T) {
 		f.store.headNode.weight = f.store.committeeWeight
-		require.Equal(t, childRoot, f.GetProposerHead())
+		require.Equal(t, childRoot, proposerHead(t, 3, 0))
 	})
 }
