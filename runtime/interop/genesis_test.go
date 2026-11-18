@@ -26,6 +26,9 @@ func TestGqrlTestnetGenesis_DepositContractMatchesConstructor(t *testing.T) {
 
 	deployed, err := depositmock.Setup()
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, deployed.Backend.Close())
+	})
 
 	addr, err := common.NewAddressFromString(cfg.DepositContractAddress)
 	require.NoError(t, err)
