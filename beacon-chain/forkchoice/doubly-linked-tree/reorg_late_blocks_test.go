@@ -3,6 +3,7 @@ package doublylinkedtree
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/testing/require"
@@ -132,10 +133,6 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 	}
 	f.ProcessAttestation(ctx, attesters, blk.Root(), 0)
 
-	// Start exactly at the slot boundary: GetProposerHead only reorgs while
-	// fewer than orphanLateBlockProposingEarly (2) whole seconds of the
-	// proposal slot have elapsed, so a delay of 1 fails "head is weak"
-	// whenever the wall clock crosses a second boundary before the call.
 	driftGenesisTime(f, 3, 0)
 	childRoot := [32]byte{'b'}
 	st, blk, err = prepareForkchoiceState(ctx, 2, childRoot, [32]byte{'a'}, [32]byte{'B'}, 0, 0)
@@ -145,10 +142,30 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, blk.Root(), headRoot)
 	orphanLateBlockFirstThreshold := params.BeaconConfig().SecondsPerSlot / params.BeaconConfig().IntervalsPerSlot
-	f.store.headNode.timestamp -= params.BeaconConfig().SecondsPerSlot - orphanLateBlockFirstThreshold
+	// pinProposalTime puts the wall clock at the first second of slot 3 with
+	// the head block (slot 2) having arrived late, and returns that second.
+	pinProposalTime := func() uint64 {
+		now := uint64(time.Now().Unix())
+		f.SetGenesisTime(now - 3*params.BeaconConfig().SecondsPerSlot)
+		f.store.headNode.timestamp = now - (params.BeaconConfig().SecondsPerSlot - orphanLateBlockFirstThreshold)
+		return now
+	}
+	pinProposalTime()
 	t.Run("head is weak", func(t *testing.T) {
-		require.Equal(t, parentRoot, f.GetProposerHead())
-
+		// GetProposerHead reads the wall clock and only reorgs while fewer
+		// than orphanLateBlockProposingEarly whole seconds of the proposal
+		// slot have elapsed. Only accept a result computed entirely within
+		// the pinned second, so a stalled test cannot fail the assertion.
+		for attempt := 0; attempt < 10; attempt++ {
+			pinned := pinProposalTime()
+			got := f.GetProposerHead()
+			if uint64(time.Now().Unix()) != pinned {
+				continue
+			}
+			require.Equal(t, parentRoot, got)
+			return
+		}
+		t.Fatal("wall clock crossed a second boundary on every attempt")
 	})
 	t.Run("head is nil", func(t *testing.T) {
 		saved := f.store.headNode
