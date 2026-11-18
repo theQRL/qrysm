@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
@@ -142,22 +143,27 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, blk.Root(), headRoot)
 	orphanLateBlockFirstThreshold := params.BeaconConfig().SecondsPerSlot / params.BeaconConfig().IntervalsPerSlot
-	// pinProposalTime puts the wall clock at the first second of slot 3 with
-	// the head block (slot 2) having arrived late, and returns that second.
-	pinProposalTime := func() uint64 {
+	// setClock puts the wall clock delay seconds into slot and returns the
+	// second it read. It also stamps the head as having arrived one second
+	// after the voting window of its own slot. The stamp is relative to the
+	// new genesis, so the head stays late however long the test takes and
+	// every subtest below reaches the guard it is named after.
+	setClock := func(slot primitives.Slot, delay uint64) uint64 {
 		now := uint64(time.Now().Unix())
-		f.SetGenesisTime(now - 3*params.BeaconConfig().SecondsPerSlot)
-		f.store.headNode.timestamp = now - (params.BeaconConfig().SecondsPerSlot - orphanLateBlockFirstThreshold)
+		genesis := now - uint64(slot)*params.BeaconConfig().SecondsPerSlot - delay
+		f.SetGenesisTime(genesis)
+		head := f.store.headNode
+		head.timestamp = genesis + uint64(head.slot)*params.BeaconConfig().SecondsPerSlot + orphanLateBlockFirstThreshold + 1
 		return now
 	}
-	pinProposalTime()
+	setClock(3, 0)
 	t.Run("head is weak", func(t *testing.T) {
 		// GetProposerHead reads the wall clock and only reorgs while fewer
 		// than orphanLateBlockProposingEarly whole seconds of the proposal
 		// slot have elapsed. Only accept a result computed entirely within
 		// the pinned second, so a stalled test cannot fail the assertion.
 		for attempt := 0; attempt < 10; attempt++ {
-			pinned := pinProposalTime()
+			pinned := setClock(3, 0)
 			got := f.GetProposerHead()
 			if uint64(time.Now().Unix()) != pinned {
 				continue
@@ -174,17 +180,17 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 		f.store.headNode = saved
 	})
 	t.Run("head is not from previous slot", func(t *testing.T) {
-		driftGenesisTime(f, 4, 0)
+		setClock(4, 0)
 		require.Equal(t, childRoot, f.GetProposerHead())
-		driftGenesisTime(f, 3, 1)
+		setClock(3, 0)
 	})
 	t.Run("head is from epoch boundary", func(t *testing.T) {
 		saved := f.store.headNode.slot
-		driftGenesisTime(f, params.BeaconConfig().SlotsPerEpoch, 0)
 		f.store.headNode.slot = params.BeaconConfig().SlotsPerEpoch - 1
+		setClock(params.BeaconConfig().SlotsPerEpoch, 0)
 		require.Equal(t, childRoot, f.GetProposerHead())
-		driftGenesisTime(f, 3, 1)
 		f.store.headNode.slot = saved
+		setClock(3, 0)
 	})
 	t.Run("head is early", func(t *testing.T) {
 		saved := f.store.headNode.timestamp
@@ -194,11 +200,14 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 	})
 	t.Run("chain not finalizing", func(t *testing.T) {
 		saved := f.store.headNode.slot
-		f.store.headNode.slot = 97
-		driftGenesisTime(f, 98, 0)
+		// First slot whose successor is more than
+		// ReorgMaxEpochsSinceFinalization epochs past finalized epoch 0.
+		stale := primitives.Slot(params.BeaconConfig().ReorgMaxEpochsSinceFinalization+1) * params.BeaconConfig().SlotsPerEpoch
+		f.store.headNode.slot = stale
+		setClock(stale+1, 0)
 		require.Equal(t, childRoot, f.GetProposerHead())
 		f.store.headNode.slot = saved
-		driftGenesisTime(f, 3, 1)
+		setClock(3, 0)
 	})
 	t.Run("Not single block reorg", func(t *testing.T) {
 		saved := f.store.headNode.parent.slot
@@ -221,7 +230,7 @@ func TestForkChoice_GetProposerHead(t *testing.T) {
 	t.Run("parent is weak", func(t *testing.T) {
 		saved := f.store.headNode.parent.weight
 		f.store.headNode.parent.weight = 0
-		require.Equal(t, false, f.ShouldOverrideFCU())
+		require.Equal(t, childRoot, f.GetProposerHead())
 		f.store.headNode.parent.weight = saved
 	})
 	t.Run("Head is strong", func(t *testing.T) {
